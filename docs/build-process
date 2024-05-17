@@ -1,0 +1,6 @@
+Pre Build:
+Before build starts, it will generate include/dsp_version.h file
+
+Post Build:
+Post build commands include generating h2xml files and amdb files
+

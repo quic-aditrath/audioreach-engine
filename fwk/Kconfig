@@ -1,0 +1,20 @@
+menu "Signal Processing Framework"
+config SPF
+	bool
+
+config SPF_AS_STATIC_LIB
+        bool "Compile SPF Library as Static Library"
+	depends on ARCH_HEXAGON
+	select SPF
+        default n
+	help
+	 Select y if you want to compile SPF as Static Library,
+	 else it will compiled as Shared Library.
+	 By default its built as Shared Library.
+
+config SPF_DEBUG
+        bool "Enable SPF DEBUG Features"
+        default n
+
+endmenu
+

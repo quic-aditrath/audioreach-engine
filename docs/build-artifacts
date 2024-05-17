@@ -1,0 +1,25 @@
+
+Libraries:
+All libraries both static and dynamic are generated in top
+build directory
+
+Headers:
+Only one version header file is generated as part of buil at
+include/dsp_version.h
+
+AMDB files:
+All amdb files are generated in below location
+
+build/amdb_autogen/
+├── spf_shared_build_config.cpp
+├── spf_shared_build_config.h
+├── spf_static_build_config.cpp
+└── spf_static_build_config.h
+
+
+H2XML Files:
+H2XML files are generated in below location
+
+build/h2xml_autogen/
+└── example_encoder_module_api.xml
+

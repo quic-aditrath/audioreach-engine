@@ -1,0 +1,10 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: ar_osal
+Description: ar osal library
+Version: @VERSION@
+Libs: -L${libdir} -lar_osal
+Cflags: -I${includedir}

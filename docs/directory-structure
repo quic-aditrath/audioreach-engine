@@ -1,0 +1,31 @@
+.
+│   ├── hexagon
+│   │   ├── configs
+│   │   │   └── defconfig
+├── CODE-OF-CONDUCT.md
+├── CONTRIBUTING.md
+├── docs
+├── fwk
+│   ├── gpr
+│   └── spf
+│       ├── amdb
+│       ├── apm
+│       ├── containers
+│       ├── module_interfaces
+│       ├── modules
+│       ├── utils
+│       └── vcpm
+├── include
+│   ├── platform
+│   │   ├── ar_osal
+│   │   └── posal
+├── LICENSE
+├── modules
+│   ├── examples
+│   └── qcom
+│       └── include
+├── README
+├── README.md
+└── scripts
+    ├── cmake
+Cmake Scripts

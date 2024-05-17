@@ -1,0 +1,24 @@
+menu "Modules"
+config MODULES
+	bool
+	default y
+
+config MODULES_DEBUG
+        bool "Enable MODULUES DEBUG Features"
+        default y
+	help
+	 Select y to enable debug symbols in modules,
+	 say n to strip debug symbols
+
+config ENCODER
+        tristate "Enable Example Encoder Library"
+        default y
+
+config ECHO_CANCELLATION
+        tristate "Enable ECHO Cancellation Library"
+        default y
+
+config GAIN
+        tristate "Enable GAIN Library"
+        default y
+endmenu

@@ -1,0 +1,43 @@
+Step 1:
+Add module specific Kconfig symbol in modules/Kconfig
+Feel free to add module customization configs here.
+Ex:
+config ENCODER
+        tristate "Enable Example Encoder Library"
+        default y
+
+Step 2: 
+Create your own module directory in modules directory
+with source files & headers, finally add the directory
+name to modules/CMakeLists.txt
+ex:
+if(CONFIG_ENCODER)
+	add_subdirectory(examples/encoder)
+endif()
+
+Step 3:
+Define module CMakeLists, to make things easy you could use
+spf_module_sources function 
+This function takes various obviously named arguments
+
+Ex:
+spf_module_sources(
+	KCONFIG		CONFIG_ENCODER
+	NAME		example_encoder
+	MAJOR_VER	1
+	MINOR_VER	0
+	AMDB_ITYPE	"capi"
+	AMDB_MTYPE	"encoder"
+	AMDB_MID	"0x0700109B"
+	AMDB_TAG	"capi_example_enc"
+	AMDB_MOD_NAME	"MODULE_ID_EXAMPLE_ENC"
+	AMDB_FMT_ID1	"MEDIA_FMT_ID_EXAMPLE"
+	SRCS		${example_encoder_sources}
+	INCLUDES	${example_encoder_includes}
+	H2XML_HEADERS	"api/example_encoder_module_api.h"
+	CFLAGS		""
+)
+
+Thats it!
+depending on the config this module will be either built
+as in-built or dynamic module.

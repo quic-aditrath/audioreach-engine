@@ -1,0 +1,34 @@
+menuconfig ARCH_HEXAGON
+        bool "Hexagon Architecture"
+	help
+          Say yes if you need Hexagon Architecture support
+
+if ARCH_HEXAGON
+
+config HEXAGON_TOOLS_ROOT
+	string "Path to Hexagon llvm tools"
+	help
+	 Absolute Path to Hexagon tools
+
+config HEXAGON_SDK_ROOT
+	string "Path to Hexagon SDK root"
+	help
+	 Absolute Path to Hexagon SDK root
+
+config DISABLE_PLATFORM
+	bool "Disable compiling platform."
+	default y
+	help
+	Select y to disable platform compilation,
+	say n to compile platform.
+
+config COMPILE_POSAL
+	bool "Compile POSAL source files."
+	default n
+	help
+	Select y to compile posal source files,
+	say n to skip posal source files compilation.
+
+endif
+
+

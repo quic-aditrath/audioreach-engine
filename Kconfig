@@ -1,0 +1,5 @@
+mainmenu "AudioReach Engine $(MAJOR_VERSION).$(MINOR_VERSION)-$(PATCHLEVEL) Configuration"
+source arch/Kconfig
+source modules/Kconfig
+source fwk/Kconfig
+source fwk/spf/modules/Kconfig

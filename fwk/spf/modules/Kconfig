@@ -1,0 +1,47 @@
+menu "Signal Processing Framework Modules"
+
+config DATA_LOGGING
+        tristate "Enable DATA_LOGGING Library"
+        default y
+
+config LATENCY
+        tristate "Enable LATENCY Library"
+        default y
+
+config SYNC
+        tristate "Enable SYNC Library"
+        default y
+
+config SPR
+        tristate "Enable SPR Library"
+        default y
+
+config SPLITTER
+        tristate "Enable SPLITTER Library"
+        default y
+
+config DATA_MARKER
+        tristate "Enable DATA_MARKER Library"
+        default y
+
+config PRIORITY_SYNC
+        tristate "Enable DATA_MARKER Library"
+        default y
+
+config MUX_DEMUX
+        tristate "Enable DATA_MARKER Library"
+        default y
+
+config SISO_RAT
+        tristate "Enable DATA_MARKER Library"
+        default y
+
+config SH_MEM_PULL_MODE
+        tristate "Enable DATA_MARKER Library"
+        default y
+
+config SH_MEM_PUSH_MODE
+        tristate "Enable DATA_MARKER Library"
+        default y
+
+endmenu

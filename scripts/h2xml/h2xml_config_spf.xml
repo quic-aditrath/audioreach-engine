@@ -1,0 +1,873 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    H2XML configuration file
+-->
+
+<H2XML_CONFIG prefix="h2xml" version="2.0.2.0" h2xmlVersion="2.0.2.0" action="
+    @h2xmlx_xmlLineLength{160}
+    @h2xmlx_xmlAttributeLength{160}
+    @h2xmlx_xmlTabSize{2}
+    @h2xmlx_xmlNumberFormat{HEX}
+    @h2xmlx_expandArray{false}  
+    @h2xmlx_expandStructs{false}   
+	@h2xmlx_xmlFloatPrecision{10}	
+">
+
+    <GLOBAL_ANNOTATIONS prefix="_">
+
+        <ALIAS keyword="setVersion" Arguments="UNSIGNED_INTEGER;UNSIGNED_INTEGER;UNSIGNED_INTEGER;UNSIGNED_INTEGER" globalAnnotation="true" action="
+            @h2xml_versionMajor{\1}
+            @h2xml_versionMinor{\2}
+            @h2xml_versionBranch{\3}
+            @h2xml_versionSubBranch{\4}
+        "/>
+        
+        <ALIAS keyword="processors" ArgumentsList="ENUM_ELEMENT" globalAnnotation="true" removeQuotes="true" action="" actionList="
+            @h2xml_saveActiveTag
+            @h2xml_TAG_PROCESSOR
+            @h2xml_processorName{\1@h2xmle_name}
+            @h2xml_processorId{\1@h2xmle_initValue}
+            @h2xml_restoreActiveTag
+        "/>
+
+        <ALIAS keyword="platforms" ArgumentsList="ENUM_ELEMENT" globalAnnotation="true" removeQuotes="true" action="" actionList="
+            @h2xml_saveActiveTag
+            @h2xml_TAG_PLATFORM
+            @h2xml_platformName{\1@h2xmle_name}
+            @h2xml_platformId{\1@h2xmle_initValue}
+            @h2xml_restoreActiveTag
+        "/>
+        <ATTRIBUTE keyword="globalAnnotations" Arguments="BOOL" default="true" attributeType="GLOBAL_ANNOTATIONS" show="false"/>
+        <ATTRIBUTE keyword="select" Arguments="LABEL" attributeType="SELECT" show="false"/>
+        <ATTRIBUTE keyword="selectCopy" Arguments="LABEL" attributeType="SELECT_COPY" show="false"/>
+        <ATTRIBUTE keyword="title1" name="title1" Arguments="STRING" globalAnnotation="true" Parent="h2xml_TAG_H2XML"/>
+        <ATTRIBUTE keyword="title2" name="title2" Arguments="STRING" globalAnnotation="true" Parent="h2xml_TAG_H2XML"/>
+        <ATTRIBUTE keyword="title3" name="title3" Arguments="STRING" globalAnnotation="true" Parent="h2xml_TAG_H2XML"/>
+        <ATTRIBUTE keyword="title4" name="title4" Arguments="STRING" globalAnnotation="true" Parent="h2xml_TAG_H2XML"/>
+        <ATTRIBUTE keyword="title5" name="title5" Arguments="STRING" globalAnnotation="true" Parent="h2xml_TAG_H2XML"/>
+        <ATTRIBUTE keyword="title6" name="title6" Arguments="STRING" globalAnnotation="true" Parent="h2xml_TAG_H2XML"/>
+        <ATTRIBUTE keyword="title7" name="title7" Arguments="STRING" globalAnnotation="true" Parent="h2xml_TAG_H2XML"/>
+        <ATTRIBUTE keyword="title8" name="title8" Arguments="STRING" globalAnnotation="true" Parent="h2xml_TAG_H2XML"/>
+        <ATTRIBUTE keyword="title9" name="title9" Arguments="STRING" globalAnnotation="true" Parent="h2xml_TAG_H2XML"/>
+        <ATTRIBUTE keyword="title10" name="title10" Arguments="STRING" globalAnnotation="true" Parent="h2xml_TAG_H2XML"/>
+        <ATTRIBUTE keyword="title_agile_rev" name="_title_agile_rev" Arguments="STRING" globalAnnotation="true" Parent="h2xml_TAG_H2XML"/>
+        <ATTRIBUTE keyword="title_date" name="title_date" Arguments="STRING" globalAnnotation="true" Parent="h2xml_TAG_H2XML"/>
+  
+        <private>
+            <ALIAS keyword="defType" Arguments="Label" removeQuotes="true" globalAnnotation="true" labelList="spfModule;driverModule;Key;DriverProp;spfProp" action="
+                @h2xml_TAG_H2XML 
+                @h2xml_setVersion{0,0,0,0}
+                @h2xml_defType_\1{}
+            "/>
+
+            <TAG keyword="TAG_PROCESSORS" name="PROCESSORS" Parent="h2xml_TAG_H2XML" newParent="true" maxOccurs="1" selectExisting="true"/>
+            <TAG keyword="TAG_PROCESSOR" name="PROCESSOR" Parent="h2xml_TAG_PROCESSORS" newParent="true"/>
+            <TAG keyword="TAG_PLATFORMS" name="PLATFORMS" Parent="h2xml_TAG_H2XML" newParent="true" maxOccurs="1" />
+            <TAG keyword="TAG_PLATFORM" name="PLATFORM" Parent="h2xml_TAG_PLATFORMS" newParent="true"/>
+
+            <ATTRIBUTE keyword="processorName"  name="name" Arguments="LABEL" Parent="h2xml_TAG_PROCESSOR"/>
+            <ATTRIBUTE keyword="processorId"  name="id" Arguments="INTEGER" Parent="h2xml_TAG_PROCESSOR"/>
+            <ATTRIBUTE keyword="platformName"  name="name" Arguments="LABEL" Parent="h2xml_TAG_PLATFORM"/>
+            <ATTRIBUTE keyword="platformId"  name="id" Arguments="INTEGER" Parent="h2xml_TAG_PLATFORM"/>
+            <ATTRIBUTE keyword="versionMajor" name="versionMajor" Arguments="UNSIGNED_INTEGER" Parent="h2xml_TAG_H2XML"/>
+            <ATTRIBUTE keyword="versionMinor" name="versionMinor" Arguments="UNSIGNED_INTEGER" Parent="h2xml_TAG_H2XML"/>
+            <ATTRIBUTE keyword="versionBranch" name="versionBranch" Arguments="UNSIGNED_INTEGER" Parent="h2xml_TAG_H2XML"/>
+            <ATTRIBUTE keyword="versionSubBranch" name="versionSubBranch" Arguments="UNSIGNED_INTEGER" Parent="h2xml_TAG_H2XML"/>
+         </private>
+    </GLOBAL_ANNOTATIONS>
+
+    <XML_GENERATOR_ANNOTATIONS prefix="x_">
+        <ATTRIBUTE keyword="expandStructs" Arguments="BOOL" default="true" attributeType="EXPAND_STRUCTS"/>
+        <ATTRIBUTE keyword="expandTypeDefs" Arguments="BOOL" default="true" attributeType="EXPAND_TYPEDEFS"/>
+        <ATTRIBUTE keyword="expandEnums" Arguments="BOOL" default="true" attributeType="EXPAND_ENUMS"/>
+        <ATTRIBUTE keyword="expandArray" Arguments="BOOL" default="TRUE" attributeType="EXPAND_ARRAY"/>
+        <ATTRIBUTE keyword="expandArrayOffset" Arguments="INTEGER" default="1" attributeType="EXPAND_ARRAY_OFFSET"/>
+        <ATTRIBUTE keyword="xmlLineLength" Arguments="INTEGER" attributeType="XML_LINE_LENGTH"/>
+        <ATTRIBUTE keyword="xmlAttributeLength" Arguments="INTEGER" attributeType="XML_ATTRIBUTE_LENGTH"/>
+        <ATTRIBUTE keyword="xmlTabSize" Arguments="INTEGER" attributeType="XML_TAB_SIZE"/>
+        <ATTRIBUTE keyword="xmlNumberFormat" Arguments="Label" labelList="NORMAL;INT;HEX" default="NORMAL" attributeType="XML_NUMBER_FORMAT"/>
+		<ATTRIBUTE keyword="xmlFloatPrecision" Arguments="INTEGER" default="7" attributeType="XML_FLOAT_PRECISION"/>
+        <ATTRIBUTE keyword="warnOnSkippedAnnnotations" Arguments="BOOL" default="TRUE" attributeType="WARN_ON_SKIPPED_ANNOTATIONS"/>
+    </XML_GENERATOR_ANNOTATIONS>
+    
+    <ELEMENT_ANNOTATIONS prefix="e_">
+        <ALIAS keyword="range" Arguments="VARIANT;VARIANT" action="@h2xmle_rangeMin{\1} @h2xmle_rangeMax{\2}" />
+        <ALIAS keyword="rangeList" ArgumentsList="LABEL;VARIANT" attributeType="RANGE_LIST" action="@h2xmle_TAG_RANGE_LIST" actionList="
+            @h2xmle_saveActiveTag
+            @h2xmle_TAG_RANGE_ELEMENT
+            @h2xmle_RangeLabel{\1}
+            @h2xmle_RangeValue{\2}  
+            @h2xmle_restoreActiveTag
+        "/>
+		<ALIAS keyword="rangeListRange" ArgumentsList="VARIANT;VARIANT" attributeType="RANGE_LIST" action="@h2xmle_TAG_RANGE_LIST" actionList="
+            @h2xmle_saveActiveTag
+            @h2xmle_TAG_RANGE_ELEMENT
+            @h2xmle_rangeValueMin{\1}
+            @h2xmle_rangeValueMax{\2}  
+            @h2xmle_restoreActiveTag
+        "/>
+         <ALIAS keyword="rangeEnum" ArgumentsList="ENUM_TYPE" attributeType="RANGE_LIST" action="@h2xmle_TAG_RANGE_LIST" actionList="
+            @h2xmle_saveActiveTag
+            @h2xmle_TAG_RANGE_ELEMENT
+            @h2xmle_RangeLabel{\1@h2xmle_name}
+            @h2xmle_RangeValue{\1@h2xmle_initValue}
+            @h2xmle_isOffloadable{\1@h2xmle_isOffloadable}          
+            @h2xmle_replace{\1@h2xmle_replace}          			
+            @h2xmle_restoreActiveTag
+        "/>
+        <ATTRIBUTE keyword="default" Arguments="VARIANT" default="0" attributeType="DEFAULT"/>
+        <ATTRIBUTE keyword="name" Arguments="LABEL" attributeType="NAME" default="UNNAMED_ELEMENT"/>
+        <ATTRIBUTE keyword="description" Arguments="STRING"/>
+        <ATTRIBUTE keyword="isOffloadable" name="isOffloadable" Arguments="BOOL" default="true"/>
+        <ATTRIBUTE keyword="replace" name="replace" Arguments="INTEGER" isList="true"/>
+        <ATTRIBUTE keyword="elementType" name="type" Arguments="LABEL" attributeType="ELEMENTTYPE" default="UNKNOWN_TYPE"/>
+        <private>
+            <TAG keyword="TAG_RANGE_LIST" name="RANGE_LIST" maxOccurs="1" selectExisting="true" />
+            <TAG keyword="TAG_RANGE_ELEMENT" name="RANGE" Parent="h2xmle_TAG_RANGE_LIST" newParent="true"/>
+            <ATTRIBUTE keyword="arrayElements" Arguments="INTEGER" attributeType="ARRAYELEMENTS" default="0"/>
+            <ATTRIBUTE keyword="byteSize" Arguments="INTEGER" attributeType="BYTESIZE" default="0"/>
+            <ATTRIBUTE keyword="bitSize" Arguments="INTEGER" attributeType="BITESIZE" default="0" show="false"/>
+            <ATTRIBUTE keyword="byteOffset" Arguments="INTEGER" attributeType="BYTEOFFSET" default="0"/>
+            <ATTRIBUTE keyword="bitOffset" Arguments="INTEGER" attributeType="BITOFFSET" default="0" show="false"/>
+            <ATTRIBUTE keyword="elementTypeUnSigned" name="typeUnSigned" Arguments="BOOL" attributeType="ELEMENTTYPE_UNSIGNED" default="false" show="false"/>
+            <ATTRIBUTE keyword="generateOutput" Arguments="BOOL" default="true" attributeType="GENERATE_OUTPUT" show="false"/>
+            <ATTRIBUTE keyword="rangeLabel" name="name" Arguments="LABEL"  />
+            <ATTRIBUTE keyword="rangeValue" name="value" Arguments="VARIANT" attributeType="RANGE_VALUE" />
+			<ATTRIBUTE keyword="rangeValueMin" name="min" Arguments="VARIANT" />
+			<ATTRIBUTE keyword="rangeValueMax" name="max" Arguments="VARIANT" />
+            <ATTRIBUTE keyword="initValue" name="val" Arguments="VARIANT" attributeType="INITVALUE" default="0"/>
+            <ATTRIBUTE keyword="rangeMin" name="min" Arguments="VARIANT" attributeType="RANGE_MIN" default="0" />
+            <ATTRIBUTE keyword="rangeMax" name="max" Arguments="VARIANT" attributeType="RANGE_MAX" default="0" />
+        </private>
+    </ELEMENT_ANNOTATIONS>
+    
+    <CONFIG_TYPE name="spfProp" addConfigType="property_All">
+        <GLOBAL_ANNOTATIONS prefix="_" action="@h2xml_deftype{spfProp}">
+            <private>
+                <ALIAS keyword="defType_spfProp" globalAnnotation="true" action="
+                "/>
+                <TAG keyword="TAG_H2XML" name="SPF_PROP_DEF" Parent="H2XML_Root" maxOccurs="1" selectExisting="true" newParent="true"/>
+            </private>
+        </GLOBAL_ANNOTATIONS>
+
+        <MODULE_ANNOTATIONS prefix="gp_">
+            <ALIAS keyword="config" Arguments="LABEL;LABEL;INTEGER" action="
+                @h2xmlgp_configType{\1} 
+                @h2xmlgp_id{\3} 
+                @h2xmlgp_name{\2} 
+                @h2xmlgp_InsertCommandLine
+                @h2xmlgp_generateOutput
+                @h2xmlp_TAG_PARAMETER 
+            "/>
+            <ATTRIBUTE keyword="description" Arguments="STRING"/>
+            <private>
+                <ALIAS keyword="configType" Arguments="LABEL" labelList="SG_CFG;CONT_CFG;VOC_SG_CFG" removeQuotes="true" action="
+                    @h2xmlgp_TAG_\1 
+                "/>
+                <TAG keyword="TAG_SG_CFG" name="SG_CFG" newParent="true" Parent="h2xml_TAG_H2XML"/>
+                <TAG keyword="TAG_CONT_CFG" name="CONT_CFG" newParent="true" Parent="h2xml_TAG_H2XML"/>
+                <TAG keyword="TAG_VOC_SG_CFG" name="VOC_SG_CFG" newParent="true" Parent="h2xml_TAG_H2XML"/>
+                <ATTRIBUTE keyword="insertStructure" attributeType="INSERT_PARAM" show="false"/>
+                <ATTRIBUTE keyword="name" Arguments="LABEL" attributeType="NAME"/>
+                <ATTRIBUTE keyword="generateOutput" Arguments="BOOL" default="true" attributeType="GENERATE_OUTPUT" show="false"/>
+                <ATTRIBUTE keyword="id" name="id" Arguments="INTEGER"/>
+            </private>   
+        </MODULE_ANNOTATIONS>
+        <STRUCTURE_ANNOTATIONS prefix="p_">
+            <ATTRIBUTE keyword="isVoice" Arguments="BOOL" default="true"/>
+        </STRUCTURE_ANNOTATIONS>    
+    </CONFIG_TYPE>
+    
+    <CONFIG_TYPE name="driverProp" addConfigType="property_All">
+        <GLOBAL_ANNOTATIONS prefix="_" action="@h2xml_deftype{driverProp}">
+            <private>
+                <ALIAS keyword="defType_driverProp" globalAnnotation="true" action="
+                    @h2xmlp_TAG_PARAMETER 
+                "/>
+                <TAG keyword="TAG_H2XML" name="DRIVER_PROP_DEF" Parent="H2XML_Root" maxOccurs="1" selectExisting="true" newParent="true"/>
+            </private>
+        </GLOBAL_ANNOTATIONS>
+        <STRUCTURE_ANNOTATIONS prefix="p_" outputGlobal="true">
+        </STRUCTURE_ANNOTATIONS>
+
+    </CONFIG_TYPE>
+    
+    <CONFIG_TYPE name="property_All">
+        <STRUCTURE_ANNOTATIONS prefix="p_">
+            <ALIAS keyword="property" Arguments="LABEL;INTEGER"  action="
+                @h2xmlp_name{\1}
+                @h2xmlp_id{\2}
+                @h2xmlp_generateOutput
+                @h2xmle_TAG_ELEMENT
+                @h2xmle_name
+                @h2xmle_elementType 
+                @h2xmle_elementTypeUnSigned 
+                @h2xmle_byteSize 
+                @h2xmle_byteOffset 
+                @h2xmle_rangeMin
+                @h2xmle_rangeMax
+                @h2xmle_default
+                @h2xmlp_InsertCommandLine
+            "/>
+            <ALIAS keyword="subStruct"  action="
+                @h2xmlp_isSubStruct {true}
+                @h2xmlp_name
+                @h2xmlp_generateOutput
+                @h2xmle_TAG_ELEMENT
+                @h2xmle_name
+                @h2xmle_elementType 
+                @h2xmle_elementTypeUnSigned 
+                @h2xmle_byteSize 
+                @h2xmle_byteOffset 
+                @h2xmle_rangeMin
+                @h2xmle_rangeMax
+                @h2xmle_default
+            "/>         
+            <ALIAS keyword="insertSubStruct" Arguments="LABEL" action="
+                @h2xml_select{\1}
+                @h2xmlgp_insertStructure
+                @h2xmlp_subStruct
+            "/>
+            <ATTRIBUTE keyword="description" Arguments="STRING"/>
+            <private>
+                <TAG keyword="TAG_PARAMETER" name="PROP"  newParent="true" addToFront="true"/>
+                <ATTRIBUTE keyword="name" name="name" Arguments="LABEL" attributeType="NAME" default="UNNAMED_PARAMETER"/>
+                <ATTRIBUTE keyword="id" name="id" Arguments="INTEGER"/>
+                <ATTRIBUTE keyword="generateOutput" Arguments="BOOL" default="true" attributeType="GENERATE_OUTPUT" show="false"/>
+                <ATTRIBUTE keyword="isSubStruct" name="isSubStruct" Arguments="BOOL" default="true"/>
+            </private>
+        </STRUCTURE_ANNOTATIONS>
+
+        <ELEMENT_ANNOTATIONS prefix="e_" >
+            <ATTRIBUTE keyword="variableArraySize" Arguments="LABEL" />
+            <private>
+                <TAG keyword="TAG_ELEMENT" name="CONFIG_ELEMENT" newParent="true"/>
+            </private>
+        </ELEMENT_ANNOTATIONS>
+    </CONFIG_TYPE>
+    
+    <CONFIG_TYPE name="Key">
+        <GLOBAL_ANNOTATIONS prefix="_" action="@h2xml_deftype{Key}">
+            <private>
+                <ALIAS keyword="defType_key" globalAnnotation="true" action="
+                    @h2xml_TAG_PLATFORMS  
+                    @h2xml_TAG_Key_LIST
+                "/>
+                <TAG keyword="TAG_H2XML" name="KEY_DEF" Parent="H2XML_Root" maxOccurs="1" selectExisting="true" newParent="true"/>
+                <TAG keyword="TAG_KEY_LIST" name="KEY_LIST" Parent="h2xml_TAG_H2XML" newParent="true"/>
+            </private>
+        </GLOBAL_ANNOTATIONS>
+
+        <STRUCTURE_ANNOTATIONS prefix="k_" outputGlobal="true">
+            <ALIAS keyword="insertKey" Arguments="ENUM_ELEMENT;LABEL" removeQuotes="true" action="
+                @h2xml_selectCopy{\2}
+                @h2xmlk_insertEnum
+                @h2xmlk_key{\1}
+            "/>
+                              
+            <ALIAS keyword="key" Arguments="ENUM_ELEMENT" removeQuotes="true" action="
+                @h2xmlk_TAG_KEY
+                @h2xmlk_keyName{\1@h2xmle_name}
+                @h2xmlk_keyId{\1@h2xmle_initValue}
+                @h2xmlk_generateOutput
+                @h2xmle_TAG_VALUE
+                @h2xmle_initValue
+                @h2xmle_name
+                @h2xmlk_InsertCommandLine
+                @h2xmle_generateOutput
+            "/>
+            <ALIAS keyword="gkeys"  action="
+                @h2xmlk_TAG_GRAPH_KEY
+                @h2xmlk_generateOutput
+                @h2xmle_TAG_KEY
+                @h2xmle_keyId
+                @h2xmle_keyName{@h2xmle_name}
+                @h2xmlk_InsertCommandLine
+                @h2xmle_generateOutput
+            "/>
+            <ALIAS keyword="ckeys"  action="
+                @h2xmlk_TAG_CAL_KEY
+                @h2xmlk_generateOutput
+                @h2xmle_TAG_KEY
+                @h2xmle_keyId
+                @h2xmle_keyName{@h2xmle_name}
+                @h2xmlk_InsertCommandLine
+                @h2xmle_generateOutput
+            "/>
+            <ALIAS keyword="modTag" Arguments="LABEL;INTEGER" action="
+                @h2xmlk_generateOutput
+                @h2xmlk_TAG_MODULE_TAGS
+                @h2xmlk_TAG_MODULE_TAG
+                @h2xmlk_keyId{\2}
+                @h2xmlk_keyName{\1}
+                @h2xmle_TAG_KEY
+                @h2xmle_keyId
+                @h2xmle_keyName{@h2xmle_name}
+                @h2xmlk_InsertCommandLine
+                @h2xmle_generateOutput
+            "/>
+            <ALIAS keyword="modTagList"  action="
+                @h2xmlk_generateOutput
+                @h2xmlk_TAG_MODULE_TAGS
+                @h2xmle_TAG_MODULE_TAG
+                @h2xmle_generateOutput
+                @h2xmle_keyId
+                @h2xmle_name
+            "/>
+            <ATTRIBUTE keyword="description" Arguments="STRING"/>
+            <ATTRIBUTE keyword="sampleRate" Arguments="BOOL" default="true"/>
+            <ATTRIBUTE keyword="volume" Arguments="BOOL" default="true"/>
+            <ATTRIBUTE keyword="isVoice" Arguments="BOOL" default="true"/>
+            <ATTRIBUTE keyword="isDynamic" Arguments="BOOL" default="true"/>
+            
+            <private>
+                <TAG keyword="TAG_KEY" name="KEY" newParent="true" addToFront="true" Parent="h2xml_TAG_KEY_LIST"/>
+                <TAG keyword="TAG_GRAPH_KEY" name="GRAPH_KEY" newParent="true" Parent="h2xml_TAG_H2XML"/>
+                <TAG keyword="TAG_CAL_KEY" name="CAL_KEY" newParent="true" Parent="h2xml_TAG_H2XML"/>
+                <TAG keyword="TAG_MODULE_TAGS" name="MODULE_TAGS" newParent="true" maxOccurs="1" selectExisting="true" Parent="h2xml_TAG_H2XML"/>
+                <TAG keyword="TAG_MODULE_TAG" name="TAG" newParent="true" Parent="h2xmlk_TAG_MODULE_TAGS"/>
+                <ATTRIBUTE keyword="insertEnum" attributeType="INSERT_PARAM" show="false"/>
+                <ATTRIBUTE keyword="generateOutput" Arguments="BOOL" default="true" attributeType="GENERATE_OUTPUT" show="false"/>
+                <ATTRIBUTE keyword="keyName" name="name" Arguments="LABEL"/>
+                <ATTRIBUTE keyword="keyId" name="id" Arguments="INTEGER"/>
+            </private>
+        </STRUCTURE_ANNOTATIONS>
+
+        <ELEMENT_ANNOTATIONS prefix="e_" >
+            <ALIAS keyword="ignore" ArgumentsList="ENUM_ELEMENT" removeQuotes="true" actionList="
+                @h2xmle_saveActiveTag
+                @h2xmle_TAG_VALUE_IGNORE
+                @h2xmle_keyNameReference{\1@h2xmle_name}
+                @h2xmle_keyIdReference{\1@h2xmle_initValue}
+                @h2xmle_generateOutput
+                @h2xmle_restoreActiveTag
+              "/>
+            <ALIAS keyword="include" ArgumentsList="ENUM_ELEMENT" removeQuotes="true" actionList="
+                @h2xmle_saveActiveTag
+                @h2xmle_TAG_VALUE_INCLUDE
+                @h2xmle_keyNameReference{\1@h2xmle_name}
+                @h2xmle_keyIdReference{\1@h2xmle_initValue}
+                @h2xmle_generateOutput
+                @h2xmle_restoreActiveTag
+              "/>
+            <ATTRIBUTE keyword="sampleRate" Arguments="LABEL" labelList="8000; 16000; 48000; 11025; 12000; 22050; 24000; 32000; 44100; 88200; 96000; 176400; 192000; 352800; 384000"/>
+            <ATTRIBUTE keyword="isVoice" Arguments="BOOL" default="true"/>
+
+            <private>
+                <TAG keyword="TAG_VALUE" name="VALUE" Parent="h2xmlk_TAG_KEY" newParent="true"/>
+                <TAG keyword="TAG_VALUE_IGNORE" name="IGNORE" Parent="h2xmle_TAG_KEY" newParent="true"/>
+                <TAG keyword="TAG_VALUE_INCLUDE" name="INCLUDE" Parent="h2xmle_TAG_KEY" newParent="true"/>
+                <TAG keyword="TAG_KEY" name="KEY" newParent="true"/>
+                <TAG keyword="TAG_MODULE_TAG" name="TAG" newParent="true" Parent="h2xmlk_TAG_MODULE_TAGS"/>
+                <ATTRIBUTE keyword="keyId" name="id" Arguments="Integer" attributeType="INITVALUE" default="0"/>
+                <ATTRIBUTE keyword="keyName" name="name" Arguments="Label" attributeType="INITREFERENCE" default="0"/>
+                <ATTRIBUTE keyword="initValue" name="val" Arguments="Integer" attributeType="INITVALUE" default="0"/>
+                <ATTRIBUTE keyword="keyNameReference" name="name" Arguments="LABEL"/>
+                <ATTRIBUTE keyword="keyIdReference" name="id" Arguments="INTEGER"/>
+            </private>
+        </ELEMENT_ANNOTATIONS>
+    </CONFIG_TYPE>
+
+    <CONFIG_TYPE name="spfModule" addConfigType="Module_All">
+        <GLOBAL_ANNOTATIONS prefix="_" action="
+                @h2xml_deftype{spfModule}  
+                @h2xmle_TAG_ELEMENT 
+               ">
+            <private>
+                <ALIAS keyword="defType_spfModule" globalAnnotation="true" action="
+                    @h2xml_TAG_PROCESSORS  
+                    @h2xml_TAG_MODULE_LIST
+                "/>
+                <TAG keyword="TAG_H2XML" name="MODULE_DEF" Parent="H2XML_Root" maxOccurs="1" selectExisting="true" newParent="true"/>
+            </private>
+        </GLOBAL_ANNOTATIONS>
+        <MODULE_ANNOTATIONS prefix="m_">
+            <ALIAS keyword="module" Arguments="LABEL; INTEGER" action="
+                @h2xmlm_TAG_Module 
+                @h2xmlm_TAG_ModuleInfo 
+                @h2xmlm_TAG_Data_Port_Info 
+                @h2xmlm_TAG_Data_Input_Ports
+                @h2xmlm_dataMaxInputPorts
+                @h2xmlm_TAG_Data_Output_Ports
+                @h2xmlm_dataMaxOutputPorts
+                @h2xmlm_TAG_Control_Port_Info
+                @h2xmlm_TAG_Control_Port_Info_Static
+                @h2xmlm_TAG_Control_Port_Info_Dynamic
+                @h2xmlm_TAG_Req_Container_Capabilities
+				@h2xmlm_TAG_Supported_Cont_Types
+                @h2xmlm_TAG_Stack_Size
+                @h2xmlm_TAG_ParameterList 
+                @h2xmlm_setActiveTag{h2xmlm_TAG_Module}
+                @h2xmlm_name{\1} 
+                @h2xmlm_id{\2} 
+                @h2xmlm_stackSize
+                @h2xmlm_InsertCommandLine
+                @h2xmlm_generateOutput
+                @h2xmlp_TAG_PARAMETER 
+            "/>
+        </MODULE_ANNOTATIONS>
+        <STRUCTURE_ANNOTATIONS prefix="p_">
+            <ALIAS keyword="parameter" Arguments="LABEL;INTEGER"  action="
+                @h2xmlp_name
+                @h2xmlp_id{\2}
+                @h2xmlp_name{\1}
+                @h2xmlp_generateOutput
+                @h2xmlp_maxSize
+                @h2xmlp_toolPolicy{rtc,calibration}
+                @h2xmlp_InsertCommandLine
+                @h2xmlp_TAG_DEFAULT_DEPENDENCIES
+            "/>
+        </STRUCTURE_ANNOTATIONS>
+    </CONFIG_TYPE>
+
+    <CONFIG_TYPE name="DriverModule" addConfigType="Module_All">
+        <GLOBAL_ANNOTATIONS prefix="_" action="
+                @h2xml_deftype{DriverModule}  
+                @h2xmle_TAG_ELEMENT 
+               ">
+            <private>
+                <ALIAS keyword="defType_DriverModule" globalAnnotation="true" action="
+                    @h2xml_TAG_MODULE_LIST
+                "/>
+                <TAG keyword="TAG_H2XML" name="DRIVER_MODULE_DEF" Parent="H2XML_Root" maxOccurs="1" selectExisting="true" newParent="true"/>
+            </private>
+        </GLOBAL_ANNOTATIONS>
+        <MODULE_ANNOTATIONS prefix="m_">
+            <ALIAS keyword="module" Arguments="LABEL; INTEGER" action="
+                @h2xmlm_TAG_Module 
+                @h2xmlm_TAG_ParameterList 
+                @h2xmlm_setActiveTag{h2xmlm_TAG_Module}
+                @h2xmlm_name{\1} 
+                @h2xmlm_id{\2} 
+                @h2xmlm_InsertCommandLine
+                @h2xmlm_generateOutput
+                @h2xmlp_TAG_PARAMETER 
+            "/>
+        </MODULE_ANNOTATIONS>
+        <STRUCTURE_ANNOTATIONS prefix="p_">
+            <ALIAS keyword="parameter" Arguments="LABEL;INTEGER"  action="
+                @h2xmlp_name
+                @h2xmlp_id{\2}
+                @h2xmlp_name{\1}
+                @h2xmlp_generateOutput
+                @h2xmlp_maxSize
+                @h2xmlp_InsertCommandLine
+                @h2xmlp_TAG_DEFAULT_DEPENDENCIES
+            "/>
+        </STRUCTURE_ANNOTATIONS>
+    </CONFIG_TYPE>
+
+    <CONFIG_TYPE name="Module_All">
+        <GLOBAL_ANNOTATIONS prefix="_">
+            <ATTRIBUTE keyword="createParameter" attributeType="CREATE_STRUCT" Arguments="LABEL" default="UNNAMED_STRUCTURE" show="false"/>
+            <private>
+                <TAG keyword="TAG_MODULE_LIST" name="MODULE_LIST" Parent="h2xml_TAG_H2XML" newParent="true" maxOccurs="1" selectExisting="true" />
+            </private>
+        </GLOBAL_ANNOTATIONS>
+        <MODULE_ANNOTATIONS prefix="m_">
+            <ALIAS keyword="dataInputPorts" ArgumentsList="LABEL;INTEGER" action="@h2xmlm_dataInputPortsElements{\kn}"
+                actionList="@h2xmlm_dataInputPort{\1;\2}
+            "/>
+            <ALIAS keyword="dataOutputPorts" ArgumentsList="LABEL;INTEGER" action="@h2xmlm_dataOutputPortsElements{\kn}"
+                actionList="@h2xmlm_dataOutputPort{\1;\2}
+            "/>
+            <ALIAS keyword="ctrlDynamicPortIntent" Arguments="LABEL;INTEGER;LABEL;INTEGER" action="
+                @h2xmlm_saveActiveTag
+                @h2xmlm_TAG_Control_Port_Info_Dynamic
+                @h2xmlm_TAG_Control_Intent
+                @h2xmlm_generateOutput
+                @h2xmlm_controlPortIntentName{\1}
+                @h2xmlm_controlPortIntentId{\2}
+                @h2xmlm_controlPortIntentMaxPorts{\4}
+                @h2xmlm_restoreActiveTag
+            "/>
+            <ALIAS keyword="ctrlStaticPort" Arguments="LABEL;INTEGER" ArgumentsList="LABEL;INTEGER" action="
+                @h2xmlm_saveActiveTag
+                @h2xmlm_TAG_Control_Port_Info_Static
+                @h2xmlm_TAG_Control_Port
+                @h2xmlm_controlPortName{\1}
+                @h2xmlm_controlPortId{\2}
+            " actionList="
+                @h2xmlm_saveActiveTag
+                @h2xmlm_TAG_Control_Intent
+                @h2xmlm_generateOutput
+                @h2xmlm_controlPortIntentName{\1}
+                @h2xmlm_controlPortIntentId{\2}
+                @h2xmlm_restoreActiveTag
+            "  
+             actionPost="
+                @h2xmlm_restoreActiveTag
+             "/>
+            <ALIAS keyword="reqContCapabilities" ArgumentsList="LABEL" action=""
+                actionList="@h2xmlm_reqContCapability{\1}
+            "/>
+			<ALIAS keyword="supportedContTypes" ArgumentsList="LABEL" action=""
+                actionList="@h2xmlm_supportedContType{\1}
+            "/>
+            <ALIAS keyword="toolPolicy" ArgumentsList="LABEL" action=" @h2xmlm_TAG_ToolPolicies" actionList="
+                @h2xmlm_saveActiveTag
+                @h2xmlm_TAG_ToolPoliciesList
+                @h2xmlm_toolPolicyAttribute{\1}
+                @h2xmlm_restoreActiveTag
+            "/>
+            <ALIAS keyword="replaces" ArgumentsList="INTEGER" action=" @h2xmlm_TAG_Replaces" actionList="
+                @h2xmlm_saveActiveTag
+                @h2xmlm_TAG_ReplacesList
+                @h2xmlm_ReplacesAttribute{\1}
+                @h2xmlm_restoreActiveTag
+            "/>
+            <ATTRIBUTE keyword="description" Arguments="STRING"/>
+            <ATTRIBUTE keyword="depInfoDescription" Arguments="STRING"/>
+			<ATTRIBUTE keyword="modUIType" Arguments="LABEL"/>
+            <ATTRIBUTE keyword="insertStructure" attributeType="INSERT_PARAM" show="false"/>
+            <ATTRIBUTE keyword="insertParameter" attributeType="INSERT_PARAM" show="false"/>
+            <ATTRIBUTE keyword="name" Arguments="LABEL" attributeType="NAME"/>
+            <ATTRIBUTE keyword="displayName" Arguments="LABEL"/>
+            <ATTRIBUTE keyword="deprecated"  Arguments="BOOL" default="true"/>
+            <ATTRIBUTE keyword="replacedBy"  Arguments="INTEGER" />
+            <ATTRIBUTE keyword="dataMaxInputPorts" name="max" Arguments="UNSIGNED_INTEGER_INF" default="0" mandatory="true" min="-1" Parent="h2xmlm_TAG_Data_Input_Ports" />
+            <ATTRIBUTE keyword="dataMaxOutputPorts" name="max" Arguments="UNSIGNED_INTEGER_INF" default="0" mandatory="true" min="-1" Parent="h2xmlm_TAG_Data_Output_Ports" />
+            <ATTRIBUTE keyword="stackSize" Arguments="INTEGER" default="0" mandatory="true" Parent="h2xmlm_TAG_Stack_Size"/>
+            <ATTRIBUTE keyword="builtin" default="true" Arguments="BOOL" />
+            <ATTRIBUTE keyword="rtmLogcode" name="rtmLogcode" Arguments="INTEGER"/>
+            <ATTRIBUTE keyword="isOffloadable" name="isOffloadable" Arguments="BOOL" default="true"/>
+            <ATTRIBUTE keyword="islandFriendly" name="islandFriendly" Arguments="BOOL" default="true"/>
+            <ATTRIBUTE keyword="offloadInsert" name="offloadInsert" Arguments="label" labelList="WR_CLIENT; WR_EP; RD_CLIENT; RD_EP"/>
+			<ATTRIBUTE keyword="modMajorType" Arguments="INTEGER"/>
+			<ATTRIBUTE keyword="modInterfaceType" Arguments="INTEGER"/>
+			<ATTRIBUTE keyword="modInterfaceVersion" Arguments="INTEGER"/>
+			<ATTRIBUTE keyword="modSearchKeys" Arguments="STRING"/>
+			<ATTRIBUTE keyword="modEntryPointTag" Arguments="STRING"/>
+			<ATTRIBUTE keyword="modFilename" Arguments="STRING"/>
+
+            <private>
+                <ALIAS keyword="dataInputPort" Arguments="LABEL;INTEGER" action="
+                    @h2xmlm_saveActiveTag
+                    @h2xmlm_TAG_Data_Input_Port
+                    @h2xmlm_generateOutput
+                    @h2xmlm_dataInputPortName{\1}
+                    @h2xmlm_dataInputPortID{\2}
+                    @h2xmlm_restoreActiveTag
+                "/>
+                <ALIAS keyword="dataOutputPort" Arguments="LABEL;INTEGER" action="
+                    @h2xmlm_saveActiveTag
+                    @h2xmlm_TAG_Data_Output_Port
+                    @h2xmlm_generateOutput
+                    @h2xmlm_dataOutputPortName{\1}
+                    @h2xmlm_dataOutputPortID{\2}
+                    @h2xmlm_restoreActiveTag
+                "/>
+                <ALIAS keyword="reqContCapability" Arguments="LABEL" removeQuotes="true" action="
+                    @h2xmlm_saveActiveTag
+                    @h2xmlm_TAG_Req_Container_Capability
+                    @h2xmlm_generateOutput
+                    @h2xmlm_reqContaineCapabilityName{\1@h2xmle_name}
+                    @h2xmlm_reqContaineCapabilityId{\1@h2xmle_initValue}
+                    @h2xmlm_restoreActiveTag
+                "/>
+				<ALIAS keyword="supportedContType" Arguments="LABEL" removeQuotes="true" action="
+                    @h2xmlm_saveActiveTag
+                    @h2xmlm_TAG_Supported_Cont_Type
+                    @h2xmlm_generateOutput
+                    @h2xmlm_reqContaineCapabilityName{\1@h2xmle_name}
+                    @h2xmlm_reqContaineCapabilityId{\1@h2xmle_initValue}
+                    @h2xmlm_restoreActiveTag
+                "/>
+                <TAG keyword="TAG_Module" name="MODULE" newParent="true" Parent="h2xml_TAG_MODULE_LIST"/>
+                <TAG keyword="TAG_ParameterList" name="PARAMETER_LIST" Parent="h2xmlm_TAG_Module" maxOccurs="1" />
+                <TAG keyword="TAG_ModuleInfo" name="MODULE_INFO" Parent="h2xmlm_TAG_Module" newParent="true" maxOccurs="1"/>
+                <TAG keyword="TAG_Data_Port_Info" name="DATA_PORT_INFO" Parent="h2xmlm_TAG_ModuleInfo" newParent="true" maxOccurs="1"/>
+                <TAG keyword="TAG_Data_Input_Ports" name="INPUT_PORTS" Parent="h2xmlm_TAG_Data_Port_Info" maxOccurs="1" />
+                <TAG keyword="TAG_Data_Output_Ports" name="OUTPUT_PORTS" Parent="h2xmlm_TAG_Data_Port_Info"  maxOccurs="1"/>
+                <TAG keyword="TAG_Data_Input_Port" name="PORT" Parent="h2xmlm_TAG_Data_Input_Ports" newParent="true"/>
+                <TAG keyword="TAG_Data_Output_Port" name="PORT" Parent="h2xmlm_TAG_Data_Output_Ports" newParent="true"/>
+                <TAG keyword="TAG_ToolPolicies" name="TOOL_POLICIES" Parent="h2xmlm_TAG_ModuleInfo"  maxOccurs="1"/>
+                <TAG keyword="TAG_ToolPoliciesList" name="POLICY" Parent="h2xmlm_TAG_ToolPolicies" newParent="true"/>
+                <TAG keyword="TAG_Replaces" name="REPLACES" Parent="h2xmlm_TAG_ModuleInfo"  maxOccurs="1"/>
+                <TAG keyword="TAG_ReplacesList" name="REPLACE_ID" Parent="h2xmlm_TAG_Replaces" newParent="true"/>
+                <TAG keyword="TAG_Stack_Size" name="STACKSIZE" Parent="h2xmlm_TAG_ModuleInfo" newParent="false"/>
+                <TAG keyword="TAG_Control_Port_Info" name="CONTROL_PORT_INFO" Parent="h2xmlm_TAG_ModuleInfo" newParent="true" maxOccurs="1"/>
+                <TAG keyword="TAG_Control_Port_Info_Dynamic" name="DYNAMIC" Parent="h2xmlm_TAG_Control_Port_Info" selectExisting="true" newParent="true" maxOccurs="1"/>
+                <TAG keyword="TAG_Control_Port_Info_Static" name="STATIC" Parent="h2xmlm_TAG_Control_Port_Info" selectExisting="true" newParent="true" maxOccurs="1"/>
+                <TAG keyword="TAG_Control_Port" name="PORT" Parent="h2xmlm_TAG_Control_Port_Info_Static" newParent="true"/>
+                <TAG keyword="TAG_Control_Intent" name="INTENT" newParent="true"/>
+                <TAG keyword="TAG_Req_Container_Capabilities" name="CAPABILITIES" Parent="h2xmlm_TAG_ModuleInfo" newParent="true" maxOccurs="1"/>
+                <TAG keyword="TAG_Req_Container_Capability" name="CAPABILITY" Parent="h2xmlm_TAG_Req_Container_Capabilities" newParent="true"/>
+                <TAG keyword="TAG_Supported_Cont_Types" name="SUPPORTEDCONTTYPES" Parent="h2xmlm_TAG_ModuleInfo" newParent="true" maxOccurs="1"/>
+                <TAG keyword="TAG_Supported_Cont_Type" name="SUPPORTEDCONTTYPE" Parent="h2xmlm_TAG_Supported_Cont_Types" newParent="true"/>
+                <ATTRIBUTE keyword="generateOutput" Arguments="BOOL" default="true" attributeType="GENERATE_OUTPUT" show="false"/>
+                <ATTRIBUTE keyword="id" name="id" Arguments="INTEGER"/>
+                <ATTRIBUTE keyword="toolPolicyAttribute" name="name" Arguments="Label" default="CALIBRATION" labelList="CALIBRATION; DEPRECATED"/>
+                <ATTRIBUTE keyword="ReplacesAttribute" name="ID" Arguments="INTEGER" />
+                <ATTRIBUTE keyword="dataInputPortsElements" name="Number of list elements" Arguments="INTEGER" default="0" max="@h2xmlm_dataMaxInputPorts" show="false" />
+                <ATTRIBUTE keyword="dataInputPortName" name="name" Arguments="LABEL"  />
+                <ATTRIBUTE keyword="dataInputPortId" even="true" name="id" Arguments="INTEGER"  />
+                <ATTRIBUTE keyword="controlPortName" name="label" Arguments="LABEL"  />
+                <ATTRIBUTE keyword="controlPortId" name="id" Arguments="INTEGER"  />
+                <ATTRIBUTE keyword="controlPortIntentName" name="name" Arguments="LABEL"  />
+                <ATTRIBUTE keyword="controlPortIntentId" name="id" Arguments="INTEGER"  />
+                <ATTRIBUTE keyword="controlPortIntentMaxPorts" name="max" Arguments="INTEGER"  />
+                <ATTRIBUTE keyword="reqContaineCapabilityName" name="name" Arguments="LABEL"  />
+                <ATTRIBUTE keyword="reqContaineCapabilityId" name="id" Arguments="INTEGER"  />
+                <ATTRIBUTE keyword="dataOutputPortsElements" name="Number of list elements" Arguments="INTEGER" default="0" max="@h2xmlm_dataMaxOutputPorts" show="false" />
+                <ATTRIBUTE keyword="dataOutputPortName" name="name" Arguments="LABEL"  />
+                <ATTRIBUTE keyword="dataOutputPortId" odd="true" name="id" Arguments="INTEGER"  />
+            </private>
+        </MODULE_ANNOTATIONS>
+
+        <STRUCTURE_ANNOTATIONS prefix="p_">
+            <ALIAS keyword="emptyParameter" Arguments="LABEL;INTEGER"  action="
+                @h2xml_createParameter {\1}                                                     
+                @h2xmlm_InsertParameter                                                     
+                @h2xmlp_parameter {\1,\2} 
+            "/>
+            <ALIAS keyword="subStruct"  action="
+                @h2xmlp_isSubStruct {true}
+                @h2xmlp_name
+                @h2xmlp_generateOutput
+                @h2xmlp_maxSize
+            "/>
+            <ALIAS keyword="toolPolicy" ArgumentsList="LABEL" action=" @h2xmlp_TAG_ToolPolicies" actionList="
+                @h2xmlp_saveActiveTag
+                @h2xmlp_TAG_ToolPoliciesList
+                @h2xmlp_toolPolicyAttribute{\1}
+                @h2xmlp_restoreActiveTag
+            "/>
+            <ALIAS keyword="insertParameter" Arguments="LABEL" action="
+                @h2xml_select{\1}
+                @h2xmlm_insertParameter
+            "/>
+            <ATTRIBUTE keyword="name" name="name" Arguments="LABEL" attributeType="NAME" default="UNNAMED_PARAMETER"/>
+            <ATTRIBUTE keyword="packing" Arguments="BOOL" attributeType="PACKING" default="false"/>
+            <ATTRIBUTE keyword="description" Arguments="STRING"/>
+            <ATTRIBUTE keyword="version" Arguments="INTEGER"/>
+            <ATTRIBUTE keyword="isSubStruct" name="isSubStruct" Arguments="BOOL" default="true"/>
+            <ATTRIBUTE keyword="isLpp" name="isLpp" Arguments="BOOL" default="true"/>
+            <ATTRIBUTE keyword="readOnly" Arguments="BOOL" default="true"/>
+            <ATTRIBUTE keyword="deprecated"  Arguments="BOOL" default="true"/>
+	        <ATTRIBUTE keyword="isHwAccelEnable"  Arguments="BOOL" default="true"/>            
+			<ATTRIBUTE keyword="isHwAccel"  Arguments="BOOL" default="true"/>		
+			<ATTRIBUTE keyword="isOffloaded"  Arguments="BOOL" default="true"/>		
+			<ATTRIBUTE keyword="isNeuralNetParam"  Arguments="BOOL" default="true"/>		
+            <ATTRIBUTE keyword="padding"  Arguments="BOOL" default="true"/>
+            <ATTRIBUTE keyword="persistType" Arguments="Label" labelList="None; Shared; Global_Shared"/>
+            <ATTRIBUTE keyword="maxSize" name="maxSize" Arguments="INTEGER" attributeType="BYTESIZE" default="0"/>
+            <ATTRIBUTE keyword="bitAlign" name="align" Arguments="INTEGER" attributeType="BITALIGN" default="32"/>
+            <private>
+                <TAG keyword="TAG_PARAMETER" name="PARAMETER" Parent="h2xmlm_TAG_ParameterList" newParent="true" addToFront="true"/>
+                <TAG keyword="TAG_ToolPolicies" name="TOOL_POLICIES" Parent="h2xmlp_TAG_PARAMETER" newParent="false" maxOccurs="1"/>
+                <TAG keyword="TAG_ToolPoliciesList" name="POLICY" Parent="h2xmlp_TAG_ToolPolicies" newParent="true"/>
+                <TAG keyword="TAG_DEFAULT_DEPENDENCIES" name="DEFAULT_DEPENDENCIES" Parent="h2xmlp_TAG_PARAMETER" maxOccurs="1" selectExisting="true" removeRedundantTags="true" />
+                <ATTRIBUTE keyword="bitSize" Arguments="INTEGER" attributeType="BITESIZE" default="0" show="false"/>
+                <ATTRIBUTE keyword="generateOutput" Arguments="BOOL" default="true" attributeType="GENERATE_OUTPUT" show="false"/>
+                <ATTRIBUTE keyword="id" name="pid" Arguments="INTEGER"/>
+                <ATTRIBUTE keyword="toolPolicyAttribute" name="name" Arguments="Label" labelList="CALIBRATION; RTC; RTM; NO_SUPPORT; RTC_READONLY"/>
+            </private>
+        </STRUCTURE_ANNOTATIONS>
+        <ELEMENT_ANNOTATIONS prefix="e_" action="   
+            @h2xmle_name 
+            @h2xmle_generateOutput 
+            @h2xmle_elementType 
+            @h2xmle_elementTypeUnSigned 
+            @h2xmle_byteSize 
+            @h2xmle_byteOffset 
+            @h2xmle_arrayElements
+            @h2xmle_rangeMin
+            @h2xmle_rangeMax
+            @h2xmle_default
+            @h2xmle_InsertCommandLine
+        ">
+            <ALIAS keyword="Bitfield" Arguments="INTEGER"  action="
+                @h2xmle_TAG_BITFIELD 
+                @h2xmle_bitMask{\1}
+                @h2xmle_rangeMin
+                @h2xmle_rangeMax
+                @h2xmle_default
+            "/>
+            <ALIAS keyword="BitfieldEnd" action=""/>
+
+            <ALIAS keyword="defaultDependency" ArgumentsList="LABEL;LABEL" action="
+                @h2xmle_defaultDependency1{\...}
+                @h2xmle_defaultDependency2{\...}
+            "/>
+            <ALIAS keyword="rtmPlotType" ArgumentsList="LABEL" removeQuotes="true" action="
+                @h2xmle_saveActiveTag
+                "
+                actionList="
+                @h2xmle_saveActiveTag
+                @h2xmle_TAG_RTMPLOTTYPES
+                @h2xmle_rtmPlotTypeElement{\1}
+                @h2xmle_restoreActiveTag
+                    "
+                actionPost="
+                @h2xmle_restoreActiveTag
+            "/>
+            <ALIAS keyword="group" ArgumentsList="LABEL" removeQuotes="true" action="
+                @h2xmle_saveActiveTag
+                "
+                actionList="
+                @h2xmle_saveActiveTag
+                @h2xmle_TAG_GROUP
+                @h2xmle_groupElement{\1}
+                @h2xmle_restoreActiveTag
+                "
+                actionPost="
+                @h2xmle_restoreActiveTag
+            "/>
+            <ALIAS keyword="subGroup" ArgumentsList="LABEL" removeQuotes="true" action="
+                @h2xmle_saveActiveTag
+                "
+                actionList="
+                @h2xmle_saveActiveTag
+                @h2xmle_TAG_SUBGROUP
+                @h2xmle_subGroupElement{\1}
+                @h2xmle_restoreActiveTag
+                "
+                actionPost="
+                @h2xmle_restoreActiveTag
+            "/>
+            <ALIAS keyword="channel" ArgumentsList="LABEL" removeQuotes="true" action="
+                @h2xmle_saveActiveTag
+                "
+                actionList="
+                @h2xmle_saveActiveTag
+                @h2xmle_TAG_CHANNEL
+                @h2xmle_channelElement{\1}
+                @h2xmle_restoreActiveTag
+                "
+                actionPost="
+                @h2xmle_restoreActiveTag
+            "/>
+            <ALIAS keyword="defaultList" ArgumentsList="VARIANT" attributeType="DEFAULTLIST" action="
+                @h2xmle_arrayDefault {}
+            "/>
+            <ALIAS keyword="defaultFile" Arguments="STRING" attributeType="DEFAULTFILE" action="/>
+                @h2xmle_arrayDefault {}
+            "/>
+            <!-- Group index aliases -->
+            <ALIAS keyword="GroupIndex" ArgumentsList="UNSIGNED_INTEGER" action="
+                @h2xmle_GroupIndexList{\...}
+            "/>
+            <ALIAS keyword="GroupIndexList" ArgumentsList="UNSIGNED_INTEGER" action="
+                @h2xmle_saveActiveTag
+                @h2xmle_TAG_GROUPINDEX
+                "
+                actionList="
+                @h2xmle_saveActiveTag
+                @h2xmle_TAG_GROUPINDEXELEMENT
+                @h2xmle_groupIndexElement{\1}
+                @h2xmle_restoreActiveTag
+                "
+                actionPost="
+            "/>
+            <ALIAS keyword="GroupIndexRange" Arguments="UNSIGNED_INTEGER; UNSIGNED_INTEGER" action="
+                @h2xmle_saveActiveTag
+                @h2xmle_TAG_GROUPINDEX
+                @h2xmle_groupIndexRangeMin{\1}
+                @h2xmle_groupIndexRangeMax{\2}
+                 "
+                actionList="
+                "
+                actionPost="
+            "/>
+            <ALIAS keyword="GroupIndexEnd"  action="
+                 @h2xmle_restoreActiveTag
+            "/>
+			
+			<ALIAS keyword="dependencyLink" Arguments="LABEL;INTEGER;LABEL" removeQuotes="true" action="
+                    @h2xmle_saveActiveTag
+                    @h2xmle_TAG_LINK
+                    @h2xmle_TAG_LINK_ELEMENT
+					@h2xmle_depName{\1}
+					@h2xmle_depValue{\2}
+					\3"
+                    actionList="
+                    h2xmle_dependency\1{\2}"
+                    actionPost="
+                    @h2xmle_restoreActiveTag
+            "/>
+            <ATTRIBUTE keyword="variableArraySize" Arguments="LABEL" />
+            <ATTRIBUTE keyword="bitMask" Arguments="UNSIGNED_INTEGER" attributeType="BITMASK" />
+            <ATTRIBUTE keyword="policy" Arguments="LABEL" labelList="basic; advanced; internal" default="advanced"/>
+            <ATTRIBUTE keyword="visibility" Arguments="LABEL" labelList="show; hide" default="show"/>
+            <ATTRIBUTE keyword="readOnly" Arguments="BOOL" default="true"/>
+            <ATTRIBUTE keyword="isVersion" Arguments="BOOL" default="true"/>
+            <ATTRIBUTE keyword="dataFormat" Arguments="LABEL" labelList="Q0.15; Q0.16; Q0; Q1.15; Q1.30; Q10; Q11; Q12; Q13; Q14; Q15; Q16; Q18; Q2.13; Q2.14; Q20; Q22; Q23; Q24.8; Q24; Q25; Q26; Q27; Q28; Q29; Q3.12; Q3.13; Q30; Q31; Q32; Q6; Q7.8; Q7; Q8.7; Q8.8; Q8; Q9.23; "/>
+            <ATTRIBUTE keyword="displayType" Arguments="LABEL" labelList="dump; checkBox; slider; dropDown; bitfield; dbtextbox; file; stringField"/>
+            <ATTRIBUTE keyword="bitName" Arguments="LABEL" />
+            <ATTRIBUTE keyword="increment" name="increment" Arguments="INTEGER"  />
+            <ATTRIBUTE keyword="rawData" Arguments="BOOL" default="true" />
+            <ATTRIBUTE keyword="displayName" Arguments="STRING"/>
+            <ATTRIBUTE keyword="arrayDefault" Arguments="STRING" attributeType="ARRAY_DEFAULT" default="" show="false" showInTag="h2xmle_TAG_DEFAULT; h2xmle_TAG_ELEMENT; h2xmle_TAG_LINK_ELEMENT"/>
+            <ATTRIBUTE keyword="groupIndexBasedOn" Arguments="LABEL"/>
+            <ATTRIBUTE keyword="groupSet" Arguments="UNSIGNED_INTEGER"/>
+            
+            <private>
+                <ALIAS keyword="defaultDependency1" ArgumentsList="LABEL;LABEL" removeQuotes="true" action="
+                    @h2xmle_saveActiveTag
+                    @h2xmle_TAG_DEFAULTS
+                    @h2xmle_TAG_DEFAULT"
+                    actionList="
+                    @h2xmle_dependency\1{\2}"
+                    actionPost="
+                    @h2xmle_restoreActiveTag
+                "/>
+                <ALIAS keyword="defaultDependency2" ArgumentsList="LABEL;LABEL" removeQuotes="true" action="
+                    @h2xmle_saveActiveTag
+                    @h2xmle_TAG_DEPENDENCY
+                    "
+                    actionList="
+                    @h2xmle_dependency\1{\2}
+                    "
+                    actionPost="
+                    @h2xmle_restoreActiveTag
+                "/>
+
+                <ALIAS keyword="dependencyDefaultList" ArgumentsList="VARIANT" attributeType="DEFAULTLIST_CONDITIONAL" action="
+                    @h2xmle_arrayDefault {}
+                "/>
+                <ALIAS keyword="dependencyDefaultFile" Arguments="STRING" attributeType="DEFAULTFILE_CONDITIONAL" action="/>
+                    @h2xmle_arrayDefault {}
+                "/>
+
+                <TAG keyword="TAG_ELEMENT" name="CONFIG_ELEMENT" Parent="h2xmlp_TAG_PARAMETER" newParent="true"/>
+                <TAG keyword="TAG_BITFIELD" name="BITFIELD"  newParent="true"/>
+				<TAG keyword="TAG_LINK" name="DEPENDENCY_LINK" maxOccurs="1" selectExisting="true"/>
+				<TAG keyword="TAG_LINK_ELEMENT" name="ELEMENT" Parent="h2xmle_TAG_LINK" newParent="true"/>
+                <TAG keyword="TAG_DEFAULTS" name="DEFAULTS" maxOccurs="1" selectExisting="true"/>
+                <TAG keyword="TAG_DEFAULT" name="DEFAULT" Parent="h2xmle_TAG_DEFAULTS" newParent="true"/>
+                <TAG keyword="TAG_DEPENDENCY" name="DEPENDENCY" Parent="h2xmlp_TAG_DEFAULT_DEPENDENCIES" newParent="true"/>
+                <TAG keyword="TAG_RTMPLOTTYPES" name="RTMPLOTTYPES" newParent="true"/>
+                <TAG keyword="TAG_GROUP" name="GROUP" newParent="true"/>
+                <TAG keyword="TAG_SUBGROUP" name="SUBGROUP" newParent="true"/>
+                <TAG keyword="TAG_CHANNEL" name="CHANNEL" newParent="true"/>
+                <TAG keyword="TAG_GROUPINDEX" name="GROUPINDEX" newParent="true"/>
+                <TAG keyword="TAG_GROUPINDEXELEMENT" name="INDEX" newParent="true"/>
+
+                <ATTRIBUTE keyword="groupElement" name="group" Arguments="LABEL"/>
+                <ATTRIBUTE keyword="subGroupElement" name="subgroup" Arguments="LABEL"/>
+                <ATTRIBUTE keyword="channelElement" name="channel" Arguments="UNSIGNED_INTEGER"/>
+                <ATTRIBUTE keyword="rtmPlotTypeElement" name="plottype" Arguments="LABEL" labelList="NONE; NEAR_END_ON_MIC1; NEAR_END_ON_MIC2; NEAR_END_ON_MIC3; NEAR_END_ON_MIC4;NEAR_END; NEAR_END; NEAR_END; NEAR_END; FAR_END;RTM_PLOT; RTM_PLOT; RTM_PLOT; RTM_PLOT; RTM_PLOT; RTM_PLOT_10LOG10; RTM_PLOT_10LOG10; RTM_PLOT_10LOG10; RTM_PLOT_10LOG10; RTM_PLOT_20LOG10; RTM_PLOT_20LOG10; RTM_PLOT_DIVIDE_BY_2; HEATMAP"/>
+                <ATTRIBUTE keyword="groupIndexElement" name="index" Arguments="UNSIGNED_INTEGER"/>
+                <ATTRIBUTE keyword="groupIndexRangeMax" name="indexMax" Arguments="UNSIGNED_INTEGER"/>
+                <ATTRIBUTE keyword="groupIndexRangeMin" name="indexMin" Arguments="UNSIGNED_INTEGER"/>
+				<ATTRIBUTE keyword="depName" name="depName" Arguments="LABEL"/>
+				<ATTRIBUTE keyword="depValue" name="depValue" Arguments="INTEGER"/>
+
+                <!-- Default Dependencies -->
+                <ATTRIBUTE keyword="dependencyDirection" name="direction" Arguments="LABEL"  labelList="TX; RX"/>
+                <ATTRIBUTE keyword="dependencyDevice" name="device" Arguments="LABEL"  labelList="Handset; Headset; Speaker; TTY; Bluetooth; USB; Hdmi; FM; General"/>
+                <ATTRIBUTE keyword="dependencyAudioVoice" name="AV" Arguments="LABEL"  labelList="Audio; Voice"/>
+                <ATTRIBUTE keyword="dependencySampleRate" name="samplerate" Arguments="LABEL"  labelList="8000; 16000; 48000; 11025; 12000; 22050; 24000; 32000; 44100; 88200; 96000; 176400; 192000"/>
+                <ATTRIBUTE keyword="dependencyVoiceBandWidth" name="VoiceBandWidth " Arguments="LABEL"  labelList="NB; WB; SWB; FB"/>
+                <ATTRIBUTE keyword="dependencyVocoderClass" name="VocoderClass" Arguments="LABEL"  labelList="GSMWCDMA; CDMA; OTHER; EVS"/>
+                <ATTRIBUTE keyword="dependencyChannel" name="Channel" Arguments="LABEL"  labelList="1; 2; 3; 4; 5; 6; 7; 8"/>
+                <ATTRIBUTE keyword="dependencyDefault" name="default"  Arguments="VARIANT" attributeType="DEFAULT_CONDITIONAL" showInTag="h2xmle_TAG_DEFAULT"/>
+            </private>
+
+        </ELEMENT_ANNOTATIONS>
+
+    </CONFIG_TYPE>
+</H2XML_CONFIG>
+
+
