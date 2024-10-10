@@ -12,14 +12,19 @@ cmake_minimum_required(VERSION 3.10)
 
 set(spr_sources
 	${LIB_ROOT}capi/src/capi_spr_avsync_utils.c
-	${LIB_ROOT}capi/src/capi_spr_data_utils.c
+	${LIB_ROOT}capi/src/capi_spr_avsync_utils_island.c
+	${LIB_ROOT}capi/src/capi_spr_data_utils_island.c
 	${LIB_ROOT}capi/src/capi_spr_imc_utils.c
+	${LIB_ROOT}capi/src/capi_spr_imc_utils_island.c
 	${LIB_ROOT}capi/src/capi_spr_int_buf_utils.c
+	${LIB_ROOT}capi/src/capi_spr_int_buf_utils_island.c
 	${LIB_ROOT}capi/src/capi_spr_path_delay.c
+	${LIB_ROOT}capi/src/capi_spr_path_delay_island.c
 	${LIB_ROOT}capi/src/capi_spr_utils.c
+	${LIB_ROOT}capi/src/capi_spr_utils_island.c
 	${LIB_ROOT}capi/src/capi_spr.c
-	${LIB_ROOT}lib/src/cicular_buffer.c
-	${LIB_ROOT}lib/src/spr_lib.c
+	${LIB_ROOT}lib/src/cicular_buffer_island.c
+	${LIB_ROOT}lib/src/spr_lib_island.c
 )
 
 set(spr_includes
