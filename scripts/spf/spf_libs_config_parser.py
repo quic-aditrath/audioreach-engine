@@ -33,6 +33,9 @@ def spf_libs_config_parser(env, is_unit_test=False):
    qact_xml_file_name=spf_cfg_autogen_folder+'/spf_module_build_info.xml';
    static_source_file_name = 'spf_static_build_config'
    shared_source_file_name = 'spf_shared_build_config'
+   shared_source_file_name_priv = 'spf_shared_build_config_private'
+   static_source_file_name_priv = 'spf_static_build_config_private'
+
    inc_header_files=['amdb_api.h', 'capi.h', 'amdb_autogen_def.h']
    #### constants
    MODULE_TYPE_MAP=OrderedDict([('generic',2), ('decoder',3), ('encoder',4),('converter',5),('packetizer',6),('depacketizer',7),('detector',8),('generator',9),('pp',10),('end_point',11),('framework',1)])
@@ -76,7 +79,7 @@ def spf_libs_config_parser(env, is_unit_test=False):
    class BuildInfoClass:
       def __init__(self, libname, build, is_amdb_info_present,lib_major_ver=0,
                      lib_minor_ver=0, depends_on_list=[],
-                     security_info=None, pkg_info=None,island_info=None):
+                     security_info=None, pkg_info=None,island_info=None, is_private=None):
          if (len(libname)==0) or (len(build)==0):
             s='BuildInfoClass: lib name or build cannot be empty';
             raise LibCfgParserError(s);
@@ -92,6 +95,7 @@ def spf_libs_config_parser(env, is_unit_test=False):
          self.pkg_info = pkg_info;
          self.security_info = security_info;
          self.island_info = island_info;
+         self.is_private = is_private
       def __str(self):
          return 'BuildInfoClass: lib %s, build %s, ver %d.%d'%(self.libname,self.build,self.lib_major_ver,self.lib_minor_ver)
       def __key(self):
@@ -364,9 +368,14 @@ def spf_libs_config_parser(env, is_unit_test=False):
             if None == security_info and not None == pkg_info:
                s='SpfLibsCfg Error: Library %s has pkg_info but not security_info'%(lib_name)
                raise LibCfgParserError(s);
+            is_private = False
+            if "is_private" in lib:
+                is_private = True
+            else:
+                is_private = False
             #every item in json must have build-info
             build_info = BuildInfoClass(lib_name, build, is_amdb_info_present, maj_version,
-               min_version, depends_on, security_info, pkg_info, island_info);
+               min_version, depends_on, security_info, pkg_info, island_info, is_private);
 
             if build_info in build_info_set:
                already_added=build_info_set[build_info]; #build_info.hash is used as key
@@ -482,7 +491,8 @@ def spf_libs_config_parser(env, is_unit_test=False):
       file.write('\n');
 
    #mod_info {m-id:{rev_num:(module-info)}}
-   def write_autogen_files(static_source_file, static_header_file, shared_source_file, shared_header_file, mod_info):
+   def write_autogen_files(static_source_file, static_header_file, shared_source_file, shared_header_file, mod_info, shared_source_file_priv,
+							shared_header_file_priv, static_source_file_priv, static_header_file_priv):
       ## first loop to get some info.
       prereq_mid_list=OrderedDict(); # {module-id-class:[module-id-class]}
       for m in mod_info:
@@ -506,6 +516,13 @@ def spf_libs_config_parser(env, is_unit_test=False):
       shared_source_file.write(s);
       static_header_file.write(s);
       shared_header_file.write(s);
+      if env.IsBuildInternal:
+        shared_header_file_priv.write(s);
+        shared_source_file_priv.write(s);
+        shared_header_file_priv.write('#ifndef __SPF_SHARED_BUILD_CONFIG_H_\n#define __SPF_SHARED_BUILD_CONFIG_H_\n\n');
+        static_header_file_priv.write(s);
+        static_source_file_priv.write(s);
+        static_header_file_priv.write('#ifndef __SPF_STATIC_PRIV_BUILD_CONFIG_H_\n#define __SPF_STATIC_PRIV_BUILD_CONFIG_H_\n\n');
 
       static_header_file.write('#ifndef __SPF_STATIC_BUILD_CONFIG_H_\n#define __SPF_STATIC_BUILD_CONFIG_H_\n\n');
       shared_header_file.write('#ifndef __SPF_SHARED_BUILD_CONFIG_H_\n#define __SPF_SHARED_BUILD_CONFIG_H_\n\n');
@@ -519,6 +536,18 @@ def spf_libs_config_parser(env, is_unit_test=False):
       shared_header_file.write('#ifdef __cplusplus \nextern "C" {\n#endif //__cplusplus \n');
       shared_source_file.write('#include "spf_begin_pragma.h" \n');
       shared_source_file.write('#include "'+shared_source_file_name+'.h"\n\n');
+
+      if env.IsBuildInternal:
+        write_c_macros(shared_header_file_priv);
+        shared_header_file_priv.write('#ifdef __cplusplus \nextern "C" {\n#endif //__cplusplus \n');
+        write_c_macros(static_header_file_priv);
+        static_header_file_priv.write('#ifdef __cplusplus \nextern "C" {\n#endif //__cplusplus \n');
+      if env.IsBuildInternal:
+        shared_source_file_priv.write('#include "spf_begin_pragma.h" \n');
+        shared_source_file_priv.write('#include "'+shared_source_file_name_priv+'.h"\n\n');
+        static_source_file_priv.write('#include "spf_begin_pragma.h" \n');
+        static_source_file_priv.write('#include "'+static_source_file_name_priv+'.h"\n\n');
+
       temp_file_name_dict={};
       temp_tag_dict={};
 
@@ -526,9 +555,14 @@ def spf_libs_config_parser(env, is_unit_test=False):
       for itype in INTERFACE_TYPE_MAP.keys():
          mod_counter['STATIC ' + itype] = 0;
          mod_counter['DYNAMIC ' + itype] = 0;
+         mod_counter['DYNAMIC_PRIVATE ' + itype] = 0;
+         mod_counter['STATIC_PRIVATE ' + itype] = 0;
          close_sh_parethesis=True;
          if itype=='capi':
             shared_source_file.write('const amdb_dynamic_capi_module_t amdb_spf_dynamic_capi_modules[] = \n{\n');
+            if env.IsBuildInternal:
+                shared_source_file_priv.write('const amdb_dynamic_capi_module_t amdb_private_dynamic_capi_modules[] = \n{\n');
+                static_source_file_priv.write('const amdb_static_capi_module_t amdb_private_static_capi_modules[] = \n{\n');
             static_source_file.write('const amdb_static_capi_module_t amdb_spf_static_capi_modules[] = \n{\n');
          elif itype=='virtual_stub':
             static_source_file.write('const amdb_module_id_t amdb_virtual_stub_modules[] = \n{\n');
@@ -596,14 +630,36 @@ def spf_libs_config_parser(env, is_unit_test=False):
          static_source_file.write('\n};\n\n');
          if close_sh_parethesis:
             shared_source_file.write('\n};\n\n');
+            if env.IsBuildInternal:
+                shared_source_file_priv.write('\n};\n\n');
+                static_source_file_priv.write('\n};\n\n');
          if itype=='capi':
             static_source_file.write('const uint32_t amdb_spf_num_static_capi_modules = %d;\n\n'%(mod_counter['STATIC ' + itype]));
             shared_source_file.write('const uint32_t amdb_spf_num_dynamic_capi_modules = %d;\n\n'%(mod_counter['DYNAMIC ' + itype]));
+            if env.IsBuildInternal:
+                shared_source_file_priv.write('const uint32_t amdb_num_dynamic_private_capi_modules = %d;\n\n'%(mod_counter['DYNAMIC_PRIVATE ' + itype]));
+                static_source_file_priv.write('const uint32_t amdb_num_static_private_capi_modules = %d;\n\n'%(mod_counter['STATIC_PRIVATE ' + itype]));
          elif itype=='virtual_stub':
             static_source_file.write('const uint32_t amdb_num_virtual_stub_modules = %d;\n\n'%(mod_counter['STATIC ' + itype]));
 
+      """
+      Incase of ARE of APPS when spf fwk is compiled standalone without ADSP build,
+      define and initialized below variables to default values to get there definition
+      as they are defined extern in amdb source file.
+      """
+      if env.SPF_FWK_COMPILATION:
+        shared_source_file.write('const amdb_dynamic_capi_module_t amdb_dynamic_capi_modules[] = \n{\n\n};\n\n');
+        static_source_file.write('const amdb_static_capi_module_t amdb_static_capi_modules[] = \n{\n\n};\n\n');
+        static_source_file.write('const uint32_t amdb_num_static_capi_modules = %d;\n\n'%(0));
+        shared_source_file.write('const uint32_t amdb_num_dynamic_capi_modules = %d;\n\n'%(0));
 
       shared_source_file.write('#include "spf_end_pragma.h"\n');
+      if env.IsBuildInternal:
+        shared_source_file_priv.write('#include "spf_end_pragma.h"\n');
+        shared_header_file_priv.write('#ifdef __cplusplus \n} /*extern c*/ \n#endif //__cplusplus \n\n#endif /*__SPF_SHARED_BUILD_CONFIG_H_*/\n\n'); #extern c
+        static_source_file_priv.write('#include "spf_end_pragma.h"\n');
+        static_header_file_priv.write('#ifdef __cplusplus \n} /*extern c*/ \n#endif //__cplusplus \n\n#endif /*__SPF_STATIC_PRIVATE_BUILD_CONFIG_H_*/\n\n'); #extern c
+
       static_source_file.write('#include "spf_end_pragma.h"\n');
       shared_header_file.write('#ifdef __cplusplus \n} /*extern c*/ \n#endif //__cplusplus \n\n#endif /*__SPF_SHARED_BUILD_CONFIG_H_*/\n\n'); #extern c
       static_header_file.write('#ifdef __cplusplus \n} /*extern c*/ \n#endif //__cplusplus \n\n#endif /*__SPF_STATIC_BUILD_CONFIG_H_*/\n\n'); #extern c
@@ -750,6 +806,14 @@ def spf_libs_config_parser(env, is_unit_test=False):
                static_header_file=open(os.path.join(c_file_dir,static_source_file_name)+'.h', 'w');
                shared_source_file=open(os.path.join(c_file_dir,shared_source_file_name)+'.c', 'w');
                shared_header_file=open(os.path.join(c_file_dir,shared_source_file_name)+'.h', 'w');
+               if env.IsBuildInternal:
+                  shared_source_file_priv=open(os.path.join(c_file_dir,shared_source_file_name_priv)+'.c', 'w');
+                  shared_header_file_priv=open(os.path.join(c_file_dir,shared_source_file_name_priv)+'.h', 'w');
+                  static_source_file_priv=open(os.path.join(c_file_dir,static_source_file_name_priv)+'.c', 'w');
+                  static_header_file_priv=open(os.path.join(c_file_dir,static_source_file_name_priv)+'.h', 'w');
+               else:
+                  shared_source_file_priv, shared_header_file_priv = (0,0)
+                  static_source_file_priv, static_header_file_priv = (0,0)
             except IOError as e:
                print('SpfLibsCfg: Error opening files : '+str(e))
                raise e
@@ -799,12 +863,17 @@ def spf_libs_config_parser(env, is_unit_test=False):
             write_qact_xml(qact_xml, mod_info);
             qact_xml.close()
             # write C files for all modules.
-            write_autogen_files(static_source_file, static_header_file, shared_source_file, shared_header_file, mod_info);
+            write_autogen_files(static_source_file, static_header_file, shared_source_file, shared_header_file, mod_info, shared_source_file_priv, shared_header_file_priv, static_source_file_priv, static_header_file_priv);
 
             static_source_file.close();
             static_header_file.close();
             shared_source_file.close();
             shared_header_file.close();
+            if env.IsBuildInternal:
+                shared_source_file_priv.close();
+                shared_header_file_priv.close();
+                static_source_file_priv.close();
+                static_header_file_priv.close();
 
       if 'GEN_SHARED_LIBS' in env and not is_unit_test :
          env.Replace(SHARED_LIB_DICT=shared_lib_dict)
@@ -838,7 +907,27 @@ def print_shared_lib_dict(shared_lib_dict):
 #===============================================================================
 # Main function for unit testing
 #===============================================================================
+
 if __name__ == '__main__':
    from collections import OrderedDict;
    env = OrderedDict();
+
+   """
+   IsBuildInternal flag decides to generate amdb autogen entry for private modules.
+   Currently the build does not support flag value as False and leads to missing
+   symbols error during linking. Set value true for the flag to enable stub
+   functionality.
+   """
+   env.IsBuildInternal = True
+
+   """
+   When spf framework is compiled seperately along with ADSP image then AMDB requires
+   two list to store the entries for SPF module and module part of ADSP image.
+   Incase of ARE of APPS where spf fwk is compiled standalone without ADSP image,
+   module list for ADSP moduele is not defined, so define SPF_FWK_COMPILATION flag
+   to TRUE to initialize the variable with default values to get there definition
+   as they are defined extern in amdb source file.
+   """
+   env.SPF_FWK_COMPILATION = True
+
    shared_lib_dict = spf_libs_config_parser(env, True);
