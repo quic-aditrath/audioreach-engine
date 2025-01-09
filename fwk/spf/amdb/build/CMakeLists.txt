@@ -29,16 +29,27 @@ set (lib_srcs_list
      ${LIB_ROOT}/core/src/amdb_capi.c
      ${LIB_ROOT}/core/src/amdb_capi_island.c
      ${LIB_ROOT}/core/src/amdb_utils.c
-     ${LIB_ROOT}/core/src/amdb_static_loading.c
      ${amdb_autogen_SOURCES}
     )
 
-#Add the ext source files
-list (APPEND lib_srcs_list
-            #${LIB_ROOT}/ext/src/amdb_queue.c
-            ${LIB_ROOT}/ext/stub/amdb_offload_utils.c
-            ${LIB_ROOT}/ext/stub/amdb_thread_stub.c
-           )
+#GEN_SHARED_LIBS in scons and CONFIG_DYNAMIC_LOADING in CMake serves the same purpose
+if(NOT CONFIG_DYNAMIC_LOADING)
+   list (APPEND lib_srcs_list
+         ${LIB_ROOT}/ext/stub/amdb_offload_utils.c
+         ${LIB_ROOT}/core/src/amdb_static_loading.c
+         ${LIB_ROOT}/ext/stub/amdb_thread_stub.c
+        )
+else()
+   list (APPEND lib_srcs_list
+         ${LIB_ROOT}/ext/src/amdb_cmd_handler.c
+         ${LIB_ROOT}/ext/src/amdb_dynamic_loading.c
+         ${LIB_ROOT}/ext/src/amdb_offload_utils.c
+         ${LIB_ROOT}/ext/src/amdb_parallel_loader.c
+         ${LIB_ROOT}/ext/src/amdb_queue.c
+         ${LIB_ROOT}/ext/src/amdb_resource_voter.c
+         ${LIB_ROOT}/ext/src/amdb_thread.c
+        )
+endif()
 
 #Add the compiler flags
 set (lib_flgs_list
@@ -56,11 +67,11 @@ if (CONFIG_COMPILE_SPF)
    )
 endif()
 
-#GEN_SHARED_LIBS in scons and CONFIG_DYNAMIC_LOADING in CMake serves the same purpose
-if(NOT CONFIG_DYNAMIC_LOADING)
-   list (APPEND lib_srcs_list
-         ${LIB_ROOT}/core/src/amdb_static_loading.c
-        )
+#Add definitions for target
+if(CONFIG_DYNAMIC_LOADING)
+set (lib_defs_list
+        DL_INFO_DEFINED
+    )
 endif()
 
 #Call spf_build_static_library to generate the static library
