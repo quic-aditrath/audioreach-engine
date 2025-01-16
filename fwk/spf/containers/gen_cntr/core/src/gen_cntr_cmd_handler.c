@@ -93,9 +93,13 @@ static ar_result_t gen_cntr_handle_events_after_cmds(gen_cntr_t *me_ptr, bool_t 
       // Adding port_flushed check to ensure that the module gets triggered atleast once after the containers are flushed.
       // This flag is set when a container is flushed, and is useful when some container got stuck in data path
       // before flush was done as in that case, process_state flag is not set.
-      if (capi_event_flag_ptr->process_state || capi_event_flag_ptr->data_trigger_policy_change ||
-          fwk_event_flag_ptr->sg_state_change || fwk_event_flag_ptr->port_state_change ||
-          fwk_event_flag_ptr->need_to_handle_dcm_req_for_island_exit || fwk_event_flag_ptr->port_flushed)
+
+      // capi_event_flag_ptr->media_fmt_event:
+      // If a module is raising media format for the first time then it may start generating output.
+      if (capi_event_flag_ptr->process_state || capi_event_flag_ptr->media_fmt_event || 
+          capi_event_flag_ptr->data_trigger_policy_change || fwk_event_flag_ptr->sg_state_change || 
+          fwk_event_flag_ptr->port_state_change || fwk_event_flag_ptr->need_to_handle_dcm_req_for_island_exit || 
+          fwk_event_flag_ptr->port_flushed)
       {
          process_frames = TRUE;
       }
