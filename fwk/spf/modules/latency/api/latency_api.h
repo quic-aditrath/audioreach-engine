@@ -114,7 +114,7 @@ struct delay_param_per_ch_cfg_t
 typedef struct param_id_latency_cfg_t param_id_latency_cfg_t;
 /** @h2xmlp_parameter   {"PARAM_ID_LATENCY_CFG", PARAM_ID_LATENCY_CFG}
     @h2xmlp_description {Delay in microseconds - supports global delay (all channels), or per channel delay.}
-    @h2xmlp_toolPolicy  {Calibration}  */
+    @h2xmlp_toolPolicy  {NO_SUPPORT}  */
 
 #include "spf_begin_pack.h"
 #include "spf_begin_pragma.h"
@@ -159,6 +159,9 @@ struct param_id_latency_cfg_t
   @h2xmlm_InsertParameter
 
   @h2xml_Select         {delay_param_per_ch_cfg_t}
+  @h2xmlm_InsertParameter
+
+  @h2xml_Select         {delay_param_per_ch_cfg_v2_t}
   @h2xmlm_InsertParameter
 
 */
