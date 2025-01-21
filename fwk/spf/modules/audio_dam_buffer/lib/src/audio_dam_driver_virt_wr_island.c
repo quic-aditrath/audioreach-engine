@@ -11,6 +11,31 @@
 #include "audio_dam_driver.h"
 #include "audio_dam_driver_i.h"
 #include "circular_buffer_i.h"
+#include "math.h"
+
+/** Rounds of the time to nearest ms. This function must be used when calculating TS difference between reader and
+   writer, because sometimes due to writers TS jitters/drift the distance between them can be not aligned to discrete ms
+   intervals. That can mess up the read pointer adjustment or overflow detection. For example,
+   if cur readers ts = 12000us and writer TS = 12000us, on writing next 40ms frame lets say writer updates the TS to
+   16001us to some jitter. then the distance between writer and reader will be calculated as 40001us. but in terms of data
+   its only 40000us, so its better to round off the TS to nearset MS to avoid the effects of jitter/drift in the unread len
+   calculation.
+   */
+#define ROUND_OFF_TIMESTAMP_TO_MS_BOUNDARY(x) (((x + 500) / 1000) * 1000)
+
+static ar_result_t audio_dam_stream_get_cur_wr_position(audio_dam_stream_reader_virtual_buf_info_t *virt_buf_ptr,
+                                                        virt_wr_position_info_t                    *wr_pos)
+{
+   ar_result_t result = AR_EOK;
+   memset(wr_pos, 0, sizeof(virt_wr_position_info_t));
+   if (AR_FAILED(result = virt_buf_ptr->cfg_ptr->get_writer_ptr_fn(virt_buf_ptr->cfg_ptr->writer_handle, wr_pos)))
+   {
+      AR_MSG_ISLAND(DBG_HIGH_PRIO, "DAM_DRIVER: Failed to get the writer position result 0x%lx");
+      return AR_EFAILED;
+   }
+
+   return AR_EOK;
+}
 
 static ar_result_t audio_dam_stream_read_check_virt_buf_overrun(audio_dam_stream_reader_t *reader_handle,
                                                                 uint32_t                  *bytes_to_read_per_ch_ptr,
@@ -22,13 +47,10 @@ static ar_result_t audio_dam_stream_read_check_virt_buf_overrun(audio_dam_stream
 
    // get th current wr pointer addr, TS
    virt_wr_position_info_t wr_pos;
-   wr_pos.latest_write_addr      = NULL;
-   wr_pos.latest_write_sample_ts = 0;
-   wr_pos.is_ts_valid            = FALSE;
-   if (AR_FAILED(result = virt_buf_ptr->cfg_ptr->get_writer_ptr_fn(virt_buf_ptr->cfg_ptr->writer_handle, &wr_pos)))
+   if (AR_FAILED(result = audio_dam_stream_get_cur_wr_position(virt_buf_ptr, &wr_pos)))
    {
       AR_MSG_ISLAND(DBG_HIGH_PRIO,
-                    "DAM_DRIVER: Virt buf reader adjust, Failed to get the writer position result 0x%lx");
+                    "DAM_DRIVER: Virt buf reader check overrun, Failed to get the writer position result 0x%lx");
       return AR_EFAILED;
    }
 
@@ -91,7 +113,8 @@ static ar_result_t audio_dam_stream_read_check_virt_buf_overrun(audio_dam_stream
    }
 
    /** calculate read offset relative to the writers timestamp, and check if overflow happened based on the offset*/
-   int64_t unread_len_in_us = wr_pos.latest_write_sample_ts - virt_buf_ptr->reader_ts;
+   int64_t unread_len_in_us =
+      ROUND_OFF_TIMESTAMP_TO_MS_BOUNDARY(wr_pos.latest_write_sample_ts - virt_buf_ptr->reader_ts);
 
 #ifdef DEBUG_AUDIO_DAM_DRIVER
    AR_MSG_ISLAND(DBG_HIGH_PRIO,
@@ -267,6 +290,25 @@ ar_result_t audio_dam_stream_read_from_virtual_buf(audio_dam_stream_reader_t *re
       src_buf.actual_data_len = bytes_to_read_in_cur_iter;
       src_buf.max_data_len    = bytes_to_read_in_cur_iter;
 
+      // invalidate the amount of data read for this iteration
+      if (AR_FAILED(result = posal_cache_invalidate((uint32_t)src_buf.data_ptr, bytes_to_read_in_cur_iter)))
+      {
+         AR_MSG_ISLAND(DBG_ERROR_PRIO,
+                       "Failed to cache invalidate addr:0x%lx for size %lu",
+                       src_buf.data_ptr,
+                       bytes_to_read_in_cur_iter);
+         return result;
+      }
+#ifdef DEBUG_AUDIO_DAM_DRIVER
+      else
+      {
+         AR_MSG_ISLAND(DBG_HIGH_PRIO,
+                       "Success to cache invalidate addr:0x%lx for size %lu",
+                       src_buf.data_ptr,
+                       bytes_to_read_in_cur_iter);
+      }
+#endif
+
       uint32_t num_samp_per_ch = bytes_to_read_in_cur_iter / (bytes_per_sample * num_src_channels);
 
       /** setup capi output buffer in scratch to pass to the deinterleaver utility*/
@@ -347,12 +389,10 @@ ar_result_t audio_dam_stream_read_adjust_virt_wr_mode(audio_dam_stream_reader_t 
 
    // get wr pointer addr, TS
    virt_wr_position_info_t wr_pos;
-   wr_pos.latest_write_addr      = NULL;
-   wr_pos.latest_write_sample_ts = 0;
-   wr_pos.is_ts_valid            = FALSE;
-   if (AR_FAILED(result = virt_buf_ptr->cfg_ptr->get_writer_ptr_fn(virt_buf_ptr->cfg_ptr->writer_handle, &wr_pos)))
+   if (AR_FAILED(result = audio_dam_stream_get_cur_wr_position(virt_buf_ptr, &wr_pos)))
    {
-      AR_MSG_ISLAND(DBG_HIGH_PRIO, "virt_buf: reader adjust, Failed to get the writer position result 0x%lx");
+      AR_MSG_ISLAND(DBG_HIGH_PRIO,
+                    "DAM_DRIVER: Virt buf reader adjust, Failed to get the writer position result 0x%lx");
       goto __err_bailout;
    }
 
