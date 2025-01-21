@@ -1039,6 +1039,14 @@ ar_result_t apm_send_close_all_to_sat(apm_t *apm_info_ptr)
          ar_result_t   local_result    = AR_EOK;
          gpr_packet_t *gpr_pkt_ptr     = NULL;
          uint32_t      sat_proc_domain = apm_sat_pd_info_ptr->proc_domain_list[sat_pd_idx];
+		 
+         if (APM_PROC_DOMAIN_ID_CDSP == sat_proc_domain) 
+         {
+             /* Close all is due to HLOS restart. */
+             AR_MSG(DBG_HIGH_PRIO,
+                    "APM: skipping sending close all to CDSP as dynamic PD restarts when HLOS restarts");
+             continue;
+         }
 
          /** allocate the GPR packet to Send to satellite DSP */
          gpr_cmd_alloc_ext_t args;
