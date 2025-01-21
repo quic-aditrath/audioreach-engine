@@ -557,11 +557,33 @@ bool_t spl_topo_out_port_is_trigger_present(void *  ctx_topo_ptr,
                   "spl_topo mpd miid 0x%lx output port idx = %ld threshold %ld bytes, output empty space %ld",
                   module_ptr->t_base.gu.module_instance_id,
                   out_port_ptr->t_base.gu.cmn.index,
-				  threshold_bytes,
+                  threshold_bytes,
                   out_port_empty_space);
       }
 #endif
-   }
+    }
+    else if (module_ptr->t_base.flags.need_sync_extn)
+    {
+        uint32_t req_samples = spl_topo_get_scaled_samples(topo_ptr, topo_ptr->cntr_frame_len.frame_len_samples,
+                topo_ptr->cntr_frame_len.sample_rate, out_port_ptr->t_base.common.media_fmt_ptr->pcm.sample_rate);
+
+        uint32_t required_bytes = topo_samples_to_bytes(req_samples, out_port_ptr->t_base.common.media_fmt_ptr);
+
+        has_enough_space = spl_topo_length_meets_threshold(out_port_empty_space, required_bytes);
+
+#if SPL_TOPO_DEBUG_LEVEL >= SPL_TOPO_DEBUG_LEVEL_3
+      if (!has_enough_space)
+      {
+         TOPO_MSG(topo_ptr->t_base.gu.log_id,
+                  DBG_MED_PRIO,
+                  "spl_topo mpd miid 0x%lx output port idx = %ld required %ld bytes, output empty space %ld",
+                  module_ptr->t_base.gu.module_instance_id,
+                  out_port_ptr->t_base.gu.cmn.index,
+                  required_bytes,
+                  out_port_empty_space);
+      }
+#endif
+    }
    else if (out_port_ptr->t_base.gu.ext_out_port_ptr)
    {
       uint32_t out_port_delivery_size =
