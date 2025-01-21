@@ -15,14 +15,13 @@
 #include "gen_topo_capi.h"
 #include "gen_topo_buf_mgr.h"
 
-
 /**
  * See comment above gen_topo_capi_set_port_operation.
  */
-static ar_result_t gen_topo_check_set_connected_port_operation(gen_topo_t *               topo_ptr,
-                                                               gen_topo_module_t *        this_module_ptr,
-                                                               gu_cmn_port_t *            conn_gu_cmn_port_ptr,
-                                                               gen_topo_common_port_t *   conn_cmn_port_ptr,
+static ar_result_t gen_topo_check_set_connected_port_operation(gen_topo_t                *topo_ptr,
+                                                               gen_topo_module_t         *this_module_ptr,
+                                                               gu_cmn_port_t             *conn_gu_cmn_port_ptr,
+                                                               gen_topo_common_port_t    *conn_cmn_port_ptr,
                                                                spf_cntr_sub_graph_list_t *spf_sg_list_ptr,
                                                                bool_t                     is_input,
                                                                uint32_t                   sg_ops)
@@ -62,8 +61,8 @@ static ar_result_t gen_topo_check_set_connected_port_operation(gen_topo_t *     
    return result;
 }
 
-static ar_result_t gen_topo_check_set_self_port_operation(gen_topo_t *            topo_ptr,
-                                                          gu_cmn_port_t *         gu_cmn_port_ptr,
+static ar_result_t gen_topo_check_set_self_port_operation(gen_topo_t             *topo_ptr,
+                                                          gu_cmn_port_t          *gu_cmn_port_ptr,
                                                           gen_topo_common_port_t *cmn_port_ptr,
                                                           bool_t                  is_input,
                                                           uint32_t                sg_ops)
@@ -90,14 +89,14 @@ static ar_result_t gen_topo_check_set_self_port_operation(gen_topo_t *          
 /* =======================================================================
 Public Function Definitions
 ========================================================================== */
-ar_result_t gen_topo_operate_on_int_in_port(void *                     topo_ptr,
-                                            gu_input_port_t *          in_port_ptr,
+ar_result_t gen_topo_operate_on_int_in_port(void                      *topo_ptr,
+                                            gu_input_port_t           *in_port_ptr,
                                             spf_cntr_sub_graph_list_t *spf_sg_list_ptr,
                                             uint32_t                   sg_ops,
                                             bool_t                     set_port_op)
 {
    ar_result_t            result           = AR_EOK;
-   gen_topo_t *           me_ptr           = (gen_topo_t *)topo_ptr;
+   gen_topo_t            *me_ptr           = (gen_topo_t *)topo_ptr;
    gen_topo_input_port_t *topo_in_port_ptr = (gen_topo_input_port_t *)in_port_ptr;
 
    // Only flush/reset/Stop are handled here.
@@ -188,14 +187,14 @@ ar_result_t gen_topo_operate_on_int_in_port(void *                     topo_ptr,
    return result;
 }
 
-ar_result_t gen_topo_operate_on_int_out_port(void *                     topo_ptr,
-                                             gu_output_port_t *         out_port_ptr,
+ar_result_t gen_topo_operate_on_int_out_port(void                      *topo_ptr,
+                                             gu_output_port_t          *out_port_ptr,
                                              spf_cntr_sub_graph_list_t *spf_sg_list_ptr,
                                              uint32_t                   sg_ops,
                                              bool_t                     set_port_op)
 {
    ar_result_t             result            = AR_EOK;
-   gen_topo_t *            me_ptr            = (gen_topo_t *)topo_ptr;
+   gen_topo_t             *me_ptr            = (gen_topo_t *)topo_ptr;
    gen_topo_output_port_t *topo_out_port_ptr = (gen_topo_output_port_t *)out_port_ptr;
 
    // Only flush/reset/Stop are handler here.
@@ -210,9 +209,9 @@ ar_result_t gen_topo_operate_on_int_out_port(void *                     topo_ptr
       // see comments in gen_topo_operate_on_int_in_port
       if ((TOPO_SG_OP_CLOSE)&sg_ops)
       {
-         gen_topo_module_t *    this_module_ptr      = (gen_topo_module_t *)topo_out_port_ptr->gu.cmn.module_ptr;
+         gen_topo_module_t     *this_module_ptr      = (gen_topo_module_t *)topo_out_port_ptr->gu.cmn.module_ptr;
          gen_topo_input_port_t *conn_in_port_ptr     = (gen_topo_input_port_t *)topo_out_port_ptr->gu.conn_in_port_ptr;
-         gen_topo_module_t *    connected_module_ptr = (gen_topo_module_t *)conn_in_port_ptr->gu.cmn.module_ptr;
+         gen_topo_module_t     *connected_module_ptr = (gen_topo_module_t *)conn_in_port_ptr->gu.cmn.module_ptr;
 
          if ((connected_module_ptr->gu.sg_ptr->id != this_module_ptr->gu.sg_ptr->id) &&
              !gu_is_sg_id_found_in_spf_array(spf_sg_list_ptr, connected_module_ptr->gu.sg_ptr->id))
@@ -258,14 +257,14 @@ ar_result_t gen_topo_operate_on_int_out_port(void *                     topo_ptr
    return result;
 }
 
-ar_result_t gen_topo_operate_on_int_ctrl_port(void *                     topo_ptr,
-                                              gu_ctrl_port_t *           ctrl_port_ptr,
+ar_result_t gen_topo_operate_on_int_ctrl_port(void                      *topo_ptr,
+                                              gu_ctrl_port_t            *ctrl_port_ptr,
                                               spf_cntr_sub_graph_list_t *spf_sg_list_ptr,
                                               uint32_t                   sg_ops,
                                               bool_t                     set_port_op)
 {
    ar_result_t           result             = AR_EOK;
-   gen_topo_t *          me_ptr             = (gen_topo_t *)topo_ptr;
+   gen_topo_t           *me_ptr             = (gen_topo_t *)topo_ptr;
    gen_topo_ctrl_port_t *topo_ctrl_port_ptr = (gen_topo_ctrl_port_t *)ctrl_port_ptr;
 
    if (topo_ctrl_port_ptr->gu.peer_ctrl_port_ptr)
@@ -314,17 +313,17 @@ ar_result_t gen_topo_operate_on_int_ctrl_port(void *                     topo_pt
 // Operate on modules only handles self SG CLOSE and disconnect.
 // START, STOP, Prepare and Suspend are not handled here, they are handled based on downgraded state
 // after state propagation is complete.
-ar_result_t gen_topo_operate_on_modules(void *                     topo_ptr,
+ar_result_t gen_topo_operate_on_modules(void                      *topo_ptr,
                                         uint32_t                   sg_ops,
-                                        gu_module_list_t *         module_list_ptr,
+                                        gu_module_list_t          *module_list_ptr,
                                         spf_cntr_sub_graph_list_t *spf_sg_list_ptr)
 {
-   ar_result_t result            = AR_EOK;
-   gen_topo_t *me_ptr            = (gen_topo_t *)topo_ptr;
+   ar_result_t result = AR_EOK;
+   gen_topo_t *me_ptr = (gen_topo_t *)topo_ptr;
    SPF_MANAGE_CRITICAL_SECTION
 
    // if self-sg is stop/suspended then their downgraded state will also be same, so can apply to the ports directly.
-   bool_t      is_set_port_op    = ((TOPO_SG_OP_SUSPEND | TOPO_SG_OP_STOP) & sg_ops) ? TRUE : FALSE;
+   bool_t is_set_port_op = ((TOPO_SG_OP_SUSPEND | TOPO_SG_OP_STOP) & sg_ops) ? TRUE : FALSE;
 
    // Operate on external ports of modules in the subgraph.
    for (; (NULL != module_list_ptr); LIST_ADVANCE(module_list_ptr))
@@ -377,11 +376,11 @@ ar_result_t gen_topo_operate_on_modules(void *                     topo_ptr,
    return result;
 }
 
-ar_result_t gen_topo_get_port_property(void *                    vtopo_ptr,
+ar_result_t gen_topo_get_port_property(void                     *vtopo_ptr,
                                        topo_port_type_t          port_type,
                                        topo_port_property_type_t prop_type,
-                                       void *                    port_ptr,
-                                       uint32_t *                val_ptr)
+                                       void                     *port_ptr,
+                                       uint32_t                 *val_ptr)
 {
    gen_topo_t *topo_ptr = (gen_topo_t *)vtopo_ptr;
    ar_result_t result   = AR_EOK;
@@ -400,7 +399,7 @@ ar_result_t gen_topo_get_port_property(void *                    vtopo_ptr,
             case TOPO_DATA_INPUT_PORT_TYPE:
             {
                gen_topo_input_port_t *in_port_ptr = (gen_topo_input_port_t *)port_ptr;
-               gen_topo_module_t *    module_ptr  = (gen_topo_module_t *)in_port_ptr->gu.cmn.module_ptr;
+               gen_topo_module_t     *module_ptr  = (gen_topo_module_t *)in_port_ptr->gu.cmn.module_ptr;
 
                // Return RT=TRUE only if module's self SG is !(stopped || suspended)
                *val_ptr = ((in_port_ptr->common.flags.is_upstream_realtime) &&
@@ -410,7 +409,7 @@ ar_result_t gen_topo_get_port_property(void *                    vtopo_ptr,
             case TOPO_DATA_OUTPUT_PORT_TYPE:
             {
                gen_topo_output_port_t *out_port_ptr = (gen_topo_output_port_t *)port_ptr;
-               gen_topo_module_t *     module_ptr   = (gen_topo_module_t *)out_port_ptr->gu.cmn.module_ptr;
+               gen_topo_module_t      *module_ptr   = (gen_topo_module_t *)out_port_ptr->gu.cmn.module_ptr;
 
                // Return RT=TRUE only if module's self SG is !(stopped || suspended)
                *val_ptr = ((out_port_ptr->common.flags.is_upstream_realtime) &&
@@ -435,7 +434,7 @@ ar_result_t gen_topo_get_port_property(void *                    vtopo_ptr,
             case TOPO_DATA_INPUT_PORT_TYPE:
             {
                gen_topo_input_port_t *in_port_ptr = (gen_topo_input_port_t *)port_ptr;
-               gen_topo_module_t *    module_ptr  = (gen_topo_module_t *)in_port_ptr->gu.cmn.module_ptr;
+               gen_topo_module_t     *module_ptr  = (gen_topo_module_t *)in_port_ptr->gu.cmn.module_ptr;
 
                // Return RT=TRUE only if module's self SG is !(stopped || suspended)
                *val_ptr = ((in_port_ptr->common.flags.is_downstream_realtime) &&
@@ -445,7 +444,7 @@ ar_result_t gen_topo_get_port_property(void *                    vtopo_ptr,
             case TOPO_DATA_OUTPUT_PORT_TYPE:
             {
                gen_topo_output_port_t *out_port_ptr = (gen_topo_output_port_t *)port_ptr;
-               gen_topo_module_t *     module_ptr   = (gen_topo_module_t *)out_port_ptr->gu.cmn.module_ptr;
+               gen_topo_module_t      *module_ptr   = (gen_topo_module_t *)out_port_ptr->gu.cmn.module_ptr;
 
                // Return RT=TRUE only if module's self SG is !(stopped || suspended)
                *val_ptr = ((out_port_ptr->common.flags.is_downstream_realtime) &&
@@ -528,10 +527,10 @@ ar_result_t gen_topo_get_port_property(void *                    vtopo_ptr,
    return result;
 }
 
-ar_result_t gen_topo_set_port_property(void *                    vtopo_ptr,
+ar_result_t gen_topo_set_port_property(void                     *vtopo_ptr,
                                        topo_port_type_t          port_type,
                                        topo_port_property_type_t prop_type,
-                                       void *                    port_ptr,
+                                       void                     *port_ptr,
                                        uint32_t                  val)
 {
    gen_topo_t *topo_ptr = (gen_topo_t *)vtopo_ptr;
@@ -604,9 +603,9 @@ ar_result_t gen_topo_set_port_property(void *                    vtopo_ptr,
 
 ar_result_t gen_topo_set_param(void *vtopo_ptr, apm_module_param_data_t *param_ptr)
 {
-   gen_topo_t *       topo_ptr    = (gen_topo_t *)vtopo_ptr;
+   gen_topo_t        *topo_ptr    = (gen_topo_t *)vtopo_ptr;
    ar_result_t        result      = AR_EOK;
-   int8_t *           payload_ptr = (int8_t *)param_ptr + sizeof(apm_module_param_data_t);
+   int8_t            *payload_ptr = (int8_t *)param_ptr + sizeof(apm_module_param_data_t);
    gen_topo_module_t *module_ptr  = (gen_topo_module_t *)gu_find_module(&topo_ptr->gu, param_ptr->module_instance_id);
 
    if (!module_ptr)
@@ -624,17 +623,22 @@ ar_result_t gen_topo_set_param(void *vtopo_ptr, apm_module_param_data_t *param_p
    return result;
 }
 
-ar_result_t gen_topo_set_input_port_media_format(gen_topo_t *           topo_ptr,
+ar_result_t gen_topo_set_input_port_media_format(gen_topo_t            *topo_ptr,
                                                  gen_topo_input_port_t *input_port_ptr,
-                                                 topo_media_fmt_t *     media_fmt_ptr)
+                                                 topo_media_fmt_t      *media_fmt_ptr)
 {
+   ar_result_t      result = AR_EOK;
    topo_media_fmt_t tmp_mf = { 0 };
    // This copies ptr for raw & sets ext port media fmt buf ptr as NULL.
    tu_copy_media_fmt(&tmp_mf, media_fmt_ptr);
 
-   tu_set_media_fmt(&topo_ptr->mf_utils, &input_port_ptr->common.media_fmt_ptr, &tmp_mf, topo_ptr->heap_id);
-   input_port_ptr->flags.media_fmt_received                = TRUE;
-   input_port_ptr->common.flags.media_fmt_event            = TRUE;
+   result = tu_set_media_fmt(&topo_ptr->mf_utils, &input_port_ptr->common.media_fmt_ptr, &tmp_mf, topo_ptr->heap_id);
+   if (AR_FAILED(result))
+   {
+      return result;
+   }
+   input_port_ptr->flags.media_fmt_received     = TRUE;
+   input_port_ptr->common.flags.media_fmt_event = TRUE;
 
    input_port_ptr->common.flags.is_mf_valid = topo_is_valid_media_fmt(input_port_ptr->common.media_fmt_ptr);
 
@@ -710,9 +714,9 @@ ar_result_t topo_shared_reset_input_port(void *topo_ptr, void *topo_in_port_ptr,
 
 ar_result_t topo_shared_reset_output_port(void *topo_ptr, void *topo_out_port_ptr, bool_t use_bufmgr)
 {
-   gen_topo_t *            me_ptr       = (gen_topo_t *)topo_ptr;
+   gen_topo_t             *me_ptr       = (gen_topo_t *)topo_ptr;
    gen_topo_output_port_t *out_port_ptr = (gen_topo_output_port_t *)topo_out_port_ptr;
-   gen_topo_module_t *     module_ptr   = (gen_topo_module_t *)out_port_ptr->gu.cmn.module_ptr;
+   gen_topo_module_t      *module_ptr   = (gen_topo_module_t *)out_port_ptr->gu.cmn.module_ptr;
 
    gen_topo_destroy_all_metadata(me_ptr->gu.log_id,
                                  (void *)module_ptr,
@@ -751,8 +755,8 @@ ar_result_t gen_topo_reset_all_out_ports(gen_topo_module_t *module_ptr)
 /**
  * useful when CAPI itself is replaced with another (such as in placeholder)
  */
-void gen_topo_reset_input_port_capi_dependent_portion(gen_topo_t *           topo_ptr,
-                                                      gen_topo_module_t *    module_ptr,
+void gen_topo_reset_input_port_capi_dependent_portion(gen_topo_t            *topo_ptr,
+                                                      gen_topo_module_t     *module_ptr,
                                                       gen_topo_input_port_t *in_port_ptr)
 {
    in_port_ptr->common.flags.port_has_threshold = FALSE;
@@ -764,8 +768,8 @@ void gen_topo_reset_input_port_capi_dependent_portion(gen_topo_t *           top
 /**
  * useful when CAPI itself is replaced with another (such as in placeholder)
  */
-void gen_topo_reset_output_port_capi_dependent_portion(gen_topo_t *            topo_ptr,
-                                                       gen_topo_module_t *     module_ptr,
+void gen_topo_reset_output_port_capi_dependent_portion(gen_topo_t             *topo_ptr,
+                                                       gen_topo_module_t      *module_ptr,
                                                        gen_topo_output_port_t *out_port_ptr)
 {
    out_port_ptr->common.flags.port_has_threshold = FALSE;
@@ -823,7 +827,7 @@ void gen_topo_update_is_signal_triggered_active_flag(gen_topo_t *topo_ptr)
       {
          gen_topo_module_t *module_ptr = (gen_topo_module_t *)module_list_ptr->module_ptr;
 
-         //Assuming only one STM module is present in the Container
+         // Assuming only one STM module is present in the Container
          if (module_ptr->flags.need_stm_extn)
          {
             topo_ptr->flags.is_signal_triggered = TRUE;
@@ -888,7 +892,7 @@ void gen_topo_reset_top_level_flags(gen_topo_t *topo_ptr)
             topo_ptr->flags.is_src_module_present = TRUE;
          }
 
-         //Assuming only one STM module is present in the Container
+         // Assuming only one STM module is present in the Container
          if (module_ptr->flags.need_stm_extn)
          {
             topo_ptr->flags.is_signal_triggered = TRUE;
@@ -948,7 +952,6 @@ void gen_topo_reset_top_level_flags(gen_topo_t *topo_ptr)
       // need to be done after gen_topo_propagate_data_trigger_in_st_cntr_event
       gen_topo_update_data_tpm_count(topo_ptr);
    }
-
 }
 
 /**
