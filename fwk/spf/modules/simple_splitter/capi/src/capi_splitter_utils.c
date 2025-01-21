@@ -19,10 +19,12 @@
 /*==========================================================================
   Function Definitions
 ========================================================================== */
-capi_err_t capi_splitter_update_and_raise_kpps_event(capi_splitter_t *me_ptr)
+capi_err_t capi_splitter_update_and_raise_kpps_bw_event(capi_splitter_t *me_ptr)
 {
    capi_err_t capi_result = CAPI_EOK;
    uint32_t   kpps        = 0;
+   uint32_t   bw          = 0;
+
    if (32000 >= me_ptr->operating_mf.format.sampling_rate)
    {
       kpps = SPLITTER_KPPS_MONO_UNDER_48K;
@@ -32,11 +34,20 @@ capi_err_t capi_splitter_update_and_raise_kpps_event(capi_splitter_t *me_ptr)
       kpps = SPLITTER_KPPS_MONO_48K;
    }
    kpps *= me_ptr->operating_mf.format.num_channels;
+   bw    = me_ptr->operating_mf.format.sampling_rate *
+                    me_ptr->operating_mf.format.num_channels *
+                     (me_ptr->operating_mf.format.bits_per_sample >> 3);
+					       // derived the equation from mux_demux module
+   
+   me_ptr->events_config.splitter_bw = bw;
+   capi_result = capi_cmn_update_bandwidth_event(&me_ptr->cb_info, 0, me_ptr->events_config.splitter_bw);
+  
    if (kpps != me_ptr->events_config.splitter_kpps)
    {
       me_ptr->events_config.splitter_kpps = kpps;
-      capi_result = capi_cmn_update_kpps_event(&me_ptr->cb_info, me_ptr->events_config.splitter_kpps);
+      capi_result |= capi_cmn_update_kpps_event(&me_ptr->cb_info, me_ptr->events_config.splitter_kpps);
    }
+
    return capi_result;
 }
 

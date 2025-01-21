@@ -44,6 +44,7 @@ extern "C" {
 typedef struct capi_splitter_events_config
 {
    uint32_t        splitter_kpps;
+   uint32_t        splitter_bw;
 } capi_splitter_events_config_t;
 
 typedef struct capi_splitter_out_port_flags_t
@@ -121,7 +122,7 @@ typedef struct capi_splitter
  * -----------------------------------------------------------------------*/
 /* Utility functions not a part of the function table  (vtbl) */
 /*Calculates and stores the current KPPS requirement of the SPLITTER module*/
-capi_err_t capi_splitter_update_and_raise_kpps_event(capi_splitter_t *me_ptr);
+capi_err_t capi_splitter_update_and_raise_kpps_bw_event(capi_splitter_t *me_ptr);
 
 /*Checks if the Port MD cfg is received and gets the whitelist information including the ptr and the number of MD*/
 bool_t capi_splitter_check_if_port_cache_cfg_rcvd_get_wl_info(capi_splitter_t *me_ptr,

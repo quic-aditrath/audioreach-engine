@@ -742,7 +742,7 @@ capi_err_t capi_splitter_set_properties(capi_t *_pif, capi_proplist_t *props_ptr
                }
                capi_result |= capi_cmn_output_media_fmt_event_v2(&me_ptr->cb_info, &me_ptr->operating_mf, FALSE, i);
             }
-            capi_result |= capi_splitter_update_and_raise_kpps_event(me_ptr);
+            capi_result |= capi_splitter_update_and_raise_kpps_bw_event(me_ptr);
 #ifdef SPLITTER_DBG_LOW
             AR_MSG(DBG_HIGH_PRIO,
                    "capi_splitter: Input Media format set prop: bits per sample: %lu bytes, num in/out channels %lu",
