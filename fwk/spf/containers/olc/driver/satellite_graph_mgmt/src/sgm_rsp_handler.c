@@ -238,6 +238,7 @@ static ar_result_t spgm_cmd_rsp_handler(cu_base_t *cu_ptr, spgm_info_t *spgm_ptr
 
    CATCH(result, OLC_MSG_PREFIX, log_id)
    {
+	   __gpr_cmd_free(packet_ptr); // free packet
    }
 
    // Destroy the command handle for the specified token

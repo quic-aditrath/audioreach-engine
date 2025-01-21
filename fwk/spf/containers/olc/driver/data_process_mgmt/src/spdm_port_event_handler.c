@@ -41,7 +41,7 @@ ar_result_t spgm_handle_event_opfs(spgm_info_t *spgm_ptr, gpr_packet_t *packet_p
       TRY(result,
           sgm_get_data_port_index_given_rw_ep_miid(spgm_ptr, IPC_READ_DATA, opfs_event_ptr->ep_miid, &port_index));
 
-      OLC_SDM_MSG(OLC_SDM_ID, DBG_HIGH_PRIO, "OPFS event, outout buffer size %lu ", opfs_event_ptr->buf_size_in_bytes);
+      OLC_SDM_MSG(OLC_SDM_ID, DBG_HIGH_PRIO, "OPFS event, output buffer size %lu ", opfs_event_ptr->buf_size_in_bytes);
 
       read_data_port_obj_t *rd_port_obj_ptr = spgm_ptr->process_info.rdp_obj_ptr[port_index];
       VERIFY(result, (NULL != rd_port_obj_ptr));
@@ -58,6 +58,8 @@ ar_result_t spgm_handle_event_opfs(spgm_info_t *spgm_ptr, gpr_packet_t *packet_p
    {
       TRY(result,
           sgm_get_data_port_index_given_rw_ep_miid(spgm_ptr, IPC_WRITE_DATA, opfs_event_ptr->ep_miid, &port_index));
+
+      OLC_SDM_MSG(OLC_SDM_ID, DBG_HIGH_PRIO, "OPFS event, input buffer size %lu ", opfs_event_ptr->buf_size_in_bytes);
 
       write_data_port_obj_t *wr_port_obj_ptr = spgm_ptr->process_info.wdp_obj_ptr[port_index];
       VERIFY(result, (NULL != wr_port_obj_ptr));
