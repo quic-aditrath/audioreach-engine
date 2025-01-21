@@ -620,7 +620,10 @@ static ar_result_t spl_cntr_handle_rest_of_graph_open(cu_base_t *base_ptr, void 
       gu_sg_t                *sg_ptr          = ext_in_port_ptr->gu.sg_ptr;
 
       ext_in_port_ptr->is_realtime_usecase = FALSE;
-      if ((APM_CONT_GRAPH_POS_STREAM != me_ptr->cu.position) && (APM_SUB_GRAPH_DIRECTION_TX == sg_ptr->direction))
+
+      //marking real time for voice containers so that all buffers from the queue can be pulled before going through process.
+      //when upstream is smaller frame size compared to the downstream then container may have to wait for multiple upstream buffers.
+      if (((APM_CONT_GRAPH_POS_STREAM != me_ptr->cu.position) && (APM_SUB_GRAPH_DIRECTION_TX == sg_ptr->direction)) || cu_has_voice_sid(&me_ptr->cu))
       {
          ext_in_port_ptr->is_realtime_usecase        = TRUE;
          me_ptr->topo.t_base.flags.is_real_time_topo = TRUE;
@@ -641,7 +644,10 @@ static ar_result_t spl_cntr_handle_rest_of_graph_open(cu_base_t *base_ptr, void 
       gu_sg_t                 *sg_ptr           = ext_out_port_ptr->gu.sg_ptr;
 
       ext_out_port_ptr->is_realtime_usecase = FALSE;
-      if ((APM_CONT_GRAPH_POS_STREAM != me_ptr->cu.position) && (APM_SUB_GRAPH_DIRECTION_TX == sg_ptr->direction))
+
+      //marking real time for voice containers so that all buffers from the queue can be pulled before going through process.
+      //when upstream is smaller frame size compared to the downstream then container may have to wait for multiple upstream buffers.
+      if (((APM_CONT_GRAPH_POS_STREAM != me_ptr->cu.position) && (APM_SUB_GRAPH_DIRECTION_TX == sg_ptr->direction)) || cu_has_voice_sid(&me_ptr->cu))
       {
          ext_out_port_ptr->is_realtime_usecase       = TRUE;
          me_ptr->topo.t_base.flags.is_real_time_topo = TRUE;

@@ -1930,7 +1930,18 @@ ar_result_t spl_cntr_check_and_process_audio(spl_cntr_t *me_ptr, uint32_t gpd_ch
     */
    gpd_check_mask |= me_ptr->gpd_optional_mask;
 
-   // if we broke the processing loop earlier then we have to check all the gpd bits.
+
+   /* If trigger policy is enabled then topo-process will be called if any trigger is satisfied.
+    * So before calling topo-process, we should give chance to other ports to buffer sufficient data as well if it is
+    * already available but not get triggered just because it has a lower bit-mask in GPD.
+    */
+   if (me_ptr->topo.t_base.num_data_tpm)
+   {
+      gpd_check_mask |= me_ptr->gpd_mask;
+   }
+
+
+   //if we broke the processing loop earlier then we have to check all the gpd bits.
    if (me_ptr->topo.t_base.flags.process_pending)
    {
       gpd_check_mask                            = 0xFFFFFFFF;
