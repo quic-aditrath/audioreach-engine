@@ -58,6 +58,8 @@ void olc_handle_failure_at_graph_open(olc_t *                   me_ptr,
    }
 
    spf_msg_ack_msg(&me_ptr->cu.cmd_msg, result);
+
+   me_ptr->cu.curr_chan_mask |= (OLC_CMD_BIT_MASK);
 }
 
 /**
@@ -93,6 +95,8 @@ static ar_result_t olc_handle_rest_of_graph_open(cu_base_t *base_ptr, void *ctx_
    }
 
    posal_memory_free(me_ptr->olc_core_graph_open_cmd_ptr);
+
+   me_ptr->cu.curr_chan_mask |= (OLC_CMD_BIT_MASK);
 
    OLC_MSG(me_ptr->topo.gu.log_id,
            DBG_HIGH_PRIO,
@@ -145,6 +149,7 @@ ar_result_t olc_graph_set_get_packed_cfg_rsp_h(cu_base_t *base_ptr, spgm_cmd_rsp
    {
    }
 
+   me_ptr->cu.curr_chan_mask |= (OLC_CMD_BIT_MASK);
    if (!((get_cfg_resp_pkt_ptr) && (APM_CMD_RSP_GET_CFG == get_cfg_resp_pkt_ptr->opcode) && (AR_EOK == result)))
    {
       __gpr_cmd_end_command(packet_ptr, (result));
@@ -234,6 +239,7 @@ ar_result_t olc_graph_set_get_cfg_rsp_h(cu_base_t *base_ptr, spgm_cmd_rsp_node_t
    {
       result                     = spf_msg_ack_msg(rsp_info->cmd_msg, cmd_extn_ptr->accu_result);
       cmd_extn_ptr->cmd_ack_done = TRUE;
+      me_ptr->cu.curr_chan_mask |= (OLC_CMD_BIT_MASK);
    }
 
    if ((cmd_extn_ptr) && (0 == cmd_extn_ptr->pending_resp_counter))
@@ -253,6 +259,7 @@ ar_result_t olc_graph_set_get_cfg_rsp_h(cu_base_t *base_ptr, spgm_cmd_rsp_node_t
       {
          result                     = spf_msg_ack_msg(rsp_info->cmd_msg, cmd_extn_ptr->accu_result);
          cmd_extn_ptr->cmd_ack_done = TRUE;
+         me_ptr->cu.curr_chan_mask |= (OLC_CMD_BIT_MASK);
       }
       posal_memory_free(cmd_extn_ptr);
    }
@@ -376,8 +383,7 @@ ar_result_t olc_graph_prepare_rsp_h(cu_base_t *base_ptr, spgm_cmd_rsp_node_t *rs
 
    result = rsp_info->rsp_result;
 
-   // OLC_CA
-
+   me_ptr->cu.curr_chan_mask |= (OLC_CMD_BIT_MASK);
    OLC_MSG(me_ptr->topo.gu.log_id,
            DBG_HIGH_PRIO,
            "CMD:Prepare Graph:Done executing prepare graph. "
@@ -421,6 +427,9 @@ ar_result_t olc_graph_start_rsp_h(cu_base_t *base_ptr, spgm_cmd_rsp_node_t *rsp_
    {
    }
 
+
+   me_ptr->cu.curr_chan_mask |= (OLC_CMD_BIT_MASK);
+
    OLC_MSG(log_id,
            DBG_HIGH_PRIO,
            "CMD:START:Done executing start command. "
@@ -438,7 +447,7 @@ ar_result_t olc_graph_set_persistent_cfg_rsp_h(cu_base_t *base_ptr, spgm_cmd_rsp
    gpr_packet_t *packet_ptr = (gpr_packet_t *)rsp_info_ptr->cmd_msg->payload_ptr;
 
    result = rsp_info_ptr->rsp_result;
-
+   me_ptr->cu.curr_chan_mask |= (OLC_CMD_BIT_MASK);
    OLC_MSG(me_ptr->topo.gu.log_id,
            DBG_HIGH_PRIO,
            "CMD:REGISTER/SHARED_REGISTER_CFG:Done executing persistent set cfg command. "
@@ -455,7 +464,7 @@ ar_result_t olc_graph_set_persistent_packed_rsp_h(cu_base_t *base_ptr, spgm_cmd_
    olc_t *     me_ptr = (olc_t *)base_ptr;
 
    result = rsp_info_ptr->rsp_result;
-
+   me_ptr->cu.curr_chan_mask |= (OLC_CMD_BIT_MASK);
    OLC_MSG(me_ptr->topo.gu.log_id,
            DBG_HIGH_PRIO,
            "CMD:REGISTER/SHARED_REGISTER_CFG:Done executing persistent set cfg command. "
@@ -473,7 +482,7 @@ ar_result_t olc_graph_event_reg_rsp_h(cu_base_t *base_ptr, spgm_cmd_rsp_node_t *
    gpr_packet_t *packet_ptr = (gpr_packet_t *)rsp_info_ptr->cmd_msg->payload_ptr;
 
    result = rsp_info_ptr->rsp_result;
-
+   me_ptr->cu.curr_chan_mask |= (OLC_CMD_BIT_MASK);
    OLC_MSG(me_ptr->topo.gu.log_id,
            DBG_HIGH_PRIO,
            "CMD:APM_CMD_REGISTER_MODULE_EVENTS:Done "
@@ -503,8 +512,7 @@ ar_result_t olc_graph_suspend_rsp_h(cu_base_t *base_ptr, spgm_cmd_rsp_node_t *rs
       CU_SET_ONE_FWK_EVENT_FLAG(&me_ptr->cu, cntr_run_state_change);
    }
 
-   // OLC_CA
-
+   me_ptr->cu.curr_chan_mask |= (OLC_CMD_BIT_MASK);
    OLC_MSG(log_id,
            DBG_HIGH_PRIO,
            "CMD:SUSPEND:Done Executing suspend command. "
@@ -537,8 +545,7 @@ ar_result_t olc_graph_stop_rsp_h(cu_base_t *base_ptr, spgm_cmd_rsp_node_t *rsp_i
       CU_SET_ONE_FWK_EVENT_FLAG(&me_ptr->cu, cntr_run_state_change);
    }
 
-   // OLC_CA
-
+   me_ptr->cu.curr_chan_mask |= (OLC_CMD_BIT_MASK);
    OLC_MSG(log_id,
            DBG_HIGH_PRIO,
            "CMD:STOP:Done Executing stop command. "
@@ -559,7 +566,7 @@ ar_result_t olc_graph_flush_rsp_h(cu_base_t *base_ptr, spgm_cmd_rsp_node_t *rsp_
 
    result = rsp_info->rsp_result;
    olc_post_operate_flush(base_ptr, rsp_info->cmd_msg);
-
+   me_ptr->cu.curr_chan_mask |= (OLC_CMD_BIT_MASK);
    OLC_MSG(me_ptr->topo.gu.log_id,
            DBG_HIGH_PRIO,
            "CMD:FLUSH:Done Executing flush command. current channel mask=0x%x. result=0x%lx.",
@@ -619,6 +626,8 @@ ar_result_t olc_graph_close_rsp_h(cu_base_t *base_ptr, spgm_cmd_rsp_node_t *rsp_
       sgm_deregister_satellite_module_with_gpr(&me_ptr->spgm_info, sub_graph_id);
       sgm_deregister_olc_module_with_gpr(&me_ptr->spgm_info, sub_graph_id);
    }
+
+   me_ptr->cu.curr_chan_mask |= (OLC_CMD_BIT_MASK);
    // check if any subgraph is pending, if not, destroy this container
    if (!me_ptr->cu.gu_ptr->num_subgraphs)
    {

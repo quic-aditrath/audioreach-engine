@@ -946,6 +946,7 @@ ar_result_t olc_gpr_cmd(cu_base_t *base_ptr)
    {
       result = sgm_cache_cmd_msg(&me_ptr->spgm_info, packet_ptr->opcode, &me_ptr->cu.cmd_msg);
       memset(&me_ptr->cu.cmd_msg, 0, sizeof(spf_msg_t));
+      me_ptr->cu.curr_chan_mask &= (~OLC_CMD_BIT_MASK);
    }
 
    CATCH(result, OLC_MSG_PREFIX, me_ptr->topo.gu.log_id)
@@ -1211,6 +1212,7 @@ ar_result_t olc_graph_open(cu_base_t *base_ptr)
    {
       result = sgm_cache_cmd_msg(&me_ptr->spgm_info, APM_CMD_GRAPH_OPEN, &me_ptr->cu.cmd_msg);
       memset(&me_ptr->cu.cmd_msg, 0, sizeof(spf_msg_t));
+      me_ptr->cu.curr_chan_mask &= (~OLC_CMD_BIT_MASK);
    }
 
 #ifdef OLC_VERBOSE_DEBUGGING
@@ -1305,6 +1307,7 @@ ar_result_t olc_graph_prepare(cu_base_t *base_ptr)
    {
       result = sgm_cache_cmd_msg(&me_ptr->spgm_info, APM_CMD_GRAPH_PREPARE, &me_ptr->cu.cmd_msg);
       memset(&me_ptr->cu.cmd_msg, 0, sizeof(spf_msg_t));
+      me_ptr->cu.curr_chan_mask &= (~OLC_CMD_BIT_MASK);
    }
 
    OLC_MSG(log_id,
@@ -1367,6 +1370,7 @@ ar_result_t olc_graph_start(cu_base_t *base_ptr)
    {
       result = sgm_cache_cmd_msg(&me_ptr->spgm_info, APM_CMD_GRAPH_START, &me_ptr->cu.cmd_msg);
       memset(&me_ptr->cu.cmd_msg, 0, sizeof(spf_msg_t));
+      me_ptr->cu.curr_chan_mask &= (~OLC_CMD_BIT_MASK);
    }
 
    OLC_MSG(log_id,
@@ -1432,6 +1436,7 @@ ar_result_t olc_graph_suspend(cu_base_t *base_ptr)
    {
       result = sgm_cache_cmd_msg(&me_ptr->spgm_info, APM_CMD_GRAPH_SUSPEND, &me_ptr->cu.cmd_msg);
       memset(&me_ptr->cu.cmd_msg, 0, sizeof(spf_msg_t));
+      me_ptr->cu.curr_chan_mask &= (~OLC_CMD_BIT_MASK);
    }
 
    OLC_MSG(log_id,
@@ -1496,6 +1501,7 @@ ar_result_t olc_graph_stop(cu_base_t *base_ptr)
    {
       result = sgm_cache_cmd_msg(&me_ptr->spgm_info, APM_CMD_GRAPH_STOP, &me_ptr->cu.cmd_msg);
       memset(&me_ptr->cu.cmd_msg, 0, sizeof(spf_msg_t));
+      me_ptr->cu.curr_chan_mask &= (~OLC_CMD_BIT_MASK);
    }
 
    OLC_MSG(log_id,
@@ -1561,6 +1567,7 @@ ar_result_t olc_graph_flush(cu_base_t *base_ptr)
    {
       result = sgm_cache_cmd_msg(&me_ptr->spgm_info, APM_CMD_GRAPH_FLUSH, &me_ptr->cu.cmd_msg);
       memset(&me_ptr->cu.cmd_msg, 0, sizeof(spf_msg_t));
+      me_ptr->cu.curr_chan_mask &= (~OLC_CMD_BIT_MASK);
    }
 
    OLC_MSG(log_id,
@@ -1634,6 +1641,7 @@ ar_result_t olc_graph_close(cu_base_t *base_ptr)
    {
       result = sgm_cache_cmd_msg(&me_ptr->spgm_info, APM_CMD_GRAPH_CLOSE, &me_ptr->cu.cmd_msg);
       memset(&me_ptr->cu.cmd_msg, 0, sizeof(spf_msg_t));
+      me_ptr->cu.curr_chan_mask &= (~OLC_CMD_BIT_MASK);
    }
 
    OLC_MSG(log_id,

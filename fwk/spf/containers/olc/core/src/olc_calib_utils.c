@@ -321,6 +321,7 @@ ar_result_t olc_path_delay_cfg(cu_base_t *                       base_ptr,
    {
       result = sgm_cache_cmd_msg(&me_ptr->spgm_info, APM_CMD_GET_CFG, &me_ptr->cu.cmd_msg);
       cmd_extn_ptr->pending_resp_counter++;
+      me_ptr->cu.curr_chan_mask &= (~OLC_CMD_BIT_MASK);
    }
 
    // clang-format off
@@ -817,6 +818,7 @@ ar_result_t olc_process_satellite_set_get_cfg(cu_base_t *                       
    {
       result = sgm_cache_cmd_msg(&me_ptr->spgm_info, opcode, &me_ptr->cu.cmd_msg);
       cmd_extn_ptr->pending_resp_counter++;
+      me_ptr->cu.curr_chan_mask &= (~OLC_CMD_BIT_MASK);
    }
 
    OLC_MSG(me_ptr->topo.gu.log_id,

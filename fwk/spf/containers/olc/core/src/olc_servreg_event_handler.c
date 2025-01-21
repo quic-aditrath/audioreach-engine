@@ -133,6 +133,7 @@ ar_result_t olc_graph_open_error_rsp_h(cu_base_t *base_ptr, spgm_cmd_rsp_node_t 
    {
    }
 
+   me_ptr->cu.curr_chan_mask |= (OLC_CMD_BIT_MASK);
    OLC_MSG(me_ptr->topo.gu.log_id,
            DBG_HIGH_PRIO,
            "CMD:GRAPH_OPEN: Done executing graph open command. current channel mask=0x%x. result=0x%lx.",
