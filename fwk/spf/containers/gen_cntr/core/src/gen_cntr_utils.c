@@ -17,8 +17,11 @@
 #include "fef_cntr_i.h"
 #endif
 
-// TODO: to profile these and tune
+#ifdef PROD_SPECIFIC_MAX_CH
+static const uint32_t GEN_CNTR_PROCESS_STACK_SIZE     = 2048; // additional requirement based on profiling
+#else
 static const uint32_t GEN_CNTR_PROCESS_STACK_SIZE     = 1024;
+#endif
 static const uint32_t GEN_CNTR_PROCESS_STACK_SIZE_LPI = 1024;
 static const uint32_t GEN_CNTR_BASE_STACK_SIZE        = 1024;
 static const uint32_t GEN_CNTR_BASE_STACK_SIZE_LPI    = 1024;

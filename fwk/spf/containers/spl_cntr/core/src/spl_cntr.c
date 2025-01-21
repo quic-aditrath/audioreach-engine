@@ -27,8 +27,12 @@ Declarations
 
 // Maximum number of commands expected ever in command queue.
 static const uint32_t SPL_CNTR_MAX_CMD_Q_ELEMENTS = 128;
-static const uint32_t SPL_CNTR_PROCESS_STACK_SIZE = 2048;
 static const uint32_t SPL_CNTR_BASE_STACK_SIZE    = 2048;
+#ifdef PROD_SPECIFIC_MAX_CH
+static const uint32_t SPL_CNTR_PROCESS_STACK_SIZE = 3072;// additional requirement based on profiling
+#else
+static const uint32_t SPL_CNTR_PROCESS_STACK_SIZE = 2048;
+#endif
 
 /* =======================================================================
 CU Virtual Table Function Implementations

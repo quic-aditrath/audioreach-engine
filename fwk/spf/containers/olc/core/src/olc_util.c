@@ -17,7 +17,11 @@
 ========================================================================== */
 /* Minimum stack Size required by the OLC container*/
 // TODO: to profile these and tune
+#ifdef PROD_SPECIFIC_MAX_CH
+static const uint32_t OLC_PROCESS_STACK_SIZE = 3072;// additional requirement based on profiling
+#else
 static const uint32_t OLC_PROCESS_STACK_SIZE = 2048;
+#endif
 static const uint32_t OLC_BASE_STACK_SIZE    = 4096;
 
 /* =======================================================================
