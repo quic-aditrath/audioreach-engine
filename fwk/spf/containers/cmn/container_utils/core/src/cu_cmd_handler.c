@@ -1290,6 +1290,14 @@ ar_result_t cu_handle_prepare(cu_base_t *base_ptr, spf_msg_cmd_graph_mgmt_t *cmd
     */
    TRY(result, base_ptr->topo_vtbl_ptr->propagate_media_fmt(base_ptr->topo_ptr, FALSE /* is_data_path*/));
 
+   // this also takes care of icb
+   base_ptr->cntr_vtbl_ptr->port_data_thresh_change(base_ptr);
+
+   //handle_frame_len_change ensures that the ICB info is sent to upstream.
+   //if frame-len is evaluated during threshold propagation then it will be sent inside "port_data_thresh_change"
+   //if frame-len is not evaluated due to the absence of media format then need to send RT/voice-SId ICB info here.
+   cu_handle_frame_len_change(base_ptr, &base_ptr->cntr_frame_len, base_ptr->period_us);
+
    for (gu_ext_out_port_list_t *ext_out_port_list_ptr = base_ptr->gu_ptr->ext_out_port_list_ptr;
         (NULL != ext_out_port_list_ptr);
         LIST_ADVANCE(ext_out_port_list_ptr))
@@ -1313,14 +1321,6 @@ ar_result_t cu_handle_prepare(cu_base_t *base_ptr, spf_msg_cmd_graph_mgmt_t *cmd
          base_ptr->cntr_vtbl_ptr->ext_out_port_apply_pending_media_fmt((void *)base_ptr, ext_out_port_ptr);
       }
    }
-
-   // this also takes care of icb
-   base_ptr->cntr_vtbl_ptr->port_data_thresh_change(base_ptr);
-
-   //handle_frame_len_change ensures that the ICB info is sent to upstream.
-   //if frame-len is evaluated during threshold propagation then it will be sent inside "port_data_thresh_change"
-   //if frame-len is not evaluated due to the absence of media format then need to send RT/voice-SId ICB info here.
-   cu_handle_frame_len_change(base_ptr, &base_ptr->cntr_frame_len, base_ptr->period_us);
 
    base_ptr->cntr_vtbl_ptr->update_path_delay(base_ptr, CU_PATH_ID_ALL_PATHS);
 

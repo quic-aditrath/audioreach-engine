@@ -72,6 +72,14 @@ ar_result_t gen_cntr_ext_out_port_apply_pending_media_fmt(void *ctx_ptr, gu_ext_
    gen_cntr_get_output_port_media_format_from_topo(gen_cntr_ext_out_port_ptr,
                                                    TRUE /* update_med_fmt_to_unchanged*/ );
 
+   //recreate output buffer if media format is changed. This is needed here as this function
+   //may get called after already allocating buffers with previously set media format.
+   //For compressed out, prebuffers shouldn't get created.
+   if (gen_cntr_ext_out_port_ptr->flags.out_media_fmt_changed)
+   {
+      gen_cntr_ext_out_port_recreate_bufs((void *)&me_ptr->cu, ext_out_port_ptr);
+   }
+
    if ((gen_cntr_ext_out_port_ptr->vtbl_ptr->prop_media_fmt) &&
        (gen_cntr_ext_out_port_ptr->cu.media_fmt.data_format != SPF_UNKNOWN_DATA_FORMAT))
    {
