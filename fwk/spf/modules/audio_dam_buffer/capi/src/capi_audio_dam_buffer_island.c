@@ -19,13 +19,13 @@ capi_vtbl_t *capi_audio_dam_buffer_get_vtable()
    return &vtbl;
 }
 
-static capi_err_t capi_dam_insert_flushing_eos_at_out_port(capi_audio_dam_t *  me_ptr,
+static capi_err_t capi_dam_insert_flushing_eos_at_out_port(capi_audio_dam_t   *me_ptr,
                                                            capi_stream_data_t *output,
                                                            bool_t              skip_voting_on_eos);
 
 capi_err_t get_output_arr_index_from_ctrl_port_id(capi_audio_dam_t *me_ptr,
                                                   uint32_t          ctrl_port_id,
-                                                  uint32_t *        num_out_ports_ptr,
+                                                  uint32_t         *num_out_ports_ptr,
                                                   uint32_t          out_port_arr_idxs[])
 {
    bool_t mapping_found = false;
@@ -96,10 +96,10 @@ uint32_t capi_dam_get_ctrl_port_arr_idx_from_ctrl_port_id(capi_audio_dam_t *me_p
   parameters. In the event of a failure, the appropriate error code is
   returned.
  * -----------------------------------------------------------------------*/
-capi_err_t capi_audio_dam_buffer_set_param(capi_t *                capi_ptr,
+capi_err_t capi_audio_dam_buffer_set_param(capi_t                 *capi_ptr,
                                            uint32_t                param_id,
                                            const capi_port_info_t *port_info_ptr,
-                                           capi_buf_t *            params_ptr)
+                                           capi_buf_t             *params_ptr)
 {
    capi_err_t        result = CAPI_EOK;
    capi_audio_dam_t *me_ptr = (capi_audio_dam_t *)((capi_ptr));
@@ -137,7 +137,7 @@ capi_err_t capi_audio_dam_buffer_set_param(capi_t *                capi_ptr,
    return capi_audio_dam_buffer_set_param_non_island(capi_ptr, param_id, port_info_ptr, params_ptr);
 }
 
-static capi_err_t capi_audio_dam_handle_and_drop_metadata(capi_audio_dam_t *  me_ptr,
+static capi_err_t capi_audio_dam_handle_and_drop_metadata(capi_audio_dam_t   *me_ptr,
                                                           capi_stream_data_t *input,
                                                           uint32_t            ip_port_index)
 {
@@ -361,6 +361,10 @@ capi_err_t capi_audio_dam_buffer_process(capi_t *capi_ptr, capi_stream_data_t *i
                                  me_ptr->out_port_info_arr[arr_idx].port_id);
                }
             }
+            if (me_ptr->out_port_info_arr[arr_idx].strm_reader_ptr->is_batch_streaming)
+            {
+               capi_audio_dam_buffer_update_kpps_vote(me_ptr);
+            }
 #ifdef DEBUG_AUDIO_DAM_BUFFER_MODULE
             uint32_t temp_unread_bytes = 0;
             audio_dam_get_stream_reader_unread_bytes(me_ptr->out_port_info_arr[arr_idx].strm_reader_ptr,
@@ -544,28 +548,54 @@ capi_err_t capi_check_and_close_the_gate(capi_audio_dam_t *me_ptr, uint32_t op_a
 // function to update the kpps votes.
 void capi_audio_dam_buffer_update_kpps_vote(capi_audio_dam_t *me_ptr)
 {
-   uint32_t kpps_vote = CAPI_AUDIO_DAM_LOW_KPPS;
+   uint32_t agg_kpps_vote = CAPI_AUDIO_DAM_LOW_KPPS;
    for (int i = 0; i < me_ptr->max_output_ports; i++)
    {
+      uint32_t kpps_vote = CAPI_AUDIO_DAM_LOW_KPPS;
+
       /** When gate is opened, bump up the clock by voting for higher KPPS
           This is because, FTRT data of about 1.4s needs to be drained in less than 10 ms.
          If we assume MPPS of 2 for draining, we would need to actually vote (1400*2/10) = 280 MPPS.
          Just voting 500 MPPS to be safe. Vote is removed once FTRT data is fully drained or at algorithmic_reset.*/
       if (me_ptr->out_port_info_arr[i].is_open && me_ptr->out_port_info_arr[i].is_started &&
-          me_ptr->out_port_info_arr[i].is_gate_opened && me_ptr->out_port_info_arr[i].ftrt_unread_data_len_in_us)
+          me_ptr->out_port_info_arr[i].is_gate_opened)
       {
-         kpps_vote = CAPI_AUDIO_DAM_HIGH_KPPS;
+         if (me_ptr->out_port_info_arr[i].strm_reader_ptr->is_batch_streaming)
+         {
+            // sometimes 40ms batching will be done at the DMA layer itself
+            // therefore DAM will not have FTRT data.
+            const uint32_t LOW_COMP_BATCH_PERIOD = 40000;
+            if (me_ptr->out_port_info_arr[i].strm_reader_ptr->data_batching_us <=
+                   LOW_COMP_BATCH_PERIOD ||                                             // sort of real time streaming
+                0 == me_ptr->out_port_info_arr[i].strm_reader_ptr->pending_batch_bytes) // going into buffering mode
+            {
+               kpps_vote = CAPI_AUDIO_DAM_LOW_KPPS;
+            }
+            else
+            { // in ftrt drain mode
+               kpps_vote = CAPI_AUDIO_DAM_HIGH_KPPS;
+            }
+         }
+         else if (me_ptr->out_port_info_arr[i].ftrt_unread_data_len_in_us)
+         { // in ftrt drain mode
+            kpps_vote = CAPI_AUDIO_DAM_HIGH_KPPS;
+         }
       }
+
+      agg_kpps_vote = MAX(agg_kpps_vote, kpps_vote);
    }
 
-   if (me_ptr->kpps_vote != kpps_vote)
+   if (me_ptr->kpps_vote != agg_kpps_vote)
    {
-      capi_cmn_update_kpps_event(&me_ptr->event_cb_info, kpps_vote);
-      me_ptr->kpps_vote = kpps_vote;
+      DAM_MSG_ISLAND(me_ptr->miid, DBG_LOW_PRIO, "capi_audio_dam: updating kpps %lu", agg_kpps_vote);
+      capi_cmn_update_kpps_event(&me_ptr->event_cb_info, agg_kpps_vote);
+      me_ptr->kpps_vote = agg_kpps_vote;
    }
 }
 
-static capi_err_t capi_dam_insert_flushing_eos_at_out_port(capi_audio_dam_t *me_ptr, capi_stream_data_t *output, bool_t skip_voting_on_eos)
+static capi_err_t capi_dam_insert_flushing_eos_at_out_port(capi_audio_dam_t   *me_ptr,
+                                                           capi_stream_data_t *output,
+                                                           bool_t              skip_voting_on_eos)
 {
    capi_err_t             capi_result    = CAPI_EOK;
    capi_stream_data_v2_t *out_stream_ptr = (capi_stream_data_v2_t *)output;
@@ -576,8 +606,8 @@ static capi_err_t capi_dam_insert_flushing_eos_at_out_port(capi_audio_dam_t *me_
       return CAPI_EFAILED;
    }
    module_cmn_md_list_t **md_list_pptr = &out_stream_ptr->metadata_list_ptr;
-   module_cmn_md_t *      new_md_ptr   = NULL;
-   module_cmn_md_eos_t *  eos_md_ptr   = NULL;
+   module_cmn_md_t       *new_md_ptr   = NULL;
+   module_cmn_md_eos_t   *eos_md_ptr   = NULL;
    capi_heap_id_t         heap;
    heap.heap_id = (uint32_t)me_ptr->heap_id;
 
