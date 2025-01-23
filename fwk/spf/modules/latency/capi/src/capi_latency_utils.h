@@ -43,10 +43,12 @@ static const uint32_t LATENCY_KPPS_32    = 5000;
 #if !((defined __hexagon__) || (defined __qdsp6__))
 static const uint32_t CAPI_LATENCY_MAX_DELAY_US = 5000000;
 #else
-static const uint32_t CAPI_LATENCY_MAX_DELAY_US = 100000;
+static const uint32_t CAPI_LATENCY_MAX_DELAY_US = 500000;
 #endif
 
 #define PCM_CHANNEL_NULL 0
+
+#define CAPI_LATENCY_DBG_MSG 1
 
 #define CAPI_LATENCY_ALIGN_4_BYTE(x) (((x) + 3) & (0xFFFFFFFC))
 
@@ -84,6 +86,19 @@ typedef struct capi_latency_cache_delay_t
 
 } capi_latency_cache_delay_t;
 
+typedef struct capi_latency_cache_delay_v2_t
+{
+   param_id_latency_cfg_v2_t *cache_delay_per_config_v2_ptr; 
+   uint32_t                  cache_delay_per_config_v2_size;
+} capi_latency_cache_delay_v2_t;
+
+typedef enum capi_latency_config_version_t
+{
+   DEFAULT    = 0,
+   VERSION_V1 = 1,
+   VERSION_V2 = 2
+} capi_latency_config_version_t;
+
 typedef struct capi_latency_events_config_t
 {
    uint32_t enable;
@@ -109,15 +124,19 @@ typedef struct capi_latency_module_config_t
 
 typedef struct capi_latency_t
 {
-   capi_t                       vtbl;
-   capi_event_callback_info_t   cb_info;
-   capi_heap_id_t               heap_mem;
-   capi_media_fmt_v2_t          media_fmt;
-   capi_latency_events_config_t events_config;
-   capi_latency_module_config_t lib_config;
-   capi_latency_cache_delay_t   cache_delay;
-   bool_t                       is_media_fmt_received;
-   uint32_t                     cfg_mode;
+   capi_t                        vtbl;
+   capi_event_callback_info_t    cb_info;
+   capi_heap_id_t                heap_mem;
+   capi_media_fmt_v2_t           media_fmt;
+   capi_latency_events_config_t  events_config;
+   capi_latency_module_config_t  lib_config;
+   capi_latency_cache_delay_t    cache_delay;
+   capi_latency_cache_delay_v2_t cache_delay_v2;
+   bool_t                        is_media_fmt_received;
+   uint32_t                      cfg_mode;
+   capi_latency_config_version_t cfg_version;
+   bool                          higher_channel_map_present;
+
 } capi_latency_t;
 
 capi_err_t capi_latency_process_set_properties(capi_latency_t *me_ptr, capi_proplist_t *proplist_ptr);
@@ -151,5 +170,38 @@ void capi_delay_set_delay(capi_latency_t *me_ptr);
 capi_err_t capi_latency_check_channel_map_delay_cfg(delay_param_per_ch_cfg_t *delay_cfg_ptr, uint32_t num_config);
 
 uint32_t capi_latency_get_max_delay(capi_latency_t *me_ptr);
+
+capi_err_t capi_latency_set_config_v2(capi_latency_t *me_ptr, uint32_t param_id, uint32_t param_size, int8_t *data_ptr);
+
+capi_err_t capi_latency_validate_multichannel_v2_payload(capi_latency_t *me_ptr,
+                                                     int8_t *    data_ptr,
+                                                     uint32_t    param_id,
+                                                     uint32_t    param_size,
+                                                     uint32_t *  req_payload_size,
+                                                     uint32_t    base_payload_size,
+                                                     uint32_t    per_cfg_base_payload_size);
+
+capi_err_t capi_latency_validate_per_channel_v2_payload(capi_latency_t *me_ptr,
+                                                    uint32_t    num_cfg,
+                                                    int8_t *    data_ptr,
+                                                    uint32_t    param_size,
+                                                    uint32_t *  required_size_ptr,
+                                                    uint32_t    param_id,
+                                                    uint32_t    base_payload_size,
+                                                    uint32_t    per_cfg_base_payload_size);
+
+bool_t capi_latency_check_multi_ch_channel_mask_v2_param(uint32_t miid,
+		                                             uint32_t    num_config,
+                                                     uint32_t    param_id,
+                                                     int8_t *    param_ptr,
+                                                     uint32_t    base_payload_size,
+											         uint32_t    per_cfg_base_payload_size);
+
+void capi_delay_set_delay_v2(capi_latency_t *me_ptr);
+
+capi_err_t capi_latency_get_config_v2(
+        capi_latency_t   *me_ptr,
+        capi_buf_t       *params_ptr);
+
 
 #endif // CAPI_LATENCY_UTILS_H

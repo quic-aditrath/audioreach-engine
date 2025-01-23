@@ -80,10 +80,12 @@ capi_err_t capi_latency_init(capi_t *_pif, capi_proplist_t *init_set_properties)
 
    memset(me_ptr, 0, sizeof(capi_latency_t));
 
-   me_ptr->vtbl.vtbl_ptr                      = &vtbl;
-   me_ptr->cache_delay.num_config             = 0;
-   me_ptr->is_media_fmt_received              = FALSE;
-   me_ptr->cache_delay.cache_delay_per_config = NULL;
+   me_ptr->vtbl.vtbl_ptr                                 = &vtbl;
+   me_ptr->cache_delay.num_config                        = 0;
+   me_ptr->is_media_fmt_received                         = FALSE;
+   me_ptr->cache_delay.cache_delay_per_config            = NULL;
+   me_ptr->cache_delay_v2.cache_delay_per_config_v2_ptr  = NULL;
+   me_ptr->cache_delay_v2.cache_delay_per_config_v2_size = 0;
    capi_cmn_init_media_fmt_v2(&me_ptr->media_fmt);
    capi_latency_init_events(me_ptr);
    capi_latency_init_config(me_ptr);
@@ -199,7 +201,12 @@ static capi_err_t capi_latency_end(capi_t *_pif)
       me_ptr->cache_delay.cache_delay_per_config = NULL;
       me_ptr->cache_delay.num_config             = 0;
    }
-
+   if(NULL != me_ptr->cache_delay_v2.cache_delay_per_config_v2_ptr)
+   {
+	  posal_memory_free(me_ptr->cache_delay_v2.cache_delay_per_config_v2_ptr);
+      me_ptr->cache_delay_v2.cache_delay_per_config_v2_ptr  = NULL;
+      me_ptr->cache_delay_v2.cache_delay_per_config_v2_size = 0;
+   }
    capi_delay_destroy_buffer(me_ptr);
 
    me_ptr->vtbl.vtbl_ptr = NULL;
@@ -226,6 +233,40 @@ static capi_err_t capi_latency_set_param(capi_t *                _pif,
       return CAPI_SET_ERROR(capi_result, CAPI_EBADPARAM);
    }
    capi_latency_t *me_ptr = (capi_latency_t *)(_pif);
+   switch (param_id)
+   {
+      case PARAM_ID_MODULE_ENABLE:
+	     break;
+      case PARAM_ID_LATENCY_CFG:
+      {
+    	 if((VERSION_V2 == me_ptr->cfg_version) || (TRUE == me_ptr->higher_channel_map_present))
+         {
+            AR_MSG(DBG_ERROR_PRIO, "CAPI latency : SetParam 0x%x failed as V2 config is already configured for the module. "
+                   "Cannot perform both V1 and V2 operations simultaneously for the module OR higher than 63 channel map present in IMF (0/1): %lu",
+				   (int)param_id,
+				   me_ptr->higher_channel_map_present);
+            return CAPI_EBADPARAM;
+         }
+         break;
+      }
+      break;
+      case PARAM_ID_LATENCY_CFG_V2:
+      {
+         if(VERSION_V1 == me_ptr->cfg_version)
+         {
+            AR_MSG(DBG_ERROR_PRIO, "CAPI latency : SetParam 0x%x failed as V1 config is already configured for the module. "
+                   "Cannot perform both V1 and V2 operations simultaneously for the module",(int)param_id);
+            return CAPI_EBADPARAM;
+         }
+         break;
+      }
+      default:
+      {
+         AR_MSG(DBG_ERROR_PRIO, "CAPI latency : SetParam, unsupported param ID 0x%x", (int)param_id);
+         return CAPI_EUNSUPPORTED;
+         break;
+      }
+   }
 
    switch (param_id)
    {
@@ -374,7 +415,7 @@ static capi_err_t capi_latency_set_param(capi_t *                _pif,
                me_ptr->cache_delay.cache_delay_per_config[count].delay_in_us = delay_cfg_ptr[count].delay_us;
             }
          }
-
+         me_ptr->cfg_version = VERSION_V1;
          if (me_ptr->is_media_fmt_received == FALSE)
          {
             return capi_result;
@@ -454,6 +495,16 @@ static capi_err_t capi_latency_set_param(capi_t *                _pif,
          }
          break;
       }
+      case PARAM_ID_LATENCY_CFG_V2:
+      {
+         capi_result = capi_latency_set_config_v2(me_ptr, param_id, params_ptr->actual_data_len, params_ptr->data_ptr);
+         if (CAPI_FAILED(capi_result))
+         {
+            AR_MSG(DBG_ERROR_PRIO, "Latency config V2 SetParam 0x%lx failed.", (int)param_id);
+            break;
+         }
+         break;
+      }
       default:
       {
          AR_MSG(DBG_ERROR_PRIO, "CAPI latency Set, unsupported param ID 0x%x", (int)param_id);
@@ -487,6 +538,40 @@ static capi_err_t capi_latency_get_param(capi_t *                _pif,
    }
 
    capi_latency_t *me_ptr = (capi_latency_t *)_pif;
+
+   switch (param_id)
+   {
+      case PARAM_ID_MODULE_ENABLE:
+	     break;
+      case PARAM_ID_LATENCY_CFG:
+      {
+    	 if((VERSION_V2 == me_ptr->cfg_version) || (TRUE == me_ptr->higher_channel_map_present))
+         {
+            AR_MSG(DBG_ERROR_PRIO, "CAPI latency : GetParam 0x%x failed as V2 config is already configured for the module. "
+                   "Cannot perform both V1 and V2 operations simultaneously for the module OR higher than 63 channel map present in IMF (0/1): %lu",
+				   (int)param_id,
+				   me_ptr->higher_channel_map_present);
+            return CAPI_EUNSUPPORTED;
+         }
+         break;
+      }
+      break;
+      case PARAM_ID_LATENCY_CFG_V2:
+      {
+         if(VERSION_V1 == me_ptr->cfg_version)
+         {
+            AR_MSG(DBG_ERROR_PRIO, "CAPI latency : GetParam 0x%x failed as V1 config is already configured for the module. "
+                   "Cannot perform both V1 and V2 operations simultaneously for the module",(int)param_id);
+            return CAPI_EUNSUPPORTED;
+         }
+         break;
+      }
+      default:
+      {
+         AR_MSG(DBG_ERROR_PRIO, "CAPI latency : GetParam, unsupported param ID 0x%x", (int)param_id);
+         return CAPI_EUNSUPPORTED;
+      }
+   }
 
    switch (param_id)
    {
@@ -565,6 +650,12 @@ static capi_err_t capi_latency_get_param(capi_t *                _pif,
             AR_MSG(DBG_ERROR_PRIO, "CAPI Latency Get Delay, Bad param size %lu", params_ptr->max_data_len);
             CAPI_SET_ERROR(capi_result, CAPI_ENEEDMORE);
          }
+         break;
+      }
+
+      case PARAM_ID_LATENCY_CFG_V2:
+      {
+         capi_result = capi_latency_get_config_v2(me_ptr, params_ptr);
          break;
       }
       default:

@@ -18,7 +18,7 @@ static capi_err_t capi_latency_raise_bandwidth_event(capi_latency_t *me_ptr);
 static capi_err_t capi_latency_raise_delay_event(capi_latency_t *me_ptr);
 static capi_err_t capi_latency_raise_process_event(capi_latency_t *me_ptr);
 
-static bool_t latency_is_supported_v2_media_type(const capi_media_fmt_v2_t *format_ptr);
+static bool_t latency_is_supported_v2_media_type(capi_latency_t *me_ptr, const capi_media_fmt_v2_t *format_ptr);
 
 static bool_t capi_delay_is_enabled(capi_latency_t *me_ptr);
 
@@ -31,7 +31,7 @@ static void capi_delay_delayline_set(capi_delay_delayline_t *delayline_ptr,
 
 static void capi_delay_delayline_reset(capi_delay_delayline_t *delayline_ptr);
 
-static bool_t latency_is_supported_v2_media_type(const capi_media_fmt_v2_t *format_ptr)
+static bool_t latency_is_supported_v2_media_type(capi_latency_t *me_ptr, const capi_media_fmt_v2_t *format_ptr)
 {
    if ((CAPI_FIXED_POINT != format_ptr->header.format_header.data_format))
    {
@@ -68,6 +68,23 @@ static bool_t latency_is_supported_v2_media_type(const capi_media_fmt_v2_t *form
              format_ptr->format.data_is_signed);
       return FALSE;
    }
+
+   for (uint32_t chan = 0; chan < format_ptr->format.num_channels; chan++)
+   {
+      if ((PCM_MAX_CHANNEL_MAP_V2 < format_ptr->channel_type[chan]) || (1 > format_ptr->channel_type[chan]))
+      {
+         AR_MSG(DBG_ERROR_PRIO,
+                "Only upto %u channel maps supported. Received channel map %lu.",
+                PCM_MAX_CHANNEL_MAP_V2,
+				format_ptr->channel_type[chan]);
+         return CAPI_EUNSUPPORTED;
+      }
+      if(format_ptr->channel_type[chan] > PCM_MAX_CHANNEL_MAP)
+      {  //If a higher channel map in the media format occurs even once in the execution history,
+    	 //the flag will be set to true from that point onward.
+   	     me_ptr->higher_channel_map_present = TRUE;
+      }
+   }
    return TRUE;
 }
 
@@ -79,6 +96,7 @@ void capi_latency_init_config(capi_latency_t *me_ptr)
    me_ptr->lib_config.enable       = TRUE;
    me_ptr->lib_config.mem_ptr      = NULL;
    me_ptr->lib_config.mchan_config = NULL;
+   me_ptr->cache_delay_v2.cache_delay_per_config_v2_ptr = NULL;
    me_ptr->cfg_mode                = LATENCY_MODE_GLOBAL;
    return;
 }
@@ -366,7 +384,7 @@ capi_err_t capi_latency_process_set_properties(capi_latency_t *me_ptr, capi_prop
 
                capi_media_fmt_v2_t *data_ptr = (capi_media_fmt_v2_t *)(payload_ptr->data_ptr);
 
-               if (!latency_is_supported_v2_media_type(data_ptr))
+               if (!latency_is_supported_v2_media_type(me_ptr, data_ptr))
                {
                   CAPI_SET_ERROR(capi_result, CAPI_EFAILED);
                   break;
@@ -411,9 +429,16 @@ capi_err_t capi_latency_process_set_properties(capi_latency_t *me_ptr, capi_prop
                          0,
                          me_ptr->media_fmt.format.num_channels * sizeof(capi_latency_per_chan_t));
 
-                  if (me_ptr->cache_delay.cache_delay_per_config != NULL)
+                  if((VERSION_V1 == me_ptr->cfg_version) && (FALSE == me_ptr->higher_channel_map_present))
                   {
-                     capi_delay_set_delay(me_ptr);
+                     if (me_ptr->cache_delay.cache_delay_per_config != NULL)
+                     {
+                        capi_delay_set_delay(me_ptr);
+                     }
+                  }
+                  else if (me_ptr->cache_delay_v2.cache_delay_per_config_v2_ptr != NULL)
+                  {
+                     capi_delay_set_delay_v2(me_ptr);
                   }
 
                   capi_result |= capi_delay_create_buffer(me_ptr, NULL);

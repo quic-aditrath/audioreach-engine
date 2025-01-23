@@ -54,8 +54,8 @@
 *  - Data Format          : PCM DATA Format \n
 *  - fmt_id               : Don't care \n
 *  - Sample Rates         : Any \n
-*  - Number of channels   : 1 to 63 (for certain products this module supports only 32 channels)\n
-*  - Channel type         : 1 to 63 (CAPI_MAX, support upto 128) \n
+*  - Number of channels   : 1 to 128 (for certain products this module supports only 32 channels)\n
+*  - Channel type         : 1 to 128 (CAPI_MAX, support upto 128) \n
 *  - Bits per sample      : 16, 32 \n
 *  - Q format             : 15, 27, 31\n
 *  - Interleaving         : de-interleaved unpacked \n
@@ -103,7 +103,7 @@ struct delay_param_per_ch_cfg_t
     /**< @h2xmle_description  {Delay in microseconds.\n
    -# The amount of delay must be greater than 0.\n  If the value is zero, this module is disabled.\n
    -# The actual resolution of the delay is limited by the period of a single audio sample.\n}
-   @h2xmle_range   {0..100000}
+   @h2xmle_range   {0..500000}
    @h2xmle_default {1000} */
   };
 
@@ -135,7 +135,7 @@ struct param_id_latency_cfg_t
    -#Valid only if cfg_mode is LATENCY_MODE_GLOBAL \n 
    -#The amount of delay must be greater than 0.\n  If the value is zero, this module is disabled.\n
    -#The actual resolution of the delay is limited by the period of a single audio sample.\n}
-   @h2xmle_range   {0..100000}
+   @h2xmle_range   {0..500000}
    @h2xmle_default {0} */
 
    uint32_t num_config;
@@ -154,6 +154,107 @@ struct param_id_latency_cfg_t
 #include "spf_end_pack.h"
 ;
 
+/* Structure for delay parameter in LPCM data paths. */
+
+/** @h2xmlp_subStruct */
+#include "spf_begin_pack.h"
+#include "spf_begin_pragma.h"
+struct delay_param_per_ch_cfg_v2_t
+{
+   uint32_t channel_type_group_mask;
+   /**< @h2xmle_description  {Indicates the mask for channel_type_mask_list array.
+                             Each bit in channel_type_group_mask corresponds to a channel group.
+                             Read as
+                             Bit 0 corresponds to channel group 1, which includes channel map for channels 1-31.
+                             Bit 1 corresponds to channel group 2, which includes channel map for channels 32-63.
+                             Bit 2 corresponds to channel group 3, which includes channel map for channels 64-95.
+                             Bit 3 corresponds to channel group 4, which includes channel map for channels 96-127.
+                             Bit 4 corresponds to channel group 5, which includes channel map for channels 128-159.
+
+                             A set bit (1) in channel_type_group_mask indicates that the channels in that channel group are configured.
+                             }
+    @h2xmle_range            {0..31}
+    @h2xmle_default          {0x00000003} */
+
+
+   uint32_t channel_type_mask_list[0];
+   /**< @h2xmle_description  {An array used to configure the channels for different channel groups. The array size depends on the number of
+                             bits set in channel_type_group_mask.\n
+                             For group 1, each bit of channel_type_mask_list corresponds to channel map from 1 (PCM_CHANNEL_L) to 31 (PCM_CHANNEL_LW).\n
+                             Bit 0 of group 1 channel_type_mask_list is reserved and must always be set to zero.\n
+                             For any other group, each bit of channel_type_mask_list corresponds to channel map from [32(group_no -1) to 32(group_no)-1].\n
+                             Bit position of the channel-map for channel_type_mask_list of defined group is obtained by left shifting (1 (left shift) Channel_map%32
+                             }
+    @h2xmle_variableArraySizeFunction {GET_SET_BITS_COUNT, channel_type_group_mask}
+    @h2xmle_copySrcList      {channel_mask_lsb, channel_mask_msb}
+    @h2xmle_defaultList      {0xfffffffe, 0xffffffff}  */
+
+   uint32_t delay_us;
+    /**< @h2xmle_description  {Delay in microseconds.\n
+   -# The amount of delay must be greater than 0.\n  If the value is zero, this module is disabled.\n
+   -# The actual resolution of the delay is limited by the period of a single audio sample.\n}
+   @h2xmle_range   {0..500000}
+   @h2xmle_copySrc {delay_us}
+   @h2xmle_default {1000} */
+}
+#include "spf_end_pragma.h"
+#include "spf_end_pack.h"
+;
+
+typedef struct delay_param_per_ch_cfg_v2_t delay_param_per_ch_cfg_v2_t;
+
+/* ID of the Delay parameter used by MODULE_ID_LATENCY. */
+#define PARAM_ID_LATENCY_CFG_V2 0x8001A90
+
+/* Structure for delay parameter in LPCM data paths. */
+
+/** @h2xmlp_parameter   {"PARAM_ID_LATENCY_CFG_V2", PARAM_ID_LATENCY_CFG_V2}
+    @h2xmlp_copySrc     {0x08001212}
+    @h2xmlp_description {Delay in microseconds - supports global delay (all channels), or per channel delay.}
+    @h2xmlp_toolPolicy  {Calibration}  */
+
+#include "spf_begin_pack.h"
+#include "spf_begin_pragma.h"
+/* Payload of the PARAM_ID_LATENCY_CFG_V2 parameter used by
+ MODULE_ID_LATENCY.
+ */
+struct param_id_latency_cfg_v2_t
+{
+   uint32_t cfg_mode;
+   /**< @h2xmle_description  {Latency mode.\n
+   -# Denotes the mode - Global (same delay for all channels), or per channel (can be tuned).}
+   @h2xmle_rangeList         {"LATENCY_MODE_GLOBAL" = LATENCY_MODE_GLOBAL,
+                              "LATENCY_MODE_PER_CH" = LATENCY_MODE_PER_CH}
+   @h2xmle_copySrc {cfg_mode}
+   @h2xmle_default {LATENCY_MODE_GLOBAL}   */
+
+   uint32_t global_delay_us;
+   /**< @h2xmle_description  {Global Delay in microseconds.\n
+   -#Valid only if cfg_mode is LATENCY_MODE_GLOBAL \n
+   -#The amount of delay must be greater than 0.\n  If the value is zero, this module is disabled.\n
+   -#The actual resolution of the delay is limited by the period of a single audio sample.\n}
+   @h2xmle_range   {0..500000}
+   @h2xmle_copySrc {cfg_mode}
+   @h2xmle_default {0} */
+
+   uint32_t num_config;
+   /**< @h2xmle_description  {Valid only for LATENCY_MODE_PER_CH_mode \n
+        -#Specifies the different delay configurations per channel.}
+        @h2xmle_range        {0..MODULE_CMN_MAX_CHANNEL}
+        @h2xmle_copySrc      {num_config}
+        @h2xmle_default      {0}                        */
+#ifdef __H2XML__
+   delay_param_per_ch_cfg_v2_t mchan_delay[0];
+   /**< @h2xmle_description {Specifies the different delay configurations.}}
+        @h2xmle_variableArraySize {num_config}
+        @h2xmle_default      {0} */
+#endif
+}
+#include "spf_end_pragma.h"
+#include "spf_end_pack.h"
+;
+typedef struct param_id_latency_cfg_v2_t param_id_latency_cfg_v2_t;
+/**
 /**
   @h2xml_Select         {param_id_module_enable_t}
   @h2xmlm_InsertParameter
@@ -169,21 +270,3 @@ struct param_id_latency_cfg_t
 
 /** @}                   <-- End of the Module -->*/
 #endif
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
