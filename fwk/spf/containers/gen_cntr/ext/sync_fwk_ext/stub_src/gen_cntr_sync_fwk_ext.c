@@ -25,3 +25,8 @@ void gen_cntr_fwk_ext_sync_update_ext_in_tgp(gen_cntr_t *me_ptr)
 {
   return;
 }
+
+bool_t gen_cntr_fwk_ext_sync_requires_data(gen_cntr_t *me_ptr, gen_topo_input_port_t *in_port_ptr)
+{
+	return FALSE;
+}

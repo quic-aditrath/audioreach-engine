@@ -1799,7 +1799,9 @@ static ar_result_t spl_cntr_topo_process(spl_cntr_t *me_ptr)
 
    // if there is any data stuck in topo then some buffer will be occupied.
    // if data is stuck then trigger backward kick.
-   me_ptr->topo.simpt1_flags.backwards_kick = (me_ptr->topo.t_base.buf_mgr.num_used_buffers > 0) ? TRUE : FALSE;
+   me_ptr->topo.simpt1_flags.backwards_kick =
+      ((me_ptr->topo.t_base.buf_mgr.num_used_buffers > 0) || me_ptr->topo.simpt_event_flags.check_pending_mf) ? TRUE
+                                                                                                              : FALSE;
 
    TRY(result, spl_cntr_setup_ext_in_port_bufs(me_ptr));
    TRY(result, spl_cntr_setup_ext_out_port_bufs(me_ptr));

@@ -526,7 +526,12 @@ ar_result_t cu_handle_frame_len_change(cu_base_t *base_ptr, icb_frame_length_t *
          cu_ext_out_port_t *ext_out_port_ptr =
             (cu_ext_out_port_t *)(((uint8_t *)gu_ext_out_port_ptr + base_ptr->ext_out_port_cu_offset));
          // When frame len changes, we inform downstream container of upstream max frame len at run time
-         ext_out_port_ptr->flags.upstream_frame_len_changed = TRUE;
+         // Set only if MF is valid on the external port because framelength alone cannot be sent to the
+         // peer containers.
+         if ((ext_out_port_ptr->media_fmt.data_format != SPF_UNKNOWN_DATA_FORMAT))
+         {
+            ext_out_port_ptr->flags.upstream_frame_len_changed = TRUE;
+         }
       }
    }
 

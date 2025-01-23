@@ -147,6 +147,18 @@ ar_result_t gen_cntr_get_output_port_media_format_from_topo(gen_cntr_ext_out_por
       ext_out_port_ptr->cu.flags.is_pcm_unpacked = topo_out_port_ptr->common.flags.is_pcm_unpacked;
 
       ext_out_port_ptr->flags.out_media_fmt_changed = TRUE;
+
+#ifdef VERBOSE_DEBUGGING
+      AR_MSG(DBG_MED_PRIO,
+             "Moved mf to external output of module 0x%x, port 0x%x, flags: media fmt %d frame len %d "
+             "df %d interleaving %d",
+             ext_out_port_ptr->gu.int_out_port_ptr->cmn.module_ptr->module_instance_id,
+             ext_out_port_ptr->gu.int_out_port_ptr->cmn.id,
+             ext_out_port_ptr->flags.out_media_fmt_changed,
+             ext_out_port_ptr->cu.flags.upstream_frame_len_changed,
+             module_out_media_fmt_ptr->data_format,
+             media_fmt_ptr->pcm.interleaving);
+#endif
    }
    return AR_EOK;
 }

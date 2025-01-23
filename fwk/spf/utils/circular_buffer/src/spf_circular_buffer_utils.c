@@ -724,7 +724,7 @@ spf_circ_buf_result_t _circ_buf_write_one_frame(spf_circ_buf_client_t *wr_client
              circ_buf_ptr->id);
       res = SPF_CIRCBUF_SUCCESS;
 
-      for (uint32_t ch_idx = 0; ch_idx < chunk_ptr->num_channels; ch_idx++)
+      for (uint32_t ch_idx = 0; ch_idx < in_sdata_ptr->bufs_num; ch_idx++)
       {
          buf_ptr[ch_idx].actual_data_len = 0;
       }
@@ -868,6 +868,14 @@ spf_circ_buf_result_t _circ_buf_write_one_frame(spf_circ_buf_client_t *wr_client
 #endif
          temp_rd_client_ptr->unread_bytes = temp_rd_client_ptr->circ_buf_ptr->circ_buf_size_bytes;
       }
+
+#ifdef DEBUG_CIRC_BUF_UTILS
+      AR_MSG(DBG_HIGH_PRIO,
+             "write_one_frame: buf_id=0x%x Updating rd_client_id=0x%x unread_bytes to %lu ",
+             temp_rd_client_ptr->circ_buf_ptr->id,
+             temp_rd_client_ptr,
+             temp_rd_client_ptr->unread_bytes);
+#endif
    }
 
    return res;
@@ -880,14 +888,15 @@ spf_circ_buf_result_t _circ_buf_write_data(spf_circ_buf_client_t *wr_handle,
                                            uint32_t *             memset_value_ptr,
                                            uint32_t *             num_memset_bytes)
 {
-   if ((NULL == wr_handle))
-   {
+
+   if ((NULL == wr_handle) || (NULL == wr_handle->circ_buf_ptr)) {
       return SPF_CIRCBUF_FAIL;
    }
 
+   spf_circ_buf_t *circ_buf_ptr = wr_handle->circ_buf_ptr;
+
    // Data pointer can be null only for memset operation.
-   if (!memset_value_ptr && !in_sdata_ptr)
-   {
+   if (!memset_value_ptr && !in_sdata_ptr) {
 #ifdef DEBUG_CIRC_BUF_UTILS
       AR_MSG(DBG_HIGH_PRIO, "write_data: buf_id: 0x%x capi buf ptr is NULL. ", wr_handle->circ_buf_ptr->id);
 #endif // DEBUG_CIRC_BUF_UTILS
@@ -911,8 +920,8 @@ spf_circ_buf_result_t _circ_buf_write_data(spf_circ_buf_client_t *wr_handle,
    // if a big write buffer needs to be written into circular buffer then,
    // split the big buffer by container frame sizes.
    capi_stream_data_t in_sdata;
-   capi_buf_t         cur_wr_frame_buf[16];
-   uint32_t           bytes_left_to_write = bytes_to_write;
+   capi_buf_t *cur_wr_frame_buf = circ_buf_ptr->scratch_buf_arr;
+   uint32_t bytes_left_to_write = bytes_to_write;
    while (bytes_left_to_write)
    {
       memset(&in_sdata, 0, sizeof(in_sdata));
@@ -2141,10 +2150,12 @@ spf_circ_buf_result_t _circ_buf_raw_write_data(spf_circ_buf_raw_client_t *wr_han
                                                uint32_t *                 memset_value_ptr,
                                                uint32_t *                 num_memset_bytes)
 {
-   if ((NULL == wr_handle))
+   if ((NULL == wr_handle) || (NULL == wr_handle->circ_buf_raw_ptr))
    {
       return SPF_CIRCBUF_FAIL;
    }
+
+   spf_circ_buf_raw_t *circ_buf_raw_ptr = wr_handle->circ_buf_raw_ptr;
 
    // Data pointer can be null only for memset operation.
    if (!memset_value_ptr && !in_sdata_ptr)
@@ -2175,8 +2186,9 @@ spf_circ_buf_result_t _circ_buf_raw_write_data(spf_circ_buf_raw_client_t *wr_han
    // if a big write buffer needs to be written into circular buffer then,
    // split the big buffer by container frame sizes.
    capi_stream_data_t in_sdata;
+
    // TODO: ONLY ONE REQ NOW - MAYBE MORE FOR DEINT RAW COMPR
-   capi_buf_t cur_wr_frame_buf[16];
+   capi_buf_t *cur_wr_frame_buf = circ_buf_raw_ptr->scratch_buf_arr;
 
    uint32_t bytes_left_to_write = bytes_to_write;
 

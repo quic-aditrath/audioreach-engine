@@ -31,6 +31,8 @@ ar_result_t gen_cntr_fwk_extn_sync_handle_toggle_threshold_buffering_event(
 //update external input port trigger policy
 void gen_cntr_fwk_ext_sync_update_ext_in_tgp(gen_cntr_t *me_ptr);
 
+bool_t gen_cntr_fwk_ext_sync_requires_data(gen_cntr_t *me_ptr, gen_topo_input_port_t *in_port_ptr);
+
 #if defined(__cplugenus)
 }
 #endif // __cplugenus

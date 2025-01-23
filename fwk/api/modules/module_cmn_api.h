@@ -180,10 +180,9 @@ struct param_id_module_data_interleaving_t
 	                             default - 3.
 	                             }
 	        @h2xmle_default     {3}
-	        @h2xmle_rangeList   {"DATA_INTERLEAVED"=1;
-	                             "DATA_DEINTERLEAVED_PACKED"=2;
-                                 "DATA_DEINTERLEAVED_UNPACKED"=3;
-	                             "DATA_INVALID_INTERLEAVING"=0}
+	        @h2xmle_rangeList   {"PCM_INTERLEAVED"=1;
+	                             "PCM_DEINTERLEAVED_PACKED"=2;
+                                 "PCM_DEINTERLEAVED_UNPACKED"=3}
 	     */
 
 }

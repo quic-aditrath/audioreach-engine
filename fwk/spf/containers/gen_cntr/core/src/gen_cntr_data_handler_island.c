@@ -1341,8 +1341,11 @@ ar_result_t gen_cntr_setup_internal_input_port_and_preprocess(gen_cntr_t *      
          // 3. for requires_data_buf=True: if no bytes were copied, wait for input
          // Following contexts: a) after ext-in buf triggers: if sufficient data is not available, go wait for one more
          // b) after processing some data, for remaining input.
+         // 4. If a sync module is present at the ext input's nblc end, and it does not have sufficient data at its
+         // input only then set the flag. Else consider that sync input trigger is satisfied.
          if ((0 == me_ptr->topo.num_data_tpm) && !sufficient_bytes_copied && !is_input_discontinuity &&
-             !force_process && (GEN_TOPO_DATA_NEEDED == gen_cntr_ext_in_port_needs_data_buffer(&ext_in_port_ptr->gu)))
+             !force_process && (GEN_TOPO_DATA_NEEDED == gen_cntr_ext_in_port_needs_data_buffer(&ext_in_port_ptr->gu)) &&
+             (!me_ptr->topo.flags.is_sync_module_present || gen_cntr_fwk_ext_sync_requires_data(me_ptr, in_port_ptr)))
          {
 #ifdef VERBOSE_DEBUGGING
             dbg_inp_insufficient = TRUE;
@@ -1420,12 +1423,20 @@ ar_result_t gen_cntr_setup_internal_input_port_and_preprocess(gen_cntr_t *      
 
       GEN_CNTR_MSG(me_ptr->topo.gu.log_id,
                    DBG_LOW_PRIO,
-                   "preprocess input: module (%lu of %lu) per buf, ext in (%lu of %lu), "
-                   "flags %08lX, curr_trigger%u, needs_inp_data%u, inport flags0x%lX",
+                   "preprocess input: module (0x%lx,0x%lx) (%lu of %lu) per buf, ext in (%lu of %lu) ",
+                   in_port_ptr->gu.cmn.module_ptr->module_instance_id,
+                   in_port_ptr->gu.cmn.id,
                    in_port_ptr->common.bufs_ptr[0].actual_data_len,
                    in_port_ptr->common.bufs_ptr[0].max_data_len,
                    ext_in_port_ptr->buf.actual_data_len,
-                   ext_in_port_ptr->buf.max_data_len,
+                   ext_in_port_ptr->buf.max_data_len);
+
+      GEN_CNTR_MSG(me_ptr->topo.gu.log_id,
+                   DBG_LOW_PRIO,
+                   "preprocess input: module (0x%lx,0x%lx) flags %08lX, curr_trigger%u, needs_inp_data%u, inport "
+                   "flags0x%lX",
+                   in_port_ptr->gu.cmn.module_ptr->module_instance_id,
+                   in_port_ptr->gu.cmn.id,
                    flags,
                    me_ptr->topo.proc_context.curr_trigger,
                    needs_inp_data,

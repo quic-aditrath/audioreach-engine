@@ -98,7 +98,7 @@ static capi_err_t capi_rat_init(capi_t *_pif, capi_proplist_t *init_set_properti
    }
 
    capi_result |= capi_cmn_init_media_fmt_v2(&(me_ptr->configured_media_fmt));
-   me_ptr->configured_media_fmt.format.data_interleaving = CAPI_DEINTERLEAVED_UNPACKED;
+   me_ptr->configured_media_fmt.format.data_interleaving = CAPI_DEINTERLEAVED_UNPACKED_V2;
 
    capi_result = capi_rat_process_set_properties(me_ptr, init_set_properties, type);
 
@@ -873,7 +873,8 @@ static capi_err_t capi_rat_process_set_properties(capi_rat_t *     me_ptr,
                return CAPI_EBADPARAM;
             }
 
-            if (CAPI_DEINTERLEAVED_UNPACKED_V2 != inp_media_fmt_ptr->format.data_interleaving)
+            if ((CAPI_DEINTERLEAVED_UNPACKED_V2 != inp_media_fmt_ptr->format.data_interleaving) &&
+                  (CAPI_INTERLEAVED != inp_media_fmt_ptr->format.data_interleaving))
             {
                RAT_MSG(me_ptr->iid,
                        DBG_ERROR_PRIO,

@@ -2878,17 +2878,18 @@ ar_result_t gen_topo_validate_port_sdata(uint32_t                log_id,
             before process it means fwk didnt not setup sdata properly. If its after process, then module must have not
             update correctly.*/
 
-         TOPO_MSG(log_id,
-                  DBG_ERROR_PRIO,
-                  "Error! Unexpected buf lengths for UNPACKED V1, Bailing out! PROCESS_DONE[%lu]: is_input:%lu port "
-                  "idx = %ld, miid = 0x%lx ch[%lu] actual:%lu max:%lu",
-                  PROCESS_DONE,
-                  is_input,
-                  port_index,
-                  module_ptr->gu.module_instance_id,
-                  b,
-                  cmn_port_ptr->sdata.buf_ptr[b].actual_data_len,
-                  cmn_port_ptr->sdata.buf_ptr[b].max_data_len);
+         AR_MSG_ISLAND(DBG_ERROR_PRIO,
+                       "Error! Unexpected buf lengths for UNPACKED V1, Bailing out! PROCESS_DONE[%lu]: is_input:%lu "
+                       "port idx = %ld, miid = 0x%lx ch[%lu] actual len (%lu != %lu) max len (%lu != %lu)",
+                       PROCESS_DONE,
+                       is_input,
+                       port_index,
+                       module_ptr->gu.module_instance_id,
+                       b,
+                       cmn_port_ptr->sdata.buf_ptr[b].actual_data_len,
+                       cmn_port_ptr->sdata.buf_ptr[0].actual_data_len,
+                       cmn_port_ptr->sdata.buf_ptr[b].max_data_len,
+                       cmn_port_ptr->sdata.buf_ptr[0].max_data_len);
          return AR_EFAILED;
       }
    }

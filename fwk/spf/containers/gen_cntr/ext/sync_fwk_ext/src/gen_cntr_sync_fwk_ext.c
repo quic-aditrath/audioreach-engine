@@ -211,7 +211,7 @@ static void gen_cntr_fwk_ext_sync_update_tgp(gen_cntr_t *me_ptr, gen_topo_module
  * 1. input port is connected to SYNC module through SISO chain and SYNC module already has sufficient data at connected
  * input.
  */
-static bool_t gen_cntr_fwk_ext_sync_requires_data(gen_cntr_t *me_ptr, gen_topo_input_port_t *in_port_ptr)
+bool_t gen_cntr_fwk_ext_sync_requires_data(gen_cntr_t *me_ptr, gen_topo_input_port_t *in_port_ptr)
 {
    if (NULL == in_port_ptr)
    {

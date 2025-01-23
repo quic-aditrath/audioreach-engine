@@ -597,7 +597,6 @@ static ar_result_t spl_topo_setup_proc_ctx_in_port(spl_topo_t *topo_ptr, spl_top
                                     in_port_ptr->t_base.gu.cmn.index,
                                     scratch_bufs_ptr,
                                     DUMMY_OUTPUT_PTR);
-      proc_context_ptr->in_port_sdata_pptr[in_port_ptr->t_base.gu.cmn.index] = &in_port_ptr->t_base.common.sdata;
 
 #if SPL_TOPO_DEBUG_LEVEL >= SPL_TOPO_DEBUG_LEVEL_4
       TOPO_MSG(topo_ptr->t_base.gu.log_id,
@@ -613,33 +612,34 @@ static ar_result_t spl_topo_setup_proc_ctx_in_port(spl_topo_t *topo_ptr, spl_top
 
       // spl_topo_setup_dummy_in_sdata clears the marker_eos flag, so we have to add it back.
       in_port_ptr->t_base.common.sdata.flags.marker_eos = prev_marker_eos;
-      return result;
+   }
+   else
+   {
+      // Update the in_port's sdata fields. Then sets the process context's sdata_ptr to point to
+      // the in_port's sdata fields.
+      if (connected_out_port_ptr)
+      {
+         // Connected port is internal cases.
+         spl_topo_setup_int_in_port_sdata(topo_ptr, in_port_ptr, connected_out_port_ptr);
+      }
+      else if (ext_in_port_ptr)
+      {
+         // Connected port is an external buffer case.
+         TRY(result, spl_topo_setup_ext_in_port_sdata(topo_ptr, in_port_ptr, ext_in_port_ptr));
+      }
+      // Set previous actual data len, so we can determine if all input data was consumed after process.
+      // All actual data lengths should be equal, so using first channel is enough.
+      proc_context_ptr->in_port_scratch_ptr[in_port_ptr->t_base.gu.cmn.index].prev_actual_data_len[0] =
+         in_port_ptr->t_base.common.sdata.buf_ptr[0].actual_data_len;
+
+      // Set the previous marker eos/eos_dfg/eof flags.
+      proc_context_ptr->in_port_scratch_ptr[in_port_ptr->t_base.gu.cmn.index].flags.prev_marker_eos =
+         in_port_ptr->t_base.common.sdata.flags.marker_eos;
+      proc_context_ptr->in_port_scratch_ptr[in_port_ptr->t_base.gu.cmn.index].flags.prev_eos_dfg =
+         spl_topo_input_port_has_dfg_or_flushing_eos(&in_port_ptr->t_base);
    }
 
-   // Update the in_port's sdata fields. Then sets the process context's sdata_ptr to point to
-   // the in_port's sdata fields.
-   if (connected_out_port_ptr)
-   {
-      // Connected port is internal cases.
-      spl_topo_setup_int_in_port_sdata(topo_ptr, in_port_ptr, connected_out_port_ptr);
-   }
-   else if (ext_in_port_ptr)
-   {
-      // Connected port is an external buffer case.
-      TRY(result, spl_topo_setup_ext_in_port_sdata(topo_ptr, in_port_ptr, ext_in_port_ptr));
-   }
-
-   // Set previous actual data len, so we can determine if all input data was consumed after process.
-   // All actual data lengths should be equal, so using first channel is enough.
-   proc_context_ptr->in_port_scratch_ptr[in_port_ptr->t_base.gu.cmn.index].prev_actual_data_len[0] =
-      in_port_ptr->t_base.common.sdata.buf_ptr[0].actual_data_len;
    proc_context_ptr->in_port_sdata_pptr[in_port_ptr->t_base.gu.cmn.index] = &in_port_ptr->t_base.common.sdata;
-
-   // Set the previous marker eos/eos_dfg/eof flags.
-   proc_context_ptr->in_port_scratch_ptr[in_port_ptr->t_base.gu.cmn.index].flags.prev_marker_eos =
-      in_port_ptr->t_base.common.sdata.flags.marker_eos;
-   proc_context_ptr->in_port_scratch_ptr[in_port_ptr->t_base.gu.cmn.index].flags.prev_eos_dfg =
-      spl_topo_input_port_has_dfg_or_flushing_eos(&in_port_ptr->t_base);
 
    if ((GEN_TOPO_MF_PCM_UNPACKED_V1 == in_port_ptr->t_base.common.flags.is_pcm_unpacked) &&
        ((gen_topo_module_t *)in_port_ptr->t_base.gu.cmn.module_ptr)->capi_ptr)
@@ -1318,10 +1318,31 @@ static ar_result_t spl_topo_setup_proc_ctx_out_port(spl_topo_t *topo_ptr, spl_to
 
       proc_context_ptr->out_port_sdata_pptr[out_port_ptr->t_base.gu.cmn.index] = &out_port_ptr->t_base.common.sdata;
 
+      if ((GEN_TOPO_MF_PCM_UNPACKED_V1 == out_port_ptr->t_base.common.flags.is_pcm_unpacked) &&
+          ((gen_topo_module_t *)out_port_ptr->t_base.gu.cmn.module_ptr)->capi_ptr)
+      {
+#if SPL_TOPO_DEBUG_LEVEL >= SPL_TOPO_DEBUG_LEVEL_4
+         TOPO_MSG(topo_ptr->t_base.gu.log_id,
+                  DBG_MED_PRIO,
+                  "Before process: output port idx = %ld, miid = 0x%lx setting up sdata for unpacked V1",
+                  out_port_ptr->t_base.gu.cmn.index,
+                  out_port_ptr->t_base.gu.cmn.module_ptr->module_instance_id);
+#endif
+
+         capi_stream_data_v2_t *out_port_sdata_ptr =
+            proc_context_ptr->out_port_sdata_pptr[out_port_ptr->t_base.gu.cmn.index];
+         for (uint32_t i = 1; i < out_port_ptr->t_base.common.sdata.bufs_num; i++)
+         {
+            out_port_sdata_ptr->buf_ptr[i].actual_data_len = out_port_sdata_ptr->buf_ptr[0].actual_data_len;
+            out_port_sdata_ptr->buf_ptr[i].max_data_len    = out_port_sdata_ptr->buf_ptr[0].max_data_len;
+         }
+      }
       return result;
    }
-
-   TRY(result, simp_topo_setup_proc_ctx_out_port(topo_ptr, out_port_ptr));
+   else
+   {
+      TRY(result, simp_topo_setup_proc_ctx_out_port(topo_ptr, out_port_ptr));
+   }
 
    CATCH(result, TOPO_MSG_PREFIX, topo_ptr->t_base.gu.log_id)
    {

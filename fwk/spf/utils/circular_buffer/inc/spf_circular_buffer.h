@@ -216,6 +216,9 @@ typedef struct spf_circ_buf_t
    intf_extn_param_id_metadata_handler_t *metadata_handler; // pointer to clients[capi module] metadata handler.
    spf_list_node_t *                      mf_list_ptr;
 
+   /** scratch buffer array used for read/write loops */
+   capi_buf_t scratch_buf_arr[CAPI_MAX_CHANNELS_V2];
+
 } spf_circ_buf_t;
 
 typedef struct spf_circ_buf_raw_t
@@ -279,6 +282,9 @@ typedef struct spf_circ_buf_raw_t
 
    /* Metadata handle for raw circular buffer */
    intf_extn_param_id_metadata_handler_t *metadata_handler;
+
+   /** scratch buffer array used for read/write loops */
+   capi_buf_t scratch_buf_arr[CAPI_MAX_CHANNELS_V2];
 
 } spf_circ_buf_raw_t;
 

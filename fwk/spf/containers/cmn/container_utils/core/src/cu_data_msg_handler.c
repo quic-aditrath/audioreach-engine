@@ -51,6 +51,7 @@ ar_result_t cu_create_media_fmt_msg_for_downstream(cu_base_t *        base_ptr,
                 DBG_ERROR_PRIO,
                 "Data format not supported %lx",
                 out_actual_media_fmt->data_format);
+         return AR_EFAILED;
       }
 
       if (AR_DID_FAIL(spf_msg_create_msg(msg,

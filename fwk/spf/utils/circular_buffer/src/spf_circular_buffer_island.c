@@ -292,11 +292,12 @@ spf_circ_buf_result_t _circ_buf_read_one_frame(spf_circ_buf_client_t *rd_client_
 
 #ifdef DEBUG_CIRC_BUF_UTILS
       AR_MSG(DBG_HIGH_PRIO,
-             "read_loop: buf_id: 0x%lx, next_frame_ptr: 0x%x, next_frame_offset: %lu, bytes_left_to_read: %lu",
+             "read_loop: buf_id: 0x%lx, next_frame_ptr: 0x%x, next_frame_offset: %lu, bytes_left_to_read: %lu unread_bytes: %lu",
              rd_client_ptr->circ_buf_ptr->id,
              cur_ch0_frame_ptr,
              rd_client_ptr->rw_pos.frame_offset,
-             bytes_left_to_read);
+             bytes_left_to_read,
+             rd_client_ptr->unread_bytes);
 #endif
    }
 

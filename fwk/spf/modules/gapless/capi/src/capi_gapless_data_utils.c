@@ -46,7 +46,10 @@ static capi_err_t gapless_handle_pending_operating_media_fmt(capi_gapless_t *me_
          capi_stream_data_v2_t *in_sdata_ptr = (capi_stream_data_v2_t *)input[i];
          if (in_sdata_ptr && in_sdata_ptr->buf_ptr)
          {
-            in_sdata_ptr->buf_ptr[0].actual_data_len = 0;
+            for (uint32_t i = 0; i < in_sdata_ptr->bufs_num; i++)
+            {
+               in_sdata_ptr->buf_ptr[i].actual_data_len = 0;
+            }
          }
       }
    }

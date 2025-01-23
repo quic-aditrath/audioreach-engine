@@ -64,7 +64,7 @@
 /*# @h2xmlp_parameter   {"EVENT_ID_EARLY_EOS", EVENT_ID_EARLY_EOS}
     @h2xmlp_description {GUID for an early EOS event. This event is raised
                          immediately when an EOS enters the Gapless module.
-                         For more details, see AudioReach Signal Processing 
+                         For more details, see AudioReach Signal Processing
                          Framework (SPF) API Reference.}
     @h2xmlp_toolPolicy  {Calibration} */
 
@@ -188,7 +188,7 @@ typedef struct param_id_gapless_early_eos_delay_t param_id_gapless_early_eos_del
                                 The output remains continuous through the
                                 stream switch. Input ports are allowed to have
                                 different input media formats. For more
-                                details, see AudioReach Signal Processing 
+                                details, see AudioReach Signal Processing
                                 Framework (SPF) API Reference.}
     @h2xmlm_dataMaxInputPorts  {GAPLESS_MAX_INPUT_PORTS}
     @h2xmlm_dataMaxOutputPorts {GAPLESS_MAX_OUTPUT_PORTS}
@@ -196,7 +196,7 @@ typedef struct param_id_gapless_early_eos_delay_t param_id_gapless_early_eos_del
                                 IN1 = 4}
     @h2xmlm_dataOutputPorts    {OUT = 3}
     @h2xmlm_toolPolicy         {Calibration}
-    @h2xmlm_supportedContTypes {APM_CONTAINER_TYPE_SC, APM_CONTAINER_TYPE_GC}
+    @h2xmlm_supportedContTypes {APM_CONTAINER_TYPE_GC}
     @h2xmlm_isOffloadable      {false}
     @h2xmlm_stackSize          {GAPLESS_STACK_SIZE}
 
