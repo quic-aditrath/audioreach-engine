@@ -14,21 +14,11 @@
 /*==============================================================================
    Function definitions
 ==============================================================================*/
-uint32_t count_set_bits(uint32_t num)
-{
-   uint32_t count = 0;
-   while (num)
-   {
-      num &= (num - 1);
-      count++;
-   }
-   return count;
-}
 
 /*utility to calculate mask array size dependent on group mask*/
 uint32_t calculate_size_for_ch_mask_array(uint32_t num)
 {
-   return (count_set_bits(num) * sizeof(uint32_t));
+   return (capi_cmn_count_set_bits(num) * sizeof(uint32_t));
 }
 
 /*return the number of channels to log.*/
@@ -41,9 +31,9 @@ uint32_t get_number_of_channels_to_log(capi_data_logging_t *me_ptr)
    {
       uint32_t *enabled_ch_mask_ptr = &me_ptr->nlpi_me_ptr->enabled_channel_mask_array[0];
       enabled_num_chs               = 0;
-      for (uint32_t i = 0; i < MAX_CHANNEL_INDEX_GROUPS; i++)
+      for (uint32_t i = 0; i < CAPI_CMN_MAX_CHANNEL_INDEX_GROUPS; i++)
       {
-         enabled_num_chs += count_set_bits(enabled_ch_mask_ptr[i]);
+         enabled_num_chs += capi_cmn_count_set_bits(enabled_ch_mask_ptr[i]);
       }
    }
    return enabled_num_chs;
@@ -83,8 +73,8 @@ capi_err_t capi_data_logging_validate_ch_mask_payload_size(capi_data_logging_t *
    uint32_t   chan_index_array_size = 0;
    uint32_t   chan_type_array_size  = 0;
    uint32_t   ch_index_group_mask   = 0;
-   uint32_t   max_valid_channel_index_group = MAX_CHANNEL_INDEX_GROUPS;
-   uint32_t   max_valid_channel_type_group  = MAX_CHANNEL_MAP_GROUPS;
+   uint32_t   max_valid_channel_index_group = CAPI_CMN_MAX_CHANNEL_INDEX_GROUPS;
+   uint32_t   max_valid_channel_type_group  = CAPI_CMN_MAX_CHANNEL_MAP_GROUPS;
    uint32_t   *base_payload_ptr = (uint32_t *)chan_mask_cfg_ptr;
    *required_size_ptr           = sizeof(data_logging_select_channels_v2_t); // 4Bytes
 
@@ -184,7 +174,7 @@ capi_err_t capi_data_logging_get_channel_index_mask_to_log_v2(capi_data_logging_
    uint32_t  ch_index_group_mask   = 0;
    uint32_t  ch_type_group_mask    = 0;
    uint32_t  num_channels          = me_ptr->media_format.format.num_channels;
-   uint32_t  max_ch_index_grp      = (num_channels + (CHANNELS_PER_MASK - 1)) / CHANNELS_PER_MASK;
+   uint32_t  max_ch_index_grp      = (num_channels + (CAPI_CMN_CHANNELS_PER_MASK - 1)) / CAPI_CMN_CHANNELS_PER_MASK;
    uint32_t *ch_type_mask_arr      = NULL;
    uint32_t *ch_index_mask_arr     = NULL;
    uint32_t *base_payload_ptr      = (uint32_t *)ch_mask_cfg_ptr;
@@ -192,7 +182,7 @@ capi_err_t capi_data_logging_get_channel_index_mask_to_log_v2(capi_data_logging_
 
    base_payload_ptr += sizeof(data_logging_select_channels_v2_t) / 4; //elements are 4 byte word
 
-   for (uint32_t i = 0; i < MAX_CHANNEL_INDEX_GROUPS; i++) 
+   for (uint32_t i = 0; i < CAPI_CMN_MAX_CHANNEL_INDEX_GROUPS; i++)
    {
       ch_index_mask_to_log_ptr[i] = DATA_LOGGING_ALL_CH_LOGGING_MASK;
    }
@@ -211,9 +201,9 @@ capi_err_t capi_data_logging_get_channel_index_mask_to_log_v2(capi_data_logging_
          // Calculate the number of bits to store in ch_index_mask_to_log_ptr[group] depending on num_channels
          // if group is not the last group: OR if num_bits is 0: set all the bits in bitmask.
          // if it is the last group: set only required bits as per num_channels and rest of the bits will be 0
-         uint32_t num_bits = (index_group < (max_ch_index_grp - 1)) ? 0 : MOD_WITH_32(num_channels);
+         uint32_t num_bits = (index_group < (max_ch_index_grp - 1)) ? 0 : CAPI_CMN_MOD_WITH_32(num_channels);
          // Calculate the bitmask for the group
-         uint32_t bitmask = (0 == num_bits) ? SET_MASK_32B : (CONVERT_TO_32B_MASK(num_bits) - 1);
+         uint32_t bitmask = (0 == num_bits) ? CAPI_CMN_SET_MASK_32B : (CAPI_CMN_CONVERT_TO_32B_MASK(num_bits) - 1);
          me_ptr->nlpi_me_ptr->enabled_channel_mask_array[index_group] = bitmask;
       }
    }
@@ -233,7 +223,7 @@ capi_err_t capi_data_logging_get_channel_index_mask_to_log_v2(capi_data_logging_
         		 ch_type_group_mask);
 #endif
          // initialize the channel index mask array to zero.
-         for (uint32_t i = 0; i < MAX_CHANNEL_INDEX_GROUPS; i++)
+         for (uint32_t i = 0; i < CAPI_CMN_MAX_CHANNEL_INDEX_GROUPS; i++)
          {
             ch_index_mask_to_log_ptr[i] = 0;
          }
@@ -245,35 +235,35 @@ capi_err_t capi_data_logging_get_channel_index_mask_to_log_v2(capi_data_logging_
          // 4. find ideal bit position to store in ch_index_mask_to_log_ptr, of that channel type in channel_type_mask_list
          // 5. check if that bit is set in channel_type_mask_list
          // 6. if yes, then store in ch_index_mask_to_log_ptr array.
-         for (uint32_t group = 0; group < MAX_CHANNEL_MAP_GROUPS; group++)
+         for (uint32_t group = 0; group < CAPI_CMN_MAX_CHANNEL_MAP_GROUPS; group++)
          {
             // check if a group is configured
             // if yes, update ch_index_mask_to_log_ptr
-            if (IS_BIT_SET_AT_POS_IN_32B_VAL(ch_type_group_mask, group))
+            if (CAPI_CMN_IS_BIT_SET_AT_POS_IN_32B_VAL(ch_type_group_mask, group))
             {
                // Iterate through each channel and check if a channel type is configured
                for (uint32_t chan_no = 0; chan_no < num_channels; chan_no++)
                {
                   // check if a channel type falls under this group
-                  if (group == (me_ptr->media_format.format.channel_type[chan_no] / CHANNELS_PER_MASK))
+                  if (group == (me_ptr->media_format.format.channel_type[chan_no] / CAPI_CMN_CHANNELS_PER_MASK))
                   {
                      //find the ideal bit position of the channel_type in channel type config array
-                     uint32_t bit_position = (uint32_t)MOD_WITH_32(me_ptr->media_format.format.channel_type[chan_no]);
+                     uint32_t bit_position = (uint32_t)CAPI_CMN_MOD_WITH_32(me_ptr->media_format.format.channel_type[chan_no]);
                      if (group == 0 && bit_position == 0)
                      {
                         // Skip the reserved bit 0 in group 0 channel_type_mask_list
                         continue;
                      }
                      // check if a channel-type in imf is configured
-                     if (IS_BIT_SET_AT_POS_IN_32B_VAL(ch_type_mask_arr[ch_type_arr_idx], bit_position))
+                     if (CAPI_CMN_IS_BIT_SET_AT_POS_IN_32B_VAL(ch_type_mask_arr[ch_type_arr_idx], bit_position))
                      {
                         //get the group index in which this particular ch should be stored
-                        uint32_t group_mask_index   = (chan_no / CHANNELS_PER_MASK);
+                        uint32_t group_mask_index   = (chan_no / CAPI_CMN_CHANNELS_PER_MASK);
                         //get the bit position in which this particular ch should be stored
                         //in ch_index_mask_to_log_ptr[group_mask_index]
-                        uint32_t index_bit_position = MOD_WITH_32(chan_no);
+                        uint32_t index_bit_position = CAPI_CMN_MOD_WITH_32(chan_no);
                         //update this chan_no to log
-                        ch_index_mask_to_log_ptr[group_mask_index] |= CONVERT_TO_32B_MASK(index_bit_position);
+                        ch_index_mask_to_log_ptr[group_mask_index] |= CAPI_CMN_CONVERT_TO_32B_MASK(index_bit_position);
                      }
                   }
                }
@@ -281,7 +271,7 @@ capi_err_t capi_data_logging_get_channel_index_mask_to_log_v2(capi_data_logging_
             }
          }
 		 
-		 for (uint32_t group = 0; group < MAX_CHANNEL_INDEX_GROUPS; group++)
+		 for (uint32_t group = 0; group < CAPI_CMN_MAX_CHANNEL_INDEX_GROUPS; group++)
 		 {
             DATA_LOGGING_MSG(me_ptr->nlpi_me_ptr->iid,DBG_HIGH_PRIO, "Received ch_index_mask_to_log_ptr[%lu] = %lu",
             		   group, ch_index_mask_to_log_ptr[group]);
@@ -297,7 +287,7 @@ capi_err_t capi_data_logging_get_channel_index_mask_to_log_v2(capi_data_logging_
          ch_index_mask_arr   = base_payload_ptr; 
 
          // initialize the channel index mask to zero.
-         for (uint32_t i = 0; i < MAX_CHANNEL_INDEX_GROUPS; i++)
+         for (uint32_t i = 0; i < CAPI_CMN_MAX_CHANNEL_INDEX_GROUPS; i++)
          {
             ch_index_mask_to_log_ptr[i] = 0;
          }
@@ -306,14 +296,14 @@ capi_err_t capi_data_logging_get_channel_index_mask_to_log_v2(capi_data_logging_
          {
             // check if a group is configured
             // if yes, update ch_index_mask_to_log_ptr
-            if (IS_BIT_SET_AT_POS_IN_32B_VAL(ch_index_group_mask, group))
+            if (CAPI_CMN_IS_BIT_SET_AT_POS_IN_32B_VAL(ch_index_group_mask, group))
             {
                // Calculate the number of bits to store in ch_index_mask_to_log_ptr[group] depending on num_channels
                // if group is not the last group OR if num_bits is 0: set all the bits in bitmask.
                // if it is the last group: set only required bits as per num_channels and rest of the bits will be 0
-               uint32_t num_bits = (group < (max_ch_index_grp - 1)) ? 0 : MOD_WITH_32(num_channels);
+               uint32_t num_bits = (group < (max_ch_index_grp - 1)) ? 0 : CAPI_CMN_MOD_WITH_32(num_channels);
                // Calculate the bitmask for the group
-               uint32_t bitmask = (0 == num_bits) ? SET_MASK_32B : (CONVERT_TO_32B_MASK(num_bits) - 1);
+               uint32_t bitmask = (0 == num_bits) ? CAPI_CMN_SET_MASK_32B : (CAPI_CMN_CONVERT_TO_32B_MASK(num_bits) - 1);
 
                ch_index_mask_to_log_ptr[group] = ch_index_mask_arr[ch_index_mask_arr_idx] & bitmask;
                ch_index_mask_arr_idx++;
@@ -327,7 +317,7 @@ capi_err_t capi_data_logging_get_channel_index_mask_to_log_v2(capi_data_logging_
       else
       {
          // Invalid configuration mode.
-         for (uint32_t i = 0; i < MAX_CHANNEL_INDEX_GROUPS; i++)
+         for (uint32_t i = 0; i < CAPI_CMN_MAX_CHANNEL_INDEX_GROUPS; i++)
          {
             ch_index_mask_to_log_ptr[i] = 0;
             DATA_LOGGING_MSG(me_ptr->nlpi_me_ptr->iid,
@@ -392,7 +382,7 @@ capi_err_t capi_data_logging_update_enabled_channels_to_log(
    capi_data_logging_selective_channel_cfg_state_t selective_ch_logging_cfg_state)
 {
    uint32_t   num_channels                   = me_ptr->media_format.format.num_channels;
-   uint32_t   max_ch_index_grp               = (num_channels + (CHANNELS_PER_MASK - 1)) / CHANNELS_PER_MASK;
+   uint32_t   max_ch_index_grp               = (num_channels + (CAPI_CMN_CHANNELS_PER_MASK - 1)) / CAPI_CMN_CHANNELS_PER_MASK;
    uint32_t * enabled_channel_index_mask_ptr = NULL;
    uint32_t * ch_index_mask_to_log_ptr       = NULL;
    capi_err_t capi_result                    = CAPI_EOK;
@@ -426,7 +416,7 @@ capi_err_t capi_data_logging_update_enabled_channels_to_log(
       enabled_channel_index_mask_ptr = &me_ptr->nlpi_me_ptr->enabled_channel_mask_array[0];
       ch_index_mask_to_log_ptr       = &me_ptr->nlpi_me_ptr->channel_logging_cfg.channel_mask_index_to_log_arr[0];
 
-      for (uint32_t i = 0; i < MAX_CHANNEL_INDEX_GROUPS; i++)
+      for (uint32_t i = 0; i < CAPI_CMN_MAX_CHANNEL_INDEX_GROUPS; i++)
       {
          if (ch_index_mask_to_log_ptr[i] != enabled_channel_index_mask_ptr[i])
          {
@@ -449,9 +439,9 @@ capi_err_t capi_data_logging_update_enabled_channels_to_log(
          // Calculate the number of bits to store in ch_index_mask_to_log_ptr[group] depending on num_channels
          // if group is not the last group: OR if num_bits is 0: set all the bits in bitmask.
          // if it is the last group: set only required bits as per num_channels and rest of the bits will be 0
-         uint32_t num_bits = (index_group < (max_ch_index_grp - 1)) ? 0 : MOD_WITH_32(num_channels);
+         uint32_t num_bits = (index_group < (max_ch_index_grp - 1)) ? 0 : CAPI_CMN_MOD_WITH_32(num_channels);
          // Calculate the bitmask for the group
-         uint32_t bitmask = (0 == num_bits) ? SET_MASK_32B : (CONVERT_TO_32B_MASK(num_bits) - 1);
+         uint32_t bitmask = (0 == num_bits) ? CAPI_CMN_SET_MASK_32B : (CAPI_CMN_CONVERT_TO_32B_MASK(num_bits) - 1);
          me_ptr->nlpi_me_ptr->enabled_channel_mask_array[index_group] = bitmask;
       }
    }
@@ -517,7 +507,7 @@ capi_err_t capi_data_logging_set_selective_channels_v2_pid(capi_data_logging_t *
       enabled_channel_index_mask_ptr = &me_ptr->nlpi_me_ptr->enabled_channel_mask_array[0];
       ch_index_mask_to_log_ptr       = &me_ptr->nlpi_me_ptr->channel_logging_cfg.channel_mask_index_to_log_arr[0];
 
-      for (uint32_t i = 0; i < MAX_CHANNEL_INDEX_GROUPS; i++)
+      for (uint32_t i = 0; i < CAPI_CMN_MAX_CHANNEL_INDEX_GROUPS; i++)
       {
          if (ch_index_mask_to_log_ptr[i] != enabled_channel_index_mask_ptr[i])
          {

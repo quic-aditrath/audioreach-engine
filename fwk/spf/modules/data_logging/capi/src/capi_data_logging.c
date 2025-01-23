@@ -169,16 +169,16 @@ capi_err_t check_alloc_log_buf(capi_data_logging_t *me_ptr)
          int       j                   = 0;
          uint32_t *enabled_ch_mask_ptr = &me_ptr->nlpi_me_ptr->enabled_channel_mask_array[0];
          memset(me_ptr->nlpi_me_ptr->log_channel_type, 0, sizeof(me_ptr->nlpi_me_ptr->log_channel_type));
-         uint32_t max_loop_count = GET_MAX_CHANNEL_GROUPS(num_channels);
+         uint32_t max_loop_count = CAPI_CMN_GET_MAX_CHANNEL_GROUPS_NEEDED(num_channels);
 
          for (uint32_t ch_index_grp_no = 0; ch_index_grp_no < max_loop_count; ch_index_grp_no++)
          {
-            uint32_t start_ch_index = ch_index_grp_no * CHANNELS_PER_MASK;
-            uint32_t end_ch_index   = (ch_index_grp_no + 1) * CHANNELS_PER_MASK;
-            end_ch_index            = MIN(end_ch_index, num_channels);
-            for (uint32_t i = start_ch_index; i < end_ch_index; i++)
+            uint32_t start_ch_index = ch_index_grp_no * CAPI_CMN_CHANNELS_PER_MASK;
+            uint32_t end_ch_index   = (ch_index_grp_no + 1) * CAPI_CMN_CHANNELS_PER_MASK;
+            end_ch_index   = MIN(end_ch_index, num_channels);
+            for (uint32_t i = start_ch_index; i < end_ch_index ; i++)
             {
-               uint32_t ch_mask = (1 << MOD_WITH_32(i));
+               uint32_t ch_mask = (1 << CAPI_CMN_MOD_WITH_32(i));
                if (ch_mask & enabled_ch_mask_ptr[ch_index_grp_no])
                {
                   me_ptr->nlpi_me_ptr->log_channel_type[j++] = me_ptr->media_format.format.channel_type[i];
@@ -779,8 +779,8 @@ capi_err_t capi_data_logging_process_get_properties(capi_data_logging_t *me_ptr,
                   /**
                    * data-logging module can act as pseudo sink. (0 == min-out-port)
                    * state propagation is blocked for pseudo sink module by framework.
-            * data-logging is a special case where we need to override the behavior of fwk for pseudo sink module.
-                   * We don't want data-logging alone to keep the graph active if downstream is stopped.
+                   * data-logging is a special case where we need to override the behavior of fwk for pseudo sink
+                   * module. We don't want data-logging alone to keep the graph active if downstream is stopped.
                    * Therefore all state should be propagated backward.
                    */
                   case INTF_EXTN_PROP_PORT_DS_STATE:
@@ -1899,18 +1899,18 @@ static capi_err_t capi_data_logging_log_data(capi_data_logging_t *me_ptr,
         check_interleaving(&me_ptr->media_format, CAPI_DEINTERLEAVED_UNPACKED))
    { // separate buffer for each channel
       uint32_t *enabled_ch_mask_ptr = &me_ptr->nlpi_me_ptr->enabled_channel_mask_array[0];
-      uint32_t  max_loop_count      = GET_MAX_CHANNEL_GROUPS(num_channels);
+      uint32_t  max_loop_count      = CAPI_CMN_GET_MAX_CHANNEL_GROUPS_NEEDED(num_channels);
 
       for (uint32_t ch_index_grp_no = 0; ch_index_grp_no < max_loop_count; ch_index_grp_no++)
       {
-         uint32_t start_ch_index = ch_index_grp_no * CHANNELS_PER_MASK;
-         uint32_t end_ch_index   = (ch_index_grp_no + 1) * CHANNELS_PER_MASK;
+         uint32_t start_ch_index = ch_index_grp_no * CAPI_CMN_CHANNELS_PER_MASK;
+         uint32_t end_ch_index   = (ch_index_grp_no + 1) * CAPI_CMN_CHANNELS_PER_MASK;
          end_ch_index            = MIN(end_ch_index, num_channels);
 
          for (uint32_t i = start_ch_index; i < end_ch_index; i++)
          {
 
-            uint32_t curr_ch_mask = (1 << MOD_WITH_32(i));
+            uint32_t curr_ch_mask = (1 << CAPI_CMN_MOD_WITH_32(i));
             if (0 == (enabled_ch_mask_ptr[ch_index_grp_no] & curr_ch_mask))
             {
                // skip the channel which is not enabled for logging.
@@ -2085,8 +2085,8 @@ static capi_err_t capi_data_logging_log_data(capi_data_logging_t *me_ptr,
 
          for (int i = 0, j = 0; i < num_channels; i++)
          {
-            uint32_t curr_ch_mask    = (1 << MOD_WITH_32(i));
-            uint32_t ch_index_grp_no = DIVIDE_WITH_32(i);
+            uint32_t curr_ch_mask    = (1 << CAPI_CMN_MOD_WITH_32(i));
+            uint32_t ch_index_grp_no = CAPI_CMN_DIVIDE_WITH_32(i);
             if (0 == (enabled_ch_mask_ptr[ch_index_grp_no] & curr_ch_mask))
             {
                // skip the channel which is not enabled for logging.
@@ -2202,8 +2202,8 @@ static capi_err_t capi_data_logging_log_data(capi_data_logging_t *me_ptr,
 
          for (uint32_t i = 0; i < me_ptr->media_format.format.num_channels; i++)
          {
-            uint32_t curr_ch_mask    = (1 << MOD_WITH_32(i));
-            uint32_t ch_index_grp_no = DIVIDE_WITH_32(i);
+            uint32_t curr_ch_mask    = (1 << CAPI_CMN_MOD_WITH_32(i));
+			uint32_t ch_index_grp_no = CAPI_CMN_DIVIDE_WITH_32(i);
             if (0 == (enabled_ch_mask_ptr[ch_index_grp_no] & curr_ch_mask))
             {
                // skip the channel which is not enabled for logging.

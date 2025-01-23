@@ -32,44 +32,6 @@
 #define DATA_LOGGING_MAX_SUPPORTED_CHANNEL_MAPS 128
 // maximum supported channels for all the V1 PIDs
 #define MAX_CHANNEL_V1_CFG             32
-// number of channels that can be represented in a word mask
-#define CHANNELS_PER_MASK              32
-#define CHANNELS_PER_MASK_MINUS_ONE    (CHANNELS_PER_MASK - 1)
-
-// optimal approach for mod operation of x with CHANNELS_PER_MASK
-#define MOD_WITH_32(var1) (var1 & CHANNELS_PER_MASK_MINUS_ONE)
-
-// optimal approach for divide operation of x with CHANNELS_PER_MASK
-#define DIVIDE_WITH_32(var1) (var1 >> 5)
-
-// even though this might depend only on number of channels and not channel maps, due to conversion of
-// channel_type configuration to channel index configuration, we would need more number of bits
-// In short, would need same number of bits as DATA_LOGGING_MAX_SUPPORTED_CHANNEL_MAPS to store ch index config
-#define TOTAL_BITS_NEEDED_FOR_INDEX_CFG   DATA_LOGGING_MAX_SUPPORTED_CHANNEL_MAPS
-
-// would need DATA_LOGGING_MAX_SUPPORTED_CHANNEL_MAPS + 1 bits to store ch type config since
-// bit 0 in 1st group is always reserved
-#define TOTAL_BITS_NEEDED_FOR_TYPE_CFG   (DATA_LOGGING_MAX_SUPPORTED_CHANNEL_MAPS + 1)
-
-// Adds the value of (CHANNELS_PER_MASK_MINUS_ONE) to the num_ch to account for rounding up to nearest higher integer value.
-// The result is division of the sum by CHANNELS_PER_MASK, which determines the channel group.
-#define GET_MAX_CHANNEL_GROUPS(num_ch) ((num_ch + (CHANNELS_PER_MASK_MINUS_ONE)) / CHANNELS_PER_MASK)
-
-// maximum valid groups for channel index array
-#define MAX_CHANNEL_INDEX_GROUPS GET_MAX_CHANNEL_GROUPS(TOTAL_BITS_NEEDED_FOR_INDEX_CFG)
-const static uint32_t max_ch_idx_group = MAX_CHANNEL_INDEX_GROUPS;
-
-// maximum valid groups for channel type array
-#define MAX_CHANNEL_MAP_GROUPS GET_MAX_CHANNEL_GROUPS(TOTAL_BITS_NEEDED_FOR_TYPE_CFG)
-const static uint32_t max_ch_type_group = MAX_CHANNEL_MAP_GROUPS;
-
-#define CONVERT_TO_32B_MASK(var)   (uint32_t)((uint32_t)1<<var)
-
-//checks if pos bit is set in val
-//val and pos should be 32 bit variables.
-#define IS_BIT_SET_AT_POS_IN_32B_VAL(val,pos) ((val & (1 << pos)))
-
-#define SET_MASK_32B 0xFFFFFFFF
 
 //#define DATA_LOGGING_DBG
 
@@ -91,7 +53,7 @@ typedef struct capi_data_logging_channel_cfg_v2_t
    uint32_t cache_channel_logging_cfg_size;
    /*size to cache selective channel logging configuration*/
 
-   uint32_t channel_mask_index_to_log_arr[MAX_CHANNEL_INDEX_GROUPS];
+   uint32_t channel_mask_index_to_log_arr[CAPI_CMN_MAX_CHANNEL_INDEX_GROUPS];
    /*new selective channel logging configuration*/
 
    uint16_t ch_index_mask_list_size_in_bytes;
@@ -162,7 +124,7 @@ typedef struct capi_data_logging_non_island_t
    data_logging_select_channels_t selective_ch_logging_cfg;
    /*selective channel logging configuration*/
 
-   uint32_t enabled_channel_mask_array[MAX_CHANNEL_INDEX_GROUPS];
+   uint32_t enabled_channel_mask_array[CAPI_CMN_MAX_CHANNEL_INDEX_GROUPS];
    /*channel index mask for which logging is enabled.*/
 
    capi_data_logging_channel_cfg_v2_t channel_logging_cfg;
@@ -218,8 +180,6 @@ typedef struct capi_data_logging_t
    /*overall process state, true: enabled, false: disabled */
 
 } capi_data_logging_t;
-
-uint32_t count_set_bits(uint32_t num);
 
 uint32_t calculate_size_for_ch_mask_array(uint32_t num);
 
