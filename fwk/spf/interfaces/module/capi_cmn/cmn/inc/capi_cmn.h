@@ -27,7 +27,7 @@
 #define CAPI_CMN_MAX_OUT_PORTS 1
 #define CAPI_ALIGN_8_BYTE(x) ((((uintptr_t)(x) + 7) >> 3) << 3)
 #define CAPI_CMN_IS_PCM_FORMAT(data_format) ((CAPI_FIXED_POINT == data_format) || (CAPI_FLOATING_POINT == data_format))
-
+#define CAPI_CMN_INT32_SIZE_IN_BYTES 4
 #define CAPI_CMN_IS_POW_OF_2(x) (!((x) & ((x)-1)))
 
 #define CAPI_CMN_ISLAND_VOTE_EXIT 1
@@ -41,9 +41,51 @@
    underrun_info.underrun_counter = 0; \
    underrun_info.prev_time = 0;
 
+#define CAPI_CMN_DBG_MSG 1
+
 #define TIMESTAMP_NUM_FRACTIONAL_BITS 10
 #define TIMESTAMP_FRACTIONAL_BIT_MASK 0x3FF
 #define SIZE_OF_AN_ARRAY(a) (sizeof(a) / sizeof((a)[0]))
+
+#define CAPI_CMN_MSG_PREFIX "CAPI CMN:[%lX] "
+#define CAPI_CMN_MSG(ID, xx_ss_mask, xx_fmt, ...)\
+         AR_MSG(xx_ss_mask, CAPI_CMN_MSG_PREFIX xx_fmt, ID, ##__VA_ARGS__)
+
+// number of channels that can be represented in a word mask
+#define CAPI_CMN_CHANNELS_PER_MASK              32
+#define CAPI_CMN_CHANNELS_PER_MASK_MINUS_ONE    (CAPI_CMN_CHANNELS_PER_MASK - 1)
+
+// optimal approach for mod operation of x with CHANNELS_PER_MASK
+#define CAPI_CMN_MOD_WITH_32(var1) (var1 & CAPI_CMN_CHANNELS_PER_MASK_MINUS_ONE)
+
+// optimal approach for divide operation of x with CHANNELS_PER_MASK
+#define CAPI_CMN_DIVIDE_WITH_32(var1) (var1 >> 5)
+
+#define CAPI_CMN_TOTAL_BITS_NEEDED_FOR_INDEX_CFG   PCM_MAX_CHANNEL_MAP_V2
+
+// would need PCM_MAX_CHANNEL_MAP_V2 + 1 bits to store channel type config since
+// bit 0 in 1st group is always reserved
+#define CAPI_CMN_TOTAL_BITS_NEEDED_FOR_TYPE_CFG   (PCM_MAX_CHANNEL_MAP_V2 + 1)
+
+// Adds the value of (CHANNELS_PER_MASK_MINUS_ONE) to the num_ch to account for rounding up to nearest higher integer value.
+// The result is division of the sum by CHANNELS_PER_MASK, which determines the channel group.
+#define CAPI_CMN_GET_MAX_CHANNEL_GROUPS_NEEDED(num_ch) ((num_ch + (CAPI_CMN_CHANNELS_PER_MASK_MINUS_ONE)) / CAPI_CMN_CHANNELS_PER_MASK)
+
+// maximum valid groups for channel index array
+#define CAPI_CMN_MAX_CHANNEL_INDEX_GROUPS CAPI_CMN_GET_MAX_CHANNEL_GROUPS_NEEDED(CAPI_CMN_TOTAL_BITS_NEEDED_FOR_INDEX_CFG)
+const static uint32_t capi_cmn_max_ch_idx_group = CAPI_CMN_MAX_CHANNEL_INDEX_GROUPS;
+
+// maximum valid groups for channel type array
+#define CAPI_CMN_MAX_CHANNEL_MAP_GROUPS CAPI_CMN_GET_MAX_CHANNEL_GROUPS_NEEDED(CAPI_CMN_TOTAL_BITS_NEEDED_FOR_TYPE_CFG)
+const static uint32_t capi_cmn_max_ch_type_group = CAPI_CMN_MAX_CHANNEL_MAP_GROUPS;
+
+#define CAPI_CMN_CONVERT_TO_32B_MASK(var)   (uint32_t)((uint32_t)1<<var)
+
+//checks if pos bit is set in val
+//val and pos should be 32 bit variables.
+#define CAPI_CMN_IS_BIT_SET_AT_POS_IN_32B_VAL(val,pos) ((val & (1 << pos)))
+
+#define CAPI_CMN_SET_MASK_32B 0xFFFFFFFF
 
 #ifdef __cplusplus
 extern "C" {
@@ -466,7 +508,31 @@ static inline uint32_t capi_cmn_div_num(uint32_t num, uint32_t den)
    }
       return capi_cmn_divide(num, den);
 }
+/* returns the number of set bis in num */
+static inline uint32_t capi_cmn_count_set_bits(uint32_t num)
+{
+   uint32_t count = 0;
+   while (num)
+   {
+      num &= (num - 1);
+      count++;
+   }
+   return count;
+}
 
+/*utility to calculate mask array size dependent on group mask*/
+static inline uint32_t capi_cmn_multi_ch_per_config_increment_size(uint32_t group_mask, uint32_t per_config_size)
+{
+   return (per_config_size + (capi_cmn_count_set_bits(group_mask) * CAPI_CMN_INT32_SIZE_IN_BYTES));
+} 
+
+//tests index(0 to 31) bit in var1 and result in position of idx'th bit among the set bits from lsb
+static inline uint32_t capi_cmn_count_set_bits_in_lower_n_bits(uint32_t var, uint32_t n)
+{
+   uint32_t set_bits_before_N = var & ((1 << n) - 1);
+   uint32_t pos_of_Nth_bit = capi_cmn_count_set_bits(set_bits_before_N);
+   return pos_of_Nth_bit;
+}
 void capi_cmn_check_print_underrun(capi_cmn_underrun_info_t *underrun_info_ptr, uint32_t iid);
 
 void capi_cmn_check_print_underrun_multiple_threshold(capi_cmn_underrun_info_t *underrun_info_ptr,
@@ -475,6 +541,22 @@ void capi_cmn_check_print_underrun_multiple_threshold(capi_cmn_underrun_info_t *
                                                       bool_t                    marker_eos,
                                                       bool_t                    is_capi_in_media_fmt_set);
 
+capi_err_t capi_cmn_check_payload_validation(uint32_t miid,
+		                                     uint32_t ch_type_group_mask,
+	                                         uint32_t per_cfg_payload_size,
+										     uint32_t count,
+										     uint32_t param_size,
+										     uint32_t *config_size_ptr,
+										     uint32_t *required_size_ptr);
+
+bool_t capi_cmn_check_v2_channel_mask_duplication(uint32_t  miid,
+		                                          uint32_t  config,
+		                                          uint32_t  channel_group_mask,
+		                                          uint32_t* temp_mask_list_ptr,
+		                                          uint32_t* current_channel_mask_arr_ptr,
+												  uint32_t* check_channel_mask_arr_ptr,
+												  uint32_t* offset_ptr,
+												  uint32_t  per_cfg_base_payload_size);
 #ifdef AVS_BUILD_SOS
 #include "spf_dyn_loading_func_mapping.h"
 

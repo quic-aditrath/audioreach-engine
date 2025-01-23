@@ -1043,7 +1043,7 @@ capi_err_t capi_cmn_validate_client_pcm_float_output_cfg(const payload_pcm_outpu
    {
       for (uint32_t i = 0; i < pcm_cfg_ptr->num_channels; i++)
       {
-         if ((channel_mapping[i] < (uint16_t)PCM_CHANNEL_L) || (channel_mapping[i] > (uint16_t)PCM_MAX_CHANNEL_MAP))
+         if ((channel_mapping[i] < (uint16_t)PCM_CHANNEL_L) || (channel_mapping[i] > (uint16_t)PCM_MAX_CHANNEL_MAP_V2))
          {
             AR_MSG(DBG_ERROR_PRIO,
                    "Unsupported channel type channel idx %d, channel type %d received",
@@ -1633,4 +1633,148 @@ capi_err_t capi_cmn_raise_deinterleaved_unpacked_v2_supported_event(capi_event_c
              result);
    }
    return result;
+}
+/*Objective: common utility function to validate the payload size for APIs enhanced to
+ *           support greater than 63 channels*/
+capi_err_t capi_cmn_check_payload_validation(uint32_t miid,
+		                                     uint32_t ch_type_group_mask,
+	                                         uint32_t per_cfg_payload_size,
+										     uint32_t count,
+										     uint32_t param_size,
+										     uint32_t *config_size_ptr,
+										     uint32_t *required_size_ptr)
+{
+
+   	*config_size_ptr = capi_cmn_multi_ch_per_config_increment_size(ch_type_group_mask, per_cfg_payload_size);
+#ifdef CAPI_CMN_DBG_MSG
+   	CAPI_CMN_MSG(miid, DBG_MED_PRIO,
+               "Calculated size for payload #%lu is %lu.",
+                count,
+				*config_size_ptr);
+#endif
+    *required_size_ptr += *config_size_ptr;
+    if (param_size < *required_size_ptr)
+    {
+       CAPI_CMN_MSG(miid, DBG_ERROR_PRIO,
+                  "Insufficient payload size %d for config #%lu. Required size %lu",
+                  param_size,
+                  count,
+                  *required_size_ptr);
+       return CAPI_ENEEDMORE;
+    }
+    return CAPI_EOK;
+}
+
+/*Objective: common utility function to check for duplication of channels maps
+ *           This function is called from a loop of total number of configs*/
+bool_t capi_cmn_check_v2_channel_mask_duplication(uint32_t miid,
+                                                  uint32_t config,
+		                                          uint32_t channel_group_mask,
+		                                          uint32_t* temp_mask_list_ptr,
+		                                          uint32_t* current_channel_mask_arr_ptr,
+												  uint32_t* check_channel_mask_arr_ptr,
+												  uint32_t* offset_ptr,
+												  uint32_t per_cfg_base_payload_size)
+{
+   bool_t   check               = TRUE;
+   bool_t   is_aggr_ch_map_zero = TRUE;
+   uint32_t ch_mask_arr_index   = 0;
+
+   //update the channel mask for current config in current_channel_mask_arr
+   for (uint32_t group_no = 0; group_no < CAPI_CMN_MAX_CHANNEL_MAP_GROUPS; group_no++)
+   {
+      current_channel_mask_arr_ptr[group_no] = 0;
+      // check if a group is configured. If yes, update current_channel_mask_arr
+      if (CAPI_CMN_IS_BIT_SET_AT_POS_IN_32B_VAL(channel_group_mask, group_no))
+      {
+         current_channel_mask_arr_ptr[group_no] = temp_mask_list_ptr[ch_mask_arr_index];
+         ch_mask_arr_index++;
+
+#ifdef CAPI_CMN_DBG_MSG
+         CAPI_CMN_MSG(miid, DBG_MED_PRIO,
+                 "current_channel_mask_arr[%lu] = %#lx",
+                 group_no,
+                 current_channel_mask_arr_ptr[group_no]);
+#endif
+         //if a valid mask is received in any channel mask group for the first time, then set the flag to false.
+         if (is_aggr_ch_map_zero && current_channel_mask_arr_ptr[group_no]) 
+         {
+            is_aggr_ch_map_zero = FALSE;
+         }
+      }
+   }
+   if(is_aggr_ch_map_zero) //if a config has aggregated channel mask as zero, this would be errored out
+   {
+      CAPI_CMN_MSG(miid, DBG_ERROR_PRIO,"Received invalid Channel mask of zero on all channels for config %lu",config);
+   	  return CAPI_EBADPARAM;
+   }
+
+   //check_channel_mask_arr comprises all the accumulated channel maps received in previous config of this parameter
+   for (uint32_t group_no = 0; group_no < CAPI_CMN_MAX_CHANNEL_MAP_GROUPS; group_no++)
+   {
+#ifdef CAPI_CMN_DBG_MSG
+ 	  CAPI_CMN_MSG(miid, DBG_MED_PRIO,
+              "check_channel_mask_arr[%lu]: %#lx, current_channel_mask_arr[%lu]: %#lx",
+              group_no,
+              check_channel_mask_arr_ptr[group_no],
+			  group_no,
+			  current_channel_mask_arr_ptr[group_no]);
+#endif
+      //check if the current channel mask has any duplicate channel maps that is already present in previous accumulated channel maps
+      uint32_t check_mask_difference = check_channel_mask_arr_ptr[group_no] & current_channel_mask_arr_ptr[group_no];
+      if (0 == group_no)
+      {
+    	 //if check_mask_difference is 0, then there is no channel mask duplication yet
+    	 //if 0th bit of 1st group is set, then ignore it.
+         if ((0 == check_mask_difference) || (1 == check_mask_difference))
+         {
+        	//add current channel maps to accumulated channel maps
+            check_channel_mask_arr_ptr[group_no] |= current_channel_mask_arr_ptr[group_no];
+#ifdef CAPI_CMN_DBG_MSG
+            CAPI_CMN_MSG(miid, DBG_MED_PRIO,
+                    "check_channel_mask_arr[%lu]: %#lx",
+                    group_no,
+                    check_channel_mask_arr_ptr[group_no]);
+#endif
+         }
+         else
+         {
+            check = FALSE;
+            CAPI_CMN_MSG(miid, DBG_ERROR_PRIO,
+                    "Invalid channel mask %#lx for group %lu. Returning.",
+                    current_channel_mask_arr_ptr[group_no],
+                    group_no);
+            return check;
+         }
+      }
+      else
+      {
+         if (0 == check_mask_difference)
+         {
+        	////add current channel maps to accumulated channel maps
+            check_channel_mask_arr_ptr[group_no] |= current_channel_mask_arr_ptr[group_no];
+#ifdef CAPI_CMN_DBG_MSG
+            CAPI_CMN_MSG(miid, DBG_MED_PRIO,
+                    "check_channel_mask_arr[%lu]: %#lx",
+                    group_no,
+                    check_channel_mask_arr_ptr[group_no]);
+#endif
+         }
+         else
+         {
+            check = FALSE;
+            CAPI_CMN_MSG(miid, DBG_ERROR_PRIO,
+                    "Invalid channel mask %#lx for group %lu. Returning.",
+                    current_channel_mask_arr_ptr[group_no],
+                    group_no);
+            return check;
+         }
+      }
+   }
+   // offset increments by size of channel mask array + size of payload
+   *offset_ptr = (ch_mask_arr_index * CAPI_CMN_INT32_SIZE_IN_BYTES + per_cfg_base_payload_size);
+#ifdef CAPI_CMN_DBG_MSG
+   CAPI_CMN_MSG(miid, DBG_MED_PRIO, "offset for config %lu is %lu", config + 1, *offset_ptr);
+#endif
+   return check;
 }
