@@ -75,6 +75,12 @@ static ar_result_t posal_power_mgr_send_command_internal(uint32_t msg_opcode, pm
    spf_handle_t *        pm_server_handle_ptr = pm_server_get_handle();
    spf_msg_token_t       token;
 
+   if(NULL == pm_server_handle_ptr)
+   {
+      AR_MSG(DBG_HIGH_PRIO,
+             "PM sever handle is NULL");
+      return AR_EFAILED;
+   }
    token.token_ptr = msg_payload_ptr;
 
    if (AR_EOK != (cmd_result = spf_msg_create_msg(&msg,                 /** MSG Ptr */
