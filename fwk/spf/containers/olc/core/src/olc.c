@@ -138,6 +138,7 @@ static const topo_to_cntr_vtable_t topo_to_olc_vtable = {
    .aggregate_ext_out_port_delay                = olc_aggregate_ext_out_port_delay_topo_cb,
    .check_for_error_print                       = NULL,
 
+   .notify_ts_disc_evt                          = NULL,
 };
 
 // function table for response handling.

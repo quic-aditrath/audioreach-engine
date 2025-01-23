@@ -154,7 +154,9 @@ static const topo_to_cntr_vtable_t topo_to_spl_cntr_vtable = {
    .check_insert_missing_eos_on_next_module     = spl_cntr_check_insert_missing_eos_on_next_module,
 
    .aggregate_ext_in_port_delay                 = spl_cntr_aggregate_ext_in_port_delay_topo_cb,
-   .aggregate_ext_out_port_delay                = spl_cntr_aggregate_ext_out_port_delay_topo_cb
+   .aggregate_ext_out_port_delay                = spl_cntr_aggregate_ext_out_port_delay_topo_cb,
+
+   .notify_ts_disc_evt                          = NULL,
 };
 // clang-format on
 

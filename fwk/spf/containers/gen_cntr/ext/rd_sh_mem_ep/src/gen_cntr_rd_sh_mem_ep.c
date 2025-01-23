@@ -43,10 +43,16 @@ static ar_result_t gen_cntr_process_rdep_shmem_peer_client_property_config(gen_c
                                                                            int8_t *      param_data_ptr,
                                                                            uint32_t      param_size);
 
+ar_result_t gen_cntr_raise_ts_disc_event_from_rd_sh_mem_ep(gen_cntr_t *       me_ptr,
+                                                           gen_cntr_module_t *module_ptr,
+                                                           bool_t             ts_valid,
+                                                           int64_t            timestamp_disc_us);
+
 const gen_cntr_fwk_module_vtable_t rd_sh_mem_ep_vtable = {
    .set_cfg   = gen_cntr_handle_set_cfg_to_rd_sh_mem_ep,
    .reg_evt   = gen_cntr_reg_evt_rd_sh_mem_ep,
    .raise_evt = NULL,
+   .raise_ts_disc_event = gen_cntr_raise_ts_disc_event_from_rd_sh_mem_ep,
 };
 
 const gen_cntr_ext_out_vtable_t gpr_client_ext_out_vtable = {
@@ -138,6 +144,7 @@ static ar_result_t gen_cntr_reg_evt_rd_sh_mem_ep(gen_cntr_t *       me_ptr,
    {
       case DATA_EVENT_ID_RD_SH_MEM_EP_MEDIA_FORMAT:
       case DATA_EVENT_ID_RD_SH_MEM_EP_EOS:
+      case EVENT_ID_RD_SH_MEM_EP_TIMESTAMP_DISC_DETECTION:
       {
          if (0 == event_config_payload_size)
          {
@@ -158,6 +165,10 @@ static ar_result_t gen_cntr_reg_evt_rd_sh_mem_ep(gen_cntr_t *       me_ptr,
                                   "When registering event, media format is valid. Trying to raise event");
                      gen_cntr_send_media_fmt_to_gpr_client(me_ptr, ext_out_port_ptr, event_id, TRUE);
                   }
+               }
+               else if(EVENT_ID_RD_SH_MEM_EP_TIMESTAMP_DISC_DETECTION == event_id)
+               {
+                   GEN_CNTR_MSG(me_ptr->topo.gu.log_id, DBG_HIGH_PRIO, "Registered for Timestamp Disc event");
                }
             }
          }
@@ -1870,5 +1881,105 @@ static ar_result_t gen_cntr_process_rdep_shmem_peer_client_property_config(gen_c
    CATCH(result, GEN_CNTR_MSG_PREFIX, me_ptr->topo.gu.log_id)
    {
    }
+   return result;
+}
+
+/* Raises the timestamp discontunity event to client if registered. This event will be following the
+ * APM_EVENT_MODULE_TO_CLIENT with the event ID EVENT_ID_RD_SH_MEM_EP_TIMESTAMP_DISC_DETECTION. To
+ * receive this event registered for it through APM_CMD_REGISTER_MODULE_EVENTS. */
+ar_result_t gen_cntr_raise_ts_disc_event_from_rd_sh_mem_ep(gen_cntr_t *       me_ptr,
+                                                           gen_cntr_module_t *module_ptr,
+                                                           bool_t             ts_valid,
+                                                           int64_t            timestamp_disc_us)
+{
+   ar_result_t result = AR_EOK;
+
+   /* Check if any client is registered for any event */
+   if (NULL == module_ptr->cu.event_list_ptr)
+   {
+      return result;
+   }
+
+   /* Check if any client is registered for Timestamp Discontinuity Event*/
+   spf_list_node_t *client_list_ptr;
+
+   cu_find_client_info(me_ptr->topo.gu.log_id,
+                       EVENT_ID_RD_SH_MEM_EP_TIMESTAMP_DISC_DETECTION,
+                       module_ptr->cu.event_list_ptr,
+                       &client_list_ptr);
+
+   if (NULL == client_list_ptr)
+   {
+      return result;
+   }
+
+   /* Fill event information */
+   event_id_rd_sh_mem_ep_timestamp_disc_detection_t ts_disc_event = {0};
+   ts_disc_event.flags = 0;
+   cu_set_bits(&ts_disc_event.flags,
+               ts_valid,
+               RD_SH_MEM_EP_BIT_MASK_TIMESTAMP_DISC_DURATION_VALID_FLAG,
+               RD_SH_MEM_EP_SHIFT_TIMESTAMP_DISC_DURATION_VALID_FLAG);
+
+   /* Event reports absolute timestamp difference observed in the discontinuity */
+   uint64_t ts_diff_us                          = (timestamp_disc_us < 0) ? -timestamp_disc_us : timestamp_disc_us;
+   ts_disc_event.timestamp_disc_duration_us_lsw = (uint32_t)ts_diff_us;
+   ts_disc_event.timestamp_disc_duration_us_msw = (uint32_t)(ts_diff_us >> 32);
+
+   GEN_CNTR_MSG(me_ptr->topo.gu.log_id,
+                DBG_HIGH_PRIO,
+                "Module 0x%lx received timestamp discontinuty notification : ts_valid = %lu, ts_lsw: %lu, ts_msw: %lu",
+                module_ptr->topo.gu.module_instance_id,
+                ts_valid,
+                (uint32_t)ts_diff_us,
+                (uint32_t)(ts_diff_us >> 32));
+
+   /* For each client registered for this event raise the notification */
+   for (cu_client_info_t *client_info_ptr = (cu_client_info_t *)(client_list_ptr->obj_ptr); (NULL != client_list_ptr);
+        LIST_ADVANCE(client_list_ptr))
+   {
+      gpr_packet_t *      gpr_pkt_ts_disc_ptr         = NULL;
+      void *              gpr_pkt_ts_disc_payload_ptr = NULL;
+      gpr_cmd_alloc_ext_t args;
+
+      args.src_domain_id = client_info_ptr->dest_domain_id;
+      args.dst_domain_id = client_info_ptr->src_domain_id;
+      args.src_port      = module_ptr->topo.gu.module_instance_id;
+      args.dst_port      = client_info_ptr->src_port;
+      args.token         = client_info_ptr->token;
+      args.opcode        = APM_EVENT_MODULE_TO_CLIENT;
+
+      args.payload_size = sizeof(apm_module_event_t) + sizeof(event_id_rd_sh_mem_ep_timestamp_disc_detection_t);
+      args.ret_packet   = &gpr_pkt_ts_disc_ptr;
+      args.client_data  = 0;
+      result            = __gpr_cmd_alloc_ext(&args);
+
+      if (AR_DID_FAIL(result) || NULL == gpr_pkt_ts_disc_ptr)
+      {
+         GEN_CNTR_MSG(me_ptr->topo.gu.log_id,
+                      DBG_ERROR_PRIO,
+                      "Allocating timestamp discontinuity notifcation pkt to send to dsp client failed with %lu",
+                      result);
+         return AR_ENOMEMORY;
+      }
+
+      gpr_pkt_ts_disc_payload_ptr = GPR_PKT_GET_PAYLOAD(void, gpr_pkt_ts_disc_ptr);
+
+      apm_module_event_t *event_payload = (apm_module_event_t *)gpr_pkt_ts_disc_payload_ptr;
+      event_payload->event_id           = EVENT_ID_RD_SH_MEM_EP_TIMESTAMP_DISC_DETECTION;
+      event_payload->event_payload_size = sizeof(event_id_rd_sh_mem_ep_timestamp_disc_detection_t);
+      memscpy(event_payload + 1, event_payload->event_payload_size, &ts_disc_event, sizeof(ts_disc_event));
+
+      if (AR_EOK != (result = __gpr_cmd_async_send(gpr_pkt_ts_disc_ptr)))
+      {
+         result = AR_EFAILED;
+         GEN_CNTR_MSG(me_ptr->topo.gu.log_id,
+                      DBG_ERROR_PRIO,
+                      "Sending timestamp discontinuity pkt to client failed with %lu",
+                      result);
+         __gpr_cmd_free(gpr_pkt_ts_disc_ptr);
+      }
+   }
+
    return result;
 }

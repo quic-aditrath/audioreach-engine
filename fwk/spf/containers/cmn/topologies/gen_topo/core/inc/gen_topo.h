@@ -250,6 +250,8 @@ typedef struct topo_to_cntr_vtable_t
    uint32_t (*aggregate_ext_out_port_delay)(gen_topo_t *topo_ptr, gu_ext_out_port_t *gu_ext_out_port_ptr);
 
    bool_t (*check_for_error_print)(gen_topo_t *topo_ptr);
+
+   ar_result_t (*notify_ts_disc_evt)(gen_topo_t *topo_ptr, bool_t ts_valid, int64_t timestamp_disc_us, uint32_t path_index);
 } topo_to_cntr_vtable_t;
 
 

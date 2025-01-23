@@ -104,6 +104,26 @@ bool_t gen_topo_check_copy_incoming_ts_util_(gen_topo_t *           topo_ptr,
 
                if (ts_disc)
                {
+                  /* If the container supports callback to notify timestamp discontinuity events forward this
+                   * notification as soon as it is detected. */
+                  if (topo_ptr->topo_to_cntr_vtable_ptr->notify_ts_disc_evt)
+                  {
+                     ar_result_t result =
+                        topo_ptr->topo_to_cntr_vtable_ptr
+                           ->notify_ts_disc_evt(topo_ptr,
+                                                incoming_ts_valid & next_sdata_ptr->flags.is_timestamp_valid,
+                                                next_data_expected_ts - incoming_ts,
+                                                next_module_ptr->gu.path_index);
+
+                     if (AR_EOK != result)
+                     {
+                        TOPO_MSG_ISLAND(topo_ptr->gu.log_id,
+                                        DBG_HIGH_PRIO,
+                                        "Failed notifying notify_ts_disc_evt %lu",
+                                        result);
+                     }
+                  }
+
                   if (!(/*topo_ptr->flags.is_signal_triggered &&*/ topo_ptr->flags.is_signal_triggered_active))
                   {
                      TOPO_MSG_ISLAND(topo_ptr->gu.log_id,

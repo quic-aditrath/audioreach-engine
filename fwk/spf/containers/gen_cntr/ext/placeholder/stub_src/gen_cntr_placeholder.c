@@ -14,9 +14,10 @@
 #include "cu_events.h"
 
 const gen_cntr_fwk_module_vtable_t placeholder_vtable = {
-   .set_cfg   = NULL,
-   .reg_evt   = NULL,
-   .raise_evt = NULL,
+   .set_cfg             = NULL,
+   .reg_evt             = NULL,
+   .raise_evt           = NULL,
+   .raise_ts_disc_event = NULL,
 };
 
 ar_result_t gen_cntr_create_placeholder_module(gen_cntr_t *           me_ptr,

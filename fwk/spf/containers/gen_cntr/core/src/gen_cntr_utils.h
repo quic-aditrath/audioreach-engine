@@ -287,6 +287,10 @@ uint32_t gen_cntr_aggregate_ext_out_port_delay_topo_cb(gen_topo_t *topo_ptr, gu_
 uint32_t gen_cntr_get_additional_ext_in_port_delay_cu_cb(cu_base_t *base_ptr, gu_ext_in_port_t *gu_ext_in_port_ptr);
 uint32_t gen_cntr_get_additional_ext_out_port_delay_cu_cb(cu_base_t *base_ptr, gu_ext_out_port_t *gu_ext_out_port_ptr);
 
+ar_result_t gen_cntr_notify_timestamp_discontinuity_event_cb(gen_topo_t *topo_ptr,
+                                                             bool_t      ts_valid,
+                                                             int64_t     timestamp_disc_us,
+                                                             uint32_t    path_index);
 #ifdef __cplusplus
 }
 #endif //__cplusplus

@@ -122,7 +122,9 @@ const topo_to_cntr_vtable_t topo_to_gen_cntr_vtable = {
 
    .aggregate_ext_in_port_delay                 = gen_cntr_aggregate_ext_in_port_delay_topo_cb,
    .aggregate_ext_out_port_delay                = gen_cntr_aggregate_ext_out_port_delay_topo_cb,
-   .check_for_error_print                       = gen_cntr_check_for_err_print
+   .check_for_error_print                       = gen_cntr_check_for_err_print,
+
+   .notify_ts_disc_evt                          = gen_cntr_notify_timestamp_discontinuity_event_cb,
 };
 // clang-format on
 const uint32_t g_sizeof_gen_cntr_cmd_handler_table = (SIZE_OF_ARRAY(gen_cntr_cmd_handler_table));

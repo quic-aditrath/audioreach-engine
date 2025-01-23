@@ -180,7 +180,7 @@ typedef struct data_cmd_rd_sh_mem_ep_data_buffer_v2_t data_cmd_rd_sh_mem_ep_data
 
 
 /** @ingroup ar_spf_mod_ep_rdshmemep_mods
-    Sent by the SPF in response to #DATA_CMD_RD_SH_MEM_EP_DATA_BUFFER_V2 when 
+    Sent by the SPF in response to #DATA_CMD_RD_SH_MEM_EP_DATA_BUFFER_V2 when
     the referenced buffer is filled and is available to the client for
     reading.
 
@@ -315,6 +315,55 @@ struct data_event_rd_sh_mem_ep_eos_t
 ;
 typedef struct data_event_rd_sh_mem_ep_eos_t data_event_rd_sh_mem_ep_eos_t;
 
+/** @ingroup ar_spf_mod_ep_rdshmemep_mods
+    Timestamp Discontinuity event sent from #MODULE_ID_RD_SHARED_MEM_EP to the client.
+
+    This event serves as a timestamp discontinuity notification and must be registered with
+    APM_CMD_REGISTER_MODULE_EVENTS (see the AudioReach SPF API Reference
+    (80-VN500-5)).
+
+    This will be received as payload of the event APM_EVENT_MODULE_TO_CLIENT.
+
+    @msgpayload
+    event_id_rd_sh_mem_ep_timestamp_disc_detection_t
+*/
+#define EVENT_ID_RD_SH_MEM_EP_TIMESTAMP_DISC_DETECTION 0x08001A98
+
+/** @ingroup ar_spf_mod_ep_rdshmemep_macros
+    Bitmask for the timestamp discontinuity duration validity information. */
+#define RD_SH_MEM_EP_BIT_MASK_TIMESTAMP_DISC_DURATION_VALID_FLAG AR_NON_GUID(0x80000000)
+
+/** @ingroup ar_spf_mod_ep_rdshmemep_macros
+    Shift Value for the timestamp discontinuity duration validity information. */
+#define RD_SH_MEM_EP_SHIFT_TIMESTAMP_DISC_DURATION_VALID_FLAG 31
+
+#include "spf_begin_pack.h"
+struct event_id_rd_sh_mem_ep_timestamp_disc_detection_t
+{
+
+   uint32_t flags;
+   /**< Frame flags.
+
+        @valuesbul{for bit 31}
+        - 1 -- Timestamp is valid
+        - 0 -- Timestamp is not valid
+
+        To set this bit, use #RD_SH_MEM_EP_BIT_MASK_TIMESTAMP_DISC_DURATION_VALID_FLAG and
+        #RD_SH_MEM_EP_SHIFT_TIMESTAMP_DISC_DURATION_VALID_FLAG
+
+        All other bits are reserved; the SPF sets them to 0. */
+
+   uint32_t timestamp_disc_duration_us_msw;
+   /**< MSW of difference in timestamp detected that led to the discontinuity
+    * in microseconds.  */
+
+   uint32_t timestamp_disc_duration_us_lsw;
+   /**< LSW of difference in timestamp detected that led to the discontinuity
+    * in microseconds.  */
+}
+#include "spf_end_pack.h"
+;
+typedef struct event_id_rd_sh_mem_ep_timestamp_disc_detection_t event_id_rd_sh_mem_ep_timestamp_disc_detection_t;
 
 /** @ingroup ar_spf_mod_ep_rdshmemep_macros
     Identifier for the input port of the #MODULE_ID_RD_SHARED_MEM_EP module. */

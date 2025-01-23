@@ -181,7 +181,6 @@ typedef struct ext_out_port_client_cfg_t
 	uint32_t                    olc_client_md_buf_size;     /** specifies the metadata buffer size in the client buffer for OLC*/
 	uint32_t                    read_data_buf_size;
 	uint32_t                    pending_internal_eos_event;
-
 } ext_out_port_client_cfg_t;
 
 typedef struct gen_cntr_fwk_module_vtable_t
@@ -189,6 +188,7 @@ typedef struct gen_cntr_fwk_module_vtable_t
    ar_result_t (*set_cfg)(gen_cntr_t *me_ptr, gen_cntr_module_t *module_ptr, uint32_t param_id, int8_t *param_data_ptr, uint32_t param_size, spf_cfg_data_type_t cfg_type, cu_handle_rest_ctx_for_set_cfg_t **pending_set_cfg_ctx_pptr);
    ar_result_t (*reg_evt)(gen_cntr_t *me_ptr, gen_cntr_module_t *  module_ptr, topo_reg_event_t *event_cfg_payload_ptr, bool_t  is_register);
    ar_result_t (*raise_evt)(gen_cntr_t *me_ptr, gen_cntr_module_t *module_ptr);
+   ar_result_t (*raise_ts_disc_event)(gen_cntr_t *me_ptr, gen_cntr_module_t *module_ptr, bool_t ts_valid, int64_t timestamp_disc_us);
 
 } gen_cntr_fwk_module_vtable_t;
 

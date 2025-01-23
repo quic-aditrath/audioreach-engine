@@ -398,3 +398,52 @@ uint32_t gen_cntr_get_bytes_in_ext_out_for_md(gen_cntr_ext_out_port_t *ext_out_p
 
    return actual_data_len;
 }
+
+
+/* Callback function to notify a timestamp discontinuity as soon as detected in topo */
+ar_result_t gen_cntr_notify_timestamp_discontinuity_event_cb(gen_topo_t *topo_ptr,
+                                                             bool_t      ts_valid,
+                                                             int64_t     timestamp_disc_us,
+                                                             uint32_t    path_index)
+{
+   ar_result_t result = AR_EOK;
+
+   if (topo_ptr->flags.is_signal_triggered_active)
+   {
+      return result;
+   }
+
+   gen_cntr_t *me_ptr = (gen_cntr_t *)GET_BASE_PTR(gen_cntr_t, topo, topo_ptr);
+
+   for (gu_sg_list_t *sg_list_ptr = topo_ptr->gu.sg_list_ptr; (NULL != sg_list_ptr); LIST_ADVANCE(sg_list_ptr))
+   {
+      for (gu_module_list_t *module_list_ptr = sg_list_ptr->sg_ptr->module_list_ptr; (NULL != module_list_ptr);
+           LIST_ADVANCE(module_list_ptr))
+      {
+
+         if (module_list_ptr->module_ptr->path_index != path_index)
+         {
+            continue;
+         }
+
+         gen_cntr_module_t *module_ptr = (gen_cntr_module_t *)module_list_ptr->module_ptr;
+
+         if ((module_ptr->fwk_module_ptr) && (module_ptr->fwk_module_ptr->vtbl_ptr->raise_ts_disc_event))
+         {
+            result = module_ptr->fwk_module_ptr->vtbl_ptr->raise_ts_disc_event(me_ptr,
+                                                                               module_ptr,
+                                                                               ts_valid,
+                                                                               timestamp_disc_us);
+            if (result != AR_EOK)
+            {
+               GEN_CNTR_MSG_ISLAND(me_ptr->topo.gu.log_id,
+                                   DBG_ERROR_PRIO,
+                                   "Failed raising timestamp discontinuity for module 0x%lx",
+                                   module_ptr->topo.gu.module_instance_id);
+            }
+         }
+      }
+   }
+
+   return result;
+}

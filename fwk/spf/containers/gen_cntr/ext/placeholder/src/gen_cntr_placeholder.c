@@ -27,9 +27,10 @@ static ar_result_t gen_cntr_handle_set_cfg_placeholder_module(
    cu_handle_rest_ctx_for_set_cfg_t **pending_set_cfg_ctx_pptr);
 
 const gen_cntr_fwk_module_vtable_t placeholder_vtable = {
-   .set_cfg   = gen_cntr_handle_set_cfg_placeholder_module,
-   .reg_evt   = gen_cntr_reg_evt_placeholder,
-   .raise_evt = NULL,
+   .set_cfg             = gen_cntr_handle_set_cfg_placeholder_module,
+   .reg_evt             = gen_cntr_reg_evt_placeholder,
+   .raise_evt           = NULL,
+   .raise_ts_disc_event = NULL,
 };
 
 ar_result_t gen_cntr_create_placeholder_module(gen_cntr_t *           me_ptr,

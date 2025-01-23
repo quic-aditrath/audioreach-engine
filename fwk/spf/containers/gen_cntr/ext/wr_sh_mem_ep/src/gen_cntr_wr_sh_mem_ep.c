@@ -42,9 +42,12 @@ static ar_result_t gen_cntr_process_wrep_shmem_peer_client_property_config(gen_c
                                                                            int8_t *      param_data_ptr,
                                                                            uint32_t      param_size);
 
-const gen_cntr_fwk_module_vtable_t wr_sh_mem_ep_vtable = {.set_cfg   = gen_cntr_handle_set_cfg_to_wr_sh_mem_ep,
-                                                          .reg_evt   = gen_cntr_reg_evt_wr_sh_mem_ep,
-                                                          .raise_evt = NULL };
+const gen_cntr_fwk_module_vtable_t wr_sh_mem_ep_vtable = {
+   .set_cfg             = gen_cntr_handle_set_cfg_to_wr_sh_mem_ep,
+   .reg_evt             = gen_cntr_reg_evt_wr_sh_mem_ep,
+   .raise_evt           = NULL,
+   .raise_ts_disc_event = NULL,
+};
 
 // clang-format off
 const gen_cntr_ext_in_vtable_t gpr_client_ext_in_vtable = {
