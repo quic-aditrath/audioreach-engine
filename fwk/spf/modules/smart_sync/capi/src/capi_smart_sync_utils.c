@@ -915,10 +915,11 @@ capi_err_t capi_smart_sync_pass_through_data(capi_smart_sync_t * me_ptr,
 
       for (uint32_t ch = 0; ch < num_channels; ch++)
       {
-         memset(output[out_index]->buf_ptr[ch].data_ptr, 0, zeros_to_append);
+         memset(output[out_index]->buf_ptr[ch].data_ptr + bytes_copied_per_ch, 0, zeros_to_append);
 
          output[out_index]->buf_ptr[ch].actual_data_len += zeros_to_append;
       }
+      bytes_copied_per_ch += zeros_to_append;
    }
 
    capi_result |=
@@ -932,7 +933,7 @@ capi_err_t capi_smart_sync_pass_through_data(capi_smart_sync_t * me_ptr,
    /* check and update trigger policy and send voice packet token for primary path. */
    if (is_primary)
    {
-      me_ptr->num_bytes_copied_to_output += bytes_to_copy_per_ch;
+      me_ptr->num_bytes_copied_to_output   += bytes_copied_per_ch;
       me_ptr->out_generated_this_vfr_cycle += bytes_copied_per_ch;
 
       capi_result |= capi_smart_sync_check_send_packet_token(me_ptr, output[out_index]);
