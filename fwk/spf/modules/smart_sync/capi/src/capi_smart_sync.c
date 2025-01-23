@@ -891,11 +891,10 @@ static capi_err_t capi_smart_sync_set_param(capi_t *                _pif,
 
             if (jitter >= SMART_SYNC_FIRST_PROC_TICK_SCHEDULING_JITTER_THRESHOLD_US) // if scheduling is delayed by more than 1.5ms then discard proc tick
             {
-               me_ptr->is_proc_tick_notif_rcvd = FALSE;
                //Resetting to avoid any internal buffering (in module and in topo).
                //Internal buffering can cause packet alignment issues
                AR_MSG(DBG_ERROR_PRIO, "vptx scheduling is delayed, ignorning proc tick.");
-               capi_smart_sync_reset_buffers(me_ptr);
+               capi_smart_sync_resync_module_state(me_ptr);
             }
          }
 
