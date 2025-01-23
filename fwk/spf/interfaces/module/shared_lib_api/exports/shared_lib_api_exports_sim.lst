@@ -86,3 +86,5 @@ init_dit_to_ascii
 tty_inband_filter
 posal_private_get_island_heap_id_v2
 capi_cmn_update_hw_acc_proc_delay_event
+capi_cmn_check_payload_validation
+capi_cmn_check_v2_channel_mask_duplication
