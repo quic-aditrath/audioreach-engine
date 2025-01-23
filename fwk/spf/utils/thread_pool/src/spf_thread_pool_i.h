@@ -55,7 +55,6 @@ typedef struct spf_thread_pool_inst_t
    posal_thread_prio_t thread_priority;        // base thread priority of the worker threads.
    uint32_t            client_ref_counter;     // number of clients subscribed to this thread pool instance
    uint32_t            req_stack_size;         // maximum stack size required from all clients
-   uint32_t            num_active_wt;          // number of active worker threads in this thread pool
    spf_list_node_t    *worker_thread_list_ptr; // list of worker threads
    posal_signal_t      kill_signal;            // kill signal to terminate worker threads
    posal_mutex_t       wt_sync_lock;           // mutex lock used by the worker threads to synchronize queue access.
@@ -69,6 +68,7 @@ typedef struct spf_thread_pool_worker_thread_inst_t
 {
    posal_thread_t          thread_id;     // thread ID
    spf_thread_pool_inst_t *tp_inst_ptr;   // thread pool instance pointer
+   spf_thread_pool_job_t  *active_job_ptr;// context of job running in this worker thread
    uint32_t                stack_size;    // Current stack size of this worker thread
    bool_t                  is_terminated; // Flag is set if worker thread is terminated
 } spf_thread_pool_worker_thread_inst_t;

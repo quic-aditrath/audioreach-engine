@@ -66,6 +66,7 @@ ar_result_t spf_thread_pool_worker_thread_entry(void *ctx_ptr) // todo: rename m
       if (msg.payload_ptr)
       {
          job_ptr = (spf_thread_pool_job_t *)msg.payload_ptr;
+         wt_ptr->active_job_ptr = job_ptr;
 
          if (job_ptr->job_func_ptr)
          {
@@ -80,6 +81,8 @@ ar_result_t spf_thread_pool_worker_thread_entry(void *ctx_ptr) // todo: rename m
                }
             }
          }
+
+         wt_ptr->active_job_ptr = NULL;
       }
 
       // set the base thread priority in case if job function has changed it
