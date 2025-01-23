@@ -276,6 +276,7 @@ typedef struct vfr_source_context_t
 
    volatile uint32_t *intr_cntr_ptr_arr[VOICE_TIMER_MAX_CLIENTS_PER_VFR_SOURCE];
    /**< Array of pointers to the client's interrupt count pointer. */
+   uint32_t    mask_index[VOICE_TIMER_MAX_CLIENTS_PER_VFR_SOURCE]; //created this hash map to cache the bits corresponding to rx clients being moved to new vfr source.
 
 }vfr_source_context_t;
 
