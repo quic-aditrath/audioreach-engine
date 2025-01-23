@@ -369,6 +369,9 @@ typedef struct apm_debug_info_cfg_t
    /**< Flag to indicate if port media info enable has to sent to satellite cntr  as
         part of SET_CFG cmd*/
 
+    bool_t is_sattelite_debug_info_send_pending;
+    /**< Flag to indicate if port media info enable has to sent to satellite cntr  as
+        part of SET_CFG cmd*/
 }apm_debug_info_cfg_t;
 
 typedef struct apm_set_cfg_cmd_ctrl_t apm_set_cfg_cmd_ctrl_t;

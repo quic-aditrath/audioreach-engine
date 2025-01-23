@@ -865,6 +865,15 @@ ar_result_t apm_send_debug_info_to_sat(apm_t *apm_info_ptr)
    {
       return result;
    }
+
+   //If message is not pending to sat apm, no need to send the debug info.
+   if(!apm_cmd_ctrl_ptr->set_cfg_cmd_ctrl.debug_info.is_sattelite_debug_info_send_pending)
+   {
+      return result;
+   }
+
+   apm_cmd_ctrl_ptr->set_cfg_cmd_ctrl.debug_info.is_sattelite_debug_info_send_pending = FALSE;
+
    size = sizeof(apm_cmd_header_t) + sizeof(apm_module_param_data_t) +
           sizeof(apm_param_id_port_media_fmt_report_cfg_enable_t);
 

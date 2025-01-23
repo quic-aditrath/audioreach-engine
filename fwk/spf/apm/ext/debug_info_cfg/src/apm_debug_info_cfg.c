@@ -69,7 +69,21 @@ ar_result_t apm_compute_port_mf_cntr_msg_payload_size(uint32_t *cntr_msg_payload
 
 static ar_result_t apm_util_cfg_port_media_fmt_reporting(apm_t *apm_info_ptr, apm_module_param_data_t *mod_data_ptr)
 {
-   ar_result_t                                      result = AR_EOK;
+   ar_result_t result    = AR_EOK;
+   bool_t      is_master = FALSE;
+
+   if (apm_info_ptr->ext_utils.offload_vtbl_ptr &&
+       apm_info_ptr->ext_utils.offload_vtbl_ptr->apm_offload_is_master_pid_fptr)
+   {
+      is_master = apm_info_ptr->ext_utils.offload_vtbl_ptr->apm_offload_is_master_pid_fptr();
+   }
+
+   if (is_master)
+   {
+      // Set pending message to sattelite apm, as we have recevied the set param.
+      apm_info_ptr->curr_cmd_ctrl_ptr->set_cfg_cmd_ctrl.debug_info.is_sattelite_debug_info_send_pending = TRUE;
+   }
+
    apm_param_id_port_media_fmt_report_cfg_enable_t *port_media_mft_report_enable_ptr =
       (apm_param_id_port_media_fmt_report_cfg_enable_t *)(mod_data_ptr + 1);
 

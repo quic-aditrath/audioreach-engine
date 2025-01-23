@@ -95,7 +95,7 @@ static ar_result_t apm_gpr_basic_rsp_handler(apm_t *apm_info_ptr, spf_msg_t *msg
       result |= __gpr_cmd_free(gpr_pkt_ptr);
 	  // if a command response needs more detailed handling for every response,
 	  // we would need to process the response and then free or cache the response and process & free later.
-	  // the above handling is TODO for now and will be planned as needed for future commands. 
+	  // the above handling is TODO for now and will be planned as needed for future commands.
 	  return result;
    }
 
@@ -136,10 +136,13 @@ static ar_result_t apm_gpr_basic_rsp_handler(apm_t *apm_info_ptr, spf_msg_t *msg
              gpr_rsp_payload_ptr->opcode);
    }
 
+   /** Update the current APM cmd corresponding to current
+    *  response in process */
+   apm_info_ptr->curr_cmd_ctrl_ptr = apm_cmd_ctrl_ptr;
+
    if ((NULL != apm_cmd_ctrl_ptr->cmd_seq.pri_op_seq_ptr) &&
        (!apm_info_ptr->curr_cmd_ctrl_ptr->rsp_ctrl.cmd_rsp_pending))
    {
-      apm_info_ptr->curr_cmd_ctrl_ptr = apm_cmd_ctrl_ptr;
       /** Call the sequencer function to perform next action */
       apm_cmd_sequencer_cmn_entry(apm_info_ptr);
    }
