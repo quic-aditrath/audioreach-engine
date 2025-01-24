@@ -695,7 +695,7 @@ static inline uint64_t topo_samples_to_us(uint32_t samples, uint32_t sample_rate
 
    if (sample_rate != 0)
    {
-      uint64_t total_byte_pns_per_s = ((uint64_t)(samples * NUM_US_PER_SEC) << TIMESTAMP_NUM_FRACTIONAL_BITS);
+      uint64_t total_byte_pns_per_s = (((uint64_t)samples * NUM_US_PER_SEC) << TIMESTAMP_NUM_FRACTIONAL_BITS);
       uint64_t sr                   = ((uint64_t)sample_rate);
 
       time_pns = (total_byte_pns_per_s / sr);
