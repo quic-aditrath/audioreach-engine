@@ -21,6 +21,11 @@
 /* -------------------------------------------------------------------------
  * Function Definitions
  * ------------------------------------------------------------------------- */
+ar_result_t posal_cache_invalidate(uint32_t virt_addr, uint32_t mem_size)
+{
+   return AR_EOK;
+}
+
 ar_result_t posal_cache_invalidate_v2(void *virt_addr_ptr, uint32_t mem_size)
 {
    uint64_t *virt_addr = (uint64_t *)virt_addr_ptr;
@@ -41,6 +46,11 @@ ar_result_t posal_cache_invalidate_v2(void *virt_addr_ptr, uint32_t mem_size)
   The client object must have been registered and the corresponding memory
   mapped before calling this function.
  */
+ar_result_t posal_cache_flush(uint32_t virt_addr, uint32_t mem_size)
+{
+   return AR_EOK;
+}
+
 ar_result_t posal_cache_flush_v2(posal_mem_addr_t virt_addr_ptr, uint32_t mem_size)
 {
    uint64_t *virt_addr = (uint64_t *)virt_addr_ptr;

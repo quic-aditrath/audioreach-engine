@@ -18,10 +18,8 @@ INCLUDE FILES FOR MODULE
 
 extern uint32_t g_heap_alloc_indicator;
 
-#define POSAL_BUFMGR_METADATA_SIZE ((uint32_t)(4 * sizeof(uint32_t) * BUFMGR_METADATA_SIZE_FACTOR))
 /* Macro for maximum bins */
 #define POSAL_BUFMGR_MAX_BUFFER_BINS 32
-
 static const uint32_t MSB_32                  = 0x80000000L;
 static const uint32_t CORRUPTION_DETECT_MAGIC = 0x836ADF71;
 /*--------------------------------------------------------------*/
@@ -118,7 +116,7 @@ ar_result_t spf_bufmgr_create(const uint32_t *nBufsInBin, posal_bufmgr_t **ppBuf
 
    for (binIdx = 0; binIdx < 32; binIdx++)
    {
-      mem_blob_size_bytes += (nBufsInBin[binIdx]) * (bufmgr_meta_data_size + ((1 << binIdx) * BUFMGR_METADATA_SIZE_FACTOR));
+      mem_blob_size_bytes += (nBufsInBin[binIdx]) * (bufmgr_meta_data_size + (1 << binIdx));
    }
 
    /* Initialized posal global buffer manager*/

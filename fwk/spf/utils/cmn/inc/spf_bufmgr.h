@@ -66,13 +66,15 @@ typedef struct posal_bufmgr_node_t
 } posal_bufmgr_node_t;
 
 /* This struct is used to store metadata in both 32-bit and 64-bit processors */
-typedef struct
+typedef struct spf_bufmgr_metadata_t
 {
    void *word0;
    void *word1;
    void *word2;
    void *word3;
-}spf_bufmgr_metadata_t;
+} spf_bufmgr_metadata_t;
+
+#define POSAL_BUFMGR_METADATA_SIZE ((uint32_t)sizeof(spf_bufmgr_metadata_t))
 
 /*-------------------------------------------------------------------------
 Function Declarations and Documentation

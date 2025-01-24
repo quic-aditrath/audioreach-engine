@@ -28,10 +28,11 @@ static __inline uint32_t fnv_hash(const void *void_ptr, uint32_t len, uint32_t h
 {
    const uint8_t *byte_ptr = (uint8_t *)void_ptr;
 
-   while (len--)
+   while (len)
    {
-      h *= FNV_32_PRIME;
+      h = (uint32_t)((uint64_t)h * FNV_32_PRIME);
       h ^= (uint32_t)*byte_ptr++;
+      len--;
    }
    return h;
 }

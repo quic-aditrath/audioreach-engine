@@ -1456,7 +1456,7 @@ static ar_result_t irm_handle_enable_all(irm_t *irm_ptr)
       return AR_EFAILED;
    }
 
-   irm_node_obj_t *processor_instance_ptr = irm_check_insert_node(irm_ptr, &processor_node_ptr->head_node_ptr, NULL);
+   irm_node_obj_t *processor_instance_ptr = irm_check_insert_node(irm_ptr, &processor_node_ptr->head_node_ptr, 0);
    if (NULL == processor_instance_ptr)
    {
       AR_MSG(DBG_ERROR_PRIO, "IRM: failed to insert processor instance node");

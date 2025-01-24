@@ -21,8 +21,6 @@ metadata for the following:
 - To help return the buffers to their proper place in the buffer manager
 - To detect double-free scenarios
  */
-#define POSAL_BUFMGR_METADATA_SIZE ((uint32_t)(4 * sizeof(uint32_t) * BUFMGR_METADATA_SIZE_FACTOR))
-
 static const uint32_t CORRUPTION_DETECT_MAGIC = 0x836ADF71;
 
 // Global variables.
@@ -70,8 +68,8 @@ bool_t spf_is_bufmgr_node(void *buf_ptr)
 ar_result_t spf_bufmgr_return_buf(void *pBuf)
 {
    /* Check for metadata corruption */
-   spf_bufmgr_metadata_t *pMetadata       = (spf_bufmgr_metadata_t *) ((uint8_t *)(pBuf) - POSAL_BUFMGR_METADATA_SIZE);
-   if ((uint64_t)pMetadata->word0 != ((uint64_t)pMetadata->word1 ^ CORRUPTION_DETECT_MAGIC))
+   spf_bufmgr_metadata_t *pMetadata = (spf_bufmgr_metadata_t *) ((uint8_t *)(pBuf) - POSAL_BUFMGR_METADATA_SIZE);
+   if ((uint32_t)pMetadata->word0 != ((uint32_t)pMetadata->word1 ^ CORRUPTION_DETECT_MAGIC))
    {
       AR_MSG(DBG_ERROR_PRIO,
              "posal Bufmgr: trying to free buffer at %p, but this pointer is corrupted! Buffer is leaked!",

@@ -230,7 +230,18 @@ void posal_memory_aligned_free_internal(void *ptr, bool_t track_mem_stats)
 
 }
 
+ar_result_t posal_memory_heapmgr_create(POSAL_HEAP_ID *heap_id_ptr,
+                                        void *         heap_start_ptr,
+                                        uint32_t       heap_size,
+                                        bool_t         is_init_heap_needed)
+{
+   return AR_EOK;
+}
 
+ar_result_t posal_memory_heapmgr_destroy(POSAL_HEAP_ID origheapId)
+{
+   return AR_EOK;
+}
 
 void *posal_memory_malloc(uint32_t unBytes, POSAL_HEAP_ID origheapId)
 {

@@ -45,11 +45,12 @@ set (lib_srcs_list
      ${LIB_ROOT}/src/${TGT_SPECIFIC_FOLDER}/posal_memorymap.c
      ${LIB_ROOT}/src/${TGT_SPECIFIC_FOLDER}/posal_mem_prof.c
      ${LIB_ROOT}/src/${TGT_SPECIFIC_FOLDER}/posal_mutex.c
+     ${LIB_ROOT}/src/${TGT_SPECIFIC_FOLDER}/posal_nmutex.c
      ${LIB_ROOT}/src/${TGT_SPECIFIC_FOLDER}/posal_power_mgr.c
+     ${LIB_ROOT}/src/${TGT_SPECIFIC_FOLDER}/posal_thread_attr_cfg.c
      ${LIB_ROOT}/src/${TGT_SPECIFIC_FOLDER}/posal_${TGT_SPECIFIC_FOLDER}_signal.c
      ${LIB_ROOT}/src/${TGT_SPECIFIC_FOLDER}/posal_${TGT_SPECIFIC_FOLDER}_stubs.c
      ${LIB_ROOT}/src/${TGT_SPECIFIC_FOLDER}/posal_${TGT_SPECIFIC_FOLDER}_thread.c
-     ${LIB_ROOT}/src/${TGT_SPECIFIC_FOLDER}/posal_thread_attr_cfg.c
     )
 
 

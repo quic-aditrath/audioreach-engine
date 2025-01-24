@@ -198,7 +198,7 @@ ar_result_t spdm_flush_read_meta_data(spgm_info_t *                             
          if ((MODULE_CMN_MD_TRACKING_CONFIG_ENABLE_FOR_DROPS_ONLY == flags.tracking_mode) ||
              (MODULE_CMN_MD_TRACKING_CONFIG_ENABLE_FOR_DROP_OR_CONSUME == flags.tracking_mode))
          {
-            spf_list_node_t *       curr_cont_node_ptr = (spf_list_node_t *)(md_data_header_ptr->token_lsw);
+            spf_list_node_t *       curr_cont_node_ptr = (spf_list_node_t *)((uint64_t)md_data_header_ptr->token_lsw);
             sdm_tracking_md_node_t *md_node_ref_ptr    = (sdm_tracking_md_node_t *)(curr_cont_node_ptr->obj_ptr);
             if (md_node_ref_ptr->md_ptr)
             {

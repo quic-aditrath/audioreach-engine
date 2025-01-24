@@ -16,6 +16,7 @@ INCLUDE FILES FOR MODULE
 #include "posal.h"
 #include "posal_internal.h"
 #include "posal_globalstate.h"
+#include "posal_mem_prof.h"
 #include "pm_server.h"
 
 /*--------------------------------------------------------------*/
@@ -64,6 +65,11 @@ void posal_init(void)
 
    /* Create posal global mutex  */
    posal_mutex_create(&posal_globalstate.mutex, POSAL_HEAP_DEFAULT);
+
+   if (AR_EOK != posal_mem_prof_init(POSAL_HEAP_DEFAULT))
+   {
+      AR_MSG(DBG_ERROR_PRIO, "FAILED to init posal mem prof");
+   }
 
    /* Initialise posal power manager */
    posal_power_mgr_init();

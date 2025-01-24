@@ -1622,7 +1622,7 @@ capi_err_t capi_cmn_raise_deinterleaved_unpacked_v2_supported_event(capi_event_c
 
    capi_event_info_t event_info;
    event_info.port_info.is_valid      = FALSE;
-   event_info.payload.actual_data_len = event_info.payload.max_data_len = NULL;
+   event_info.payload.actual_data_len = event_info.payload.max_data_len = 0;
    event_info.payload.data_ptr                                          = NULL;
    result =
       cb_info_ptr->event_cb(cb_info_ptr->event_context, CAPI_EVENT_DEINTERLEAVED_UNPACKED_V2_SUPPORTED, &event_info);

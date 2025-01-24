@@ -19,6 +19,8 @@
 extern "C" {
 #endif // __cplusplus
 
+typedef struct cu_base_t cu_base_t;
+
 ar_result_t cu_fwk_extn_soft_timer_start(cu_base_t *  base_ptr,
                                          gu_module_t *module_ptr,
                                          uint32_t     timer_id,

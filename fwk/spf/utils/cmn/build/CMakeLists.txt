@@ -30,11 +30,6 @@ set (lib_srcs_list
      ${LIB_ROOT}/src/spf_sys_util.c
     )
 
-#Add definitions for target
-set (lib_defs_list
-     BUFMGR_METADATA_SIZE_FACTOR=2
-    )
-
 #Add the compiler flags
 set (lib_flgs_list
      -Wno-address-of-packed-member

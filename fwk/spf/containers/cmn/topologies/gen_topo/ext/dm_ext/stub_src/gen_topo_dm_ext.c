@@ -26,7 +26,7 @@ uint32_t gen_topo_compute_if_input_needs_addtional_bytes_for_dm(gen_topo_t *me_p
 }
 
 uint32_t gen_topo_compute_if_output_needs_addtional_bytes_for_dm(gen_topo_t *            me_ptr,
-                                                                 gen_topo_output_port_t *out_port_ptr);
+                                                                 gen_topo_output_port_t *out_port_ptr)
 {
    return 0;
 }

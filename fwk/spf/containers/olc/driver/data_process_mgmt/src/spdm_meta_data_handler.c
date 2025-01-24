@@ -131,10 +131,17 @@ ar_result_t spdm_read_meta_data(spgm_info_t *          spgm_ptr,
             if (0 == is_md_originated_in_satellite) // implies MD in propagated by OLC in Master SPF and propagated back
                                                     // to OLC
             {
-               if ((md_data_header_ptr->token_lsw) &&
-                   (md_data_header_ptr->token_msw == (md_data_header_ptr->token_lsw ^ MAGIC_MD_TRACKING_KEY)))
+#if defined(__x86_64__) || defined(__LP64__) || defined(_WIN64)
+               // don't check against encrypted value for 64bit
+               if (md_data_header_ptr->token_lsw)
                {
-                  spf_list_node_t *       curr_cont_node_ptr = (spf_list_node_t *)(md_data_header_ptr->token_lsw);
+                  spf_list_node_t *curr_cont_node_ptr = (spf_list_node_t *)(((uint64_t)md_data_header_ptr->token_msw << 32) | md_data_header_ptr->token_lsw);
+#else
+               if ((md_data_header_ptr->token_lsw)
+                   && (md_data_header_ptr->token_msw == (md_data_header_ptr->token_lsw ^ MAGIC_MD_TRACKING_KEY)))
+               {
+                  spf_list_node_t *curr_cont_node_ptr = (spf_list_node_t *)(md_data_header_ptr->token_lsw);
+#endif
                   sdm_tracking_md_node_t *md_node_ref_ptr    = (sdm_tracking_md_node_t *)(curr_cont_node_ptr->obj_ptr);
                   module_cmn_md_list_t *  node_ptr           = (module_cmn_md_list_t *)(md_node_ref_ptr->md_ptr);
                   ref_md_ptr                                 = md_node_ref_ptr->md_ptr->obj_ptr;
@@ -427,11 +434,16 @@ ar_result_t spdm_write_meta_data(spgm_info_t *          spgm_ptr,
                spf_list_get_tail_node(spgm_ptr->process_info.tr_md.md_list_ptr, &curr_cont_node_ptr);
 
                // token stores the address of the metadata node pointer.
-               // the LSW will have the original value and msw will have a encrypted value
+               // For 32bit, the LSW will have the original value and msw will have a encrypted value
+               // For 64bit, the LSW stores the lower 32bits and MSW stores the higher 32bits.
                // the token is not expected to be returned back to client
+#if defined(__x86_64__) || defined(__LP64__) || defined(_WIN64)
+               md_data_header_ptr->token_lsw = (uint32_t)((uint64_t)curr_cont_node_ptr & 0xFFFFFFFF);
+               md_data_header_ptr->token_msw = (uint32_t)(((uint64_t)curr_cont_node_ptr >> 32) & 0xFFFFFFFF);
+#else
                md_data_header_ptr->token_lsw = (uint32_t)curr_cont_node_ptr;
                md_data_header_ptr->token_msw = md_data_header_ptr->token_lsw ^ MAGIC_MD_TRACKING_KEY;
-
+#endif
                uint32_t temp_flags =
                   (MD_HEADER_FLAGS_TRACKING_EVENT_POLICY_EACH << MD_HEADER_FLAGS_SHIFT_TRACKING_EVENT_POLICY_FLAG);
                temp_flags |= (MD_HEADER_FLAGS_TRACKING_CONFIG_ENABLE_FOR_DROP_OR_CONSUME

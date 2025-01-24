@@ -183,12 +183,7 @@ ar_result_t posal_thread_launch3(posal_thread_t     *posal_obj_ptr,
 
    unix_result = pthread_attr_setstacksize(&attr, stack_size);
    if (unix_result)
-   {
-      AR_MSG(DBG_ERROR_PRIO, "Error: set stack size %d failed with %d", stack_size, unix_result);
-      *posal_obj_ptr = NULL;
-      result         = AR_EBADPARAM;
-      goto err_attr;
-   }
+      AR_MSG(DBG_HIGH_PRIO, "Warning: set stack size %d failed with %d", stack_size, unix_result);
 
    memset(&sch_param, 0, sizeof(sch_param));
 
@@ -200,21 +195,21 @@ ar_result_t posal_thread_launch3(posal_thread_t     *posal_obj_ptr,
       goto err_set;
    }
 
-      unix_result = pthread_attr_setschedpolicy(&attr, sched_policy);
-      if (unix_result)
-      {
-         AR_MSG(DBG_ERROR_PRIO, "Error: pthread_attr_setschedpolicy failed with status 0x%x", unix_result);
-         result = AR_EFAILED;
-         goto err_set;
-      }
-
-   sch_param.sched_priority = nPriority;
-   unix_result = pthread_attr_setschedparam (&attr, &sch_param);
+   unix_result = pthread_attr_setschedpolicy(&attr, sched_policy);
    if (unix_result)
    {
-       AR_MSG(DBG_ERROR_PRIO, "Error: pthread_attr_setschedparam failed with status 0x%x", unix_result);
-       result = AR_EFAILED;
-       goto err_set;
+      AR_MSG(DBG_ERROR_PRIO, "Error: pthread_attr_setschedpolicy failed with status 0x%x", unix_result);
+      result = AR_EFAILED;
+      goto err_set;
+   }
+
+   sch_param.sched_priority = nPriority;
+   unix_result = pthread_attr_setschedparam(&attr, &sch_param);
+   if (unix_result)
+   {
+      AR_MSG(DBG_ERROR_PRIO, "Error: pthread_attr_setschedparam failed with status 0x%x", unix_result);
+      result = AR_EFAILED;
+      goto err_set;
    }
    unix_result = pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
    if (unix_result)
@@ -224,7 +219,8 @@ ar_result_t posal_thread_launch3(posal_thread_t     *posal_obj_ptr,
       goto err_set;
    }
 
-#if !defined (ARSPF_PLATFORM_QNX)  //Thread Affinity is not supported via this api on QNX
+// Thread Affinity is not supported via this api on QNX and Linux Android
+#if !defined (ARSPF_PLATFORM_QNX) && !defined(__ANDROID__)
    if (0 != affinity)
    {
       cpu_set_t cs;

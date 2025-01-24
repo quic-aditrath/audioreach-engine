@@ -238,14 +238,14 @@ struct metadata_header_t
     *   Effective sample_offset in above cases must be less than buffer end
     */
 
-   uint32_t	token_lsw;
+   uint32_t token_lsw;
    /* Unique token applicable for tracking Metadata.
     * The same token will be used while raising the Metadata tracking event
     *
     * Lower 32 bits of the token field 
     */
     
-   uint32_t  token_msw;
+   uint32_t token_msw;
    /* 
     * Higher 32 bits of the token field 
     */
@@ -338,7 +338,7 @@ struct metadata_tracking_event_t
    *   Other bits are reserved for future use and should be set to zero.
    */
 
-   uint32_t	token_lsw;
+   uint32_t token_lsw;
    /** <
     *  Specifies the LSW of the unique token.
     *
@@ -349,7 +349,7 @@ struct metadata_tracking_event_t
     *         It can be configured to the module by the client, if the MD needs to be trackable.    *
     */
 
-   uint32_t	token_msw;
+   uint32_t token_msw;
    /** <
     *  Specifies the MSW of the unique token.
     */

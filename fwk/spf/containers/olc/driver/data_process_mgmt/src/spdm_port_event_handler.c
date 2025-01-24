@@ -89,7 +89,7 @@ ar_result_t spgm_handle_event_clone_md(spgm_info_t *spgm_ptr, gpr_packet_t *pack
    if (sizeof(metadata_tracking_event_t) <= payload_size)
    {
       md_te_ptr                                  = (metadata_tracking_event_t *)GPR_PKT_GET_PAYLOAD(void, packet_ptr);
-      spf_list_node_t *       curr_cont_node_ptr = (spf_list_node_t *)(md_te_ptr->token_lsw);
+      spf_list_node_t *       curr_cont_node_ptr = (spf_list_node_t *)((uint64_t)md_te_ptr->token_lsw);
       sdm_tracking_md_node_t *md_node_ref_ptr    = (sdm_tracking_md_node_t *)(curr_cont_node_ptr->obj_ptr);
 
       md_node_ref_ptr->num_ref_count++;
@@ -152,7 +152,7 @@ ar_result_t spgm_handle_tracking_md_event(spgm_info_t *spgm_ptr, gpr_packet_t *p
       {
          md_te_ptr = (metadata_tracking_event_t *)GPR_PKT_GET_PAYLOAD(void, packet_ptr);
 
-         spf_list_node_t *       curr_cont_node_ptr = (spf_list_node_t *)(md_te_ptr->token_lsw);
+         spf_list_node_t *       curr_cont_node_ptr = (spf_list_node_t *)((uint64_t)md_te_ptr->token_lsw);
          sdm_tracking_md_node_t *md_node_ref_ptr    = (sdm_tracking_md_node_t *)(curr_cont_node_ptr->obj_ptr);
 
          bool_t is_node_in_list =

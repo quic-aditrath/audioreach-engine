@@ -136,7 +136,7 @@ ar_result_t apm_offload_global_mem_mgr_init(POSAL_HEAP_ID heap_id)
 ar_result_t apm_offload_master_memorymap_register(uint32_t mem_map_client, uint32_t master_handle, uint32_t mem_size)
 {
    ar_result_t   result         = AR_EOK;
-   uint32_t      virt_addr      = 0;
+   uint64_t      virt_addr      = 0;
    POSAL_HEAP_ID region_heap_id = APM_INTERNAL_STATIC_HEAP_ID;
 
    posal_mutex_lock(g_offload_mem_mgr.map_mutex);
@@ -150,13 +150,13 @@ ar_result_t apm_offload_master_memorymap_register(uint32_t mem_map_client, uint3
    }
 
    // now query the VA, create the heap mgr
-   result = posal_memorymap_get_virtual_addr_from_shm_handle(mem_map_client,
-                                                             master_handle,
-                                                             0 /*lsw offset*/,
-                                                             0 /*msw offset*/,
-                                                             mem_size,
-                                                             FALSE,
-                                                             &virt_addr);
+   result = posal_memorymap_get_virtual_addr_from_shm_handle_v2(mem_map_client,
+                                                               master_handle,
+                                                               0 /*lsw offset*/,
+                                                               0 /*msw offset*/,
+                                                               mem_size,
+                                                               FALSE,
+                                                               &virt_addr);
    if ((AR_DID_FAIL(result)) || (0 == virt_addr))
    {
       AR_MSG(DBG_ERROR_PRIO,
@@ -179,7 +179,7 @@ ar_result_t apm_offload_master_memorymap_register(uint32_t mem_map_client, uint3
    posal_mutex_lock(g_offload_mem_mgr.map_mutex);
    g_offload_mem_mgr.master_book[idx].master_handle      = master_handle;
    g_offload_mem_mgr.master_book[idx].heap_size          = mem_size;
-   g_offload_mem_mgr.master_book[idx].heap_start_addr_va = virt_addr;
+   g_offload_mem_mgr.master_book[idx].heap_start_addr_va = (uint32_t)virt_addr;
    g_offload_mem_mgr.master_book[idx].heap_id            = region_heap_id;
    posal_mutex_unlock(g_offload_mem_mgr.map_mutex);
 

@@ -13,16 +13,16 @@
 
 
 /* Enable timer and add node to the list*/
-ar_result_t cu_fwk_extn_soft_timer_start(cu_base_t*   base_ptr,
-                                               spl_topo_module_t *module_ptr,
-                                               uint32_t           timer_id,
-                                               int64_t            duration_us)
+ar_result_t cu_fwk_extn_soft_timer_start(cu_base_t   *base_ptr,
+                                         gu_module_t *module_ptr,
+                                         uint32_t    timer_id,
+                                         int64_t     duration_us)
 {
    return AR_EOK;
 }
 
 /* Disable timer and remove corresponding node from the list*/
-ar_result_t cu_fwk_extn_soft_timer_disable(cu_base_t*   base_ptr,, uint32_t timer_id, spl_topo_module_t *module_ptr)
+ar_result_t cu_fwk_extn_soft_timer_disable(cu_base_t *base_ptr, gu_module_t *module_ptr, uint32_t timer_id)
 {
    return AR_EOK;
 }
@@ -34,6 +34,6 @@ ar_result_t cu_fwk_extn_soft_timer_expired(cu_base_t *cu_ptr, uint32_t ch_bit_in
 }
 
 /* Called during graph close with closing subgraph list, destroy all timers in the list */
-void cu_fwk_extn_soft_timer_destroy_at_close(cu_base_t*   base_ptr,, spf_cntr_sub_graph_list_t *sg_list_ptr)
+void cu_fwk_extn_soft_timer_destroy_at_close(cu_base_t *base_ptr, gu_module_t *module_ptr)
 {
 }

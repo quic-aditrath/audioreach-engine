@@ -320,12 +320,13 @@ capi_err_t capi_data_logging_get_channel_index_mask_to_log_v2(capi_data_logging_
          for (uint32_t i = 0; i < CAPI_CMN_MAX_CHANNEL_INDEX_GROUPS; i++)
          {
             ch_index_mask_to_log_ptr[i] = 0;
-            DATA_LOGGING_MSG(me_ptr->nlpi_me_ptr->iid,
-                             DBG_ERROR_PRIO,
-                             "Invalid configuration of ch_mask mode %lu",
-                             ch_mask_cfg_ptr->mode);
-            return CAPI_EBADPARAM;
          }
+
+         DATA_LOGGING_MSG(me_ptr->nlpi_me_ptr->iid,
+                          DBG_ERROR_PRIO,
+                          "Invalid configuration of ch_mask mode %lu",
+                          ch_mask_cfg_ptr->mode);
+         return CAPI_EBADPARAM;
       }
    }
    return CAPI_EOK;

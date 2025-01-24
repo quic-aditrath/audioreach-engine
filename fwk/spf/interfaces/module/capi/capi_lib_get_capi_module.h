@@ -108,6 +108,7 @@ typedef struct elite_lib_capi_handle elite_lib_capi_handle;
 #define ELITE_LIB_CAPI_TYPE_DEPACKETIZER 5
 
 typedef struct elite_lib_get_capi_vtable elite_lib_get_capi_vtable;
+typedef struct elite_lib_get_capi_t elite_lib_get_capi_t;
 
 /** Virtual function table of the library interface.
 */
@@ -130,7 +131,6 @@ struct elite_lib_get_capi_vtable
    capi_err_t (*release_handle)(elite_lib_get_capi_t *obj_ptr, elite_lib_capi_handle *h);
 };
 
-typedef struct elite_lib_get_capi_t elite_lib_get_capi_t;
 
 /** Contains a pointer to the CAPI virtual function table that is defined in
     #elite_lib_get_capi_vtable.
