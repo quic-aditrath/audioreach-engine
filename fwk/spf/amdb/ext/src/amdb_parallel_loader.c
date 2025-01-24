@@ -13,6 +13,10 @@
 #include "posal_atomic.h"
 #include "amdb_queue.h"
 #include "amdb_resource_voter.h"
+#ifdef AMDB_MODULE_LOADING_TIMEOUT_US
+#include "spf_watchdog_svc.h"
+#include "posal_err_fatal.h"
+#endif
 static ar_result_t amdb_loader_thread_entry_function(void *context);
 
 static const uint32_t AMDB_THREAD_STACK_SIZE = 8 * (1 << 10); // 4K stack is needed for dlopen according to the platform
@@ -312,9 +316,23 @@ void amdb_loader_destroy(void *vobj_ptr)
   OUT : None
 
   --------------------------------------------------------------------------------------------------------------------*/
+#ifdef AMDB_MODULE_LOADING_TIMEOUT_US
+static ar_result_t amdb_loader_timeout(void* ctx_ptr)
+{
+   amdb_module_handle_info_t *h_ptr = (amdb_module_handle_info_t*)ctx_ptr;
+
+   AR_MSG(DBG_HIGH_PRIO, "module_loading 0x%x timed out", h_ptr->module_id);
+   posal_err_fatal("Forcing Crash.");
+
+   return AR_EOK;
+}
+#endif
 static ar_result_t amdb_loader_thread_entry_function(void *context)
 {
    amdb_parallel_loader *obj_ptr = (amdb_parallel_loader *)(context);
+#ifdef AMDB_MODULE_LOADING_TIMEOUT_US
+   spf_watchdog_svc_job_t wd_job = {.job_func_ptr = &amdb_loader_timeout};
+#endif
    while (1)
    {
       // Pop from the queue.
@@ -331,7 +349,15 @@ static ar_result_t amdb_loader_thread_entry_function(void *context)
       {
          case DLOPEN_TASK:
          {
+#ifdef AMDB_MODULE_LOADING_TIMEOUT_US
+            wd_job.job_context_ptr = (void*)task.payload.dlopen_task.task_info;
+            wd_job.timeout_us = posal_timer_get_time() + AMDB_MODULE_LOADING_TIMEOUT_US;
+            spf_watchdog_svc_add_job(&wd_job);
+#endif
             task.payload.dlopen_task.client_handle->load_function(task.payload.dlopen_task.task_info);
+#ifdef AMDB_MODULE_LOADING_TIMEOUT_US
+            spf_watchdog_svc_remove_job(&wd_job);
+#endif
             amdb_loader_release_handle((void *)task.payload.dlopen_task.client_handle);
             break;
          }

@@ -15,9 +15,10 @@ INCLUDE FILES FOR MODULE
 ========================================================================== */
 #include "posal.h"
 #include "spf_utils.h"
-#ifdef CONTAINER_ASYNC_CMD_HANDLING
+#ifdef USES_SPF_THREAD_POOL
 #include "spf_thread_pool.h"
 #endif
+#include "spf_watchdog_svc.h"
 #include "spf_main.h"
 #include "amdb_static.h"
 #include "apm.h"
@@ -85,9 +86,11 @@ ar_result_t spf_framework_post_init(void){
    /* create APM service : must be the last one because spf up state is sent by APM upon query from the client. */
    result = apm_create();
 
-#ifdef CONTAINER_ASYNC_CMD_HANDLING
+#ifdef USES_SPF_THREAD_POOL
    result = spf_thread_pool_init();
 #endif
+
+   spf_watchdog_svc_init();
 
    AR_MSG(DBG_HIGH_PRIO, "spf framework Initialized");
 
@@ -120,7 +123,9 @@ ar_result_t spf_framework_pre_deinit(void)
 {
 #ifndef DISABLE_DEINIT
 
-#ifdef CONTAINER_ASYNC_CMD_HANDLING
+   spf_watchdog_svc_deinit();
+
+#ifdef USES_SPF_THREAD_POOL
    spf_thread_pool_deinit();
 #endif
 

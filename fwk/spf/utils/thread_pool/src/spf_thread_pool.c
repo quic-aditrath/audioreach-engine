@@ -104,7 +104,8 @@ ar_result_t spf_thread_pool_get_instance(spf_thread_pool_inst_t **spf_tp_inst_pt
       {
          spf_thread_pool_inst_t *temp_tp_inst_ptr = (spf_thread_pool_inst_t *)tp_list_ptr->obj_ptr;
 
-         if (heap_id == temp_tp_inst_ptr->heap_id && thread_prio == temp_tp_inst_ptr->thread_priority)
+         if (heap_id == temp_tp_inst_ptr->heap_id && thread_prio == temp_tp_inst_ptr->thread_priority &&
+             !temp_tp_inst_ptr->is_dedicated_pool)
          {
             // found an existing tp with same heap id and thread priority
 
@@ -138,10 +139,10 @@ ar_result_t spf_thread_pool_get_instance(spf_thread_pool_inst_t **spf_tp_inst_pt
 
       memset(tp_inst_ptr, 0, sizeof(spf_thread_pool_inst_t));
 
-      tp_inst_ptr->log_id           = g_spf_tp.pool_id_incr++;
-      tp_inst_ptr->heap_id          = heap_id;
-      tp_inst_ptr->thread_priority  = thread_prio;
-      tp_inst_ptr->req_stack_size   = SPF_THREAD_POOL_MIN_STACK_SIZE;
+      tp_inst_ptr->log_id            = g_spf_tp.pool_id_incr++;
+      tp_inst_ptr->heap_id           = heap_id;
+      tp_inst_ptr->thread_priority   = thread_prio;
+      tp_inst_ptr->req_stack_size    = SPF_THREAD_POOL_MIN_STACK_SIZE;
       tp_inst_ptr->is_dedicated_pool = is_dedicated_pool;
 
       // create channel for the thread pool queue
@@ -393,7 +394,7 @@ static ar_result_t spf_thread_pool_update_instance_internal(spf_thread_pool_inst
 
    spf_thread_pool_inst_t *tp_inst_ptr = *spf_tp_inst_ptr;
 
-   uint32_t                num_active_wt_count = 0;
+   uint32_t num_active_wt_count = 0;
 
    posal_mutex_lock(g_spf_tp.pool_lock);
 
