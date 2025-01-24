@@ -49,7 +49,7 @@ ar_result_t spr_driver_init(POSAL_HEAP_ID heap_id, spr_driver_t **drv_ptr_ptr_pt
    if (NULL == drv_ptr_ptr_ptr)
    {
 #ifdef DEBUG_SPR_DRIVER
-      AR_MSG(DBG_ERROR_PRIO, "SPR_DRIVER: Init failed. bad input params.");
+      AR_MSG_ISLAND(DBG_ERROR_PRIO, "SPR_DRIVER: Init failed. bad input params.");
 #endif
       return AR_EBADPARAM;
    }
@@ -62,7 +62,7 @@ ar_result_t spr_driver_init(POSAL_HEAP_ID heap_id, spr_driver_t **drv_ptr_ptr_pt
    if (NULL == *drv_ptr_ptr_ptr)
    {
 #ifdef DEBUG_SPR_DRIVER
-      AR_MSG(DBG_ERROR_PRIO, "SPR_DRIVER: Init failed. No memory.");
+      AR_MSG_ISLAND(DBG_ERROR_PRIO, "SPR_DRIVER: Init failed. No memory.");
 #endif
       return AR_ENOMEMORY;
    }
@@ -80,7 +80,7 @@ ar_result_t spr_driver_deinit(spr_driver_t **drv_ptr_pptr, uint32_t driver_insta
    if (NULL == drv_ptr_pptr)
    {
 #ifdef DEBUG_SPR_DRIVER
-      AR_MSG(DBG_ERROR_PRIO, "spr_driver_deinit: Failed. bad input params.");
+      AR_MSG_ISLAND(DBG_ERROR_PRIO, "spr_driver_deinit: Failed. bad input params.");
 #endif
       return AR_EBADPARAM;
    }
@@ -96,7 +96,7 @@ ar_result_t spr_driver_deinit(spr_driver_t **drv_ptr_pptr, uint32_t driver_insta
       if (result != AR_EOK)
       {
 #ifdef DEBUG_SPR_DRIVER
-         AR_MSG(DBG_ERROR_PRIO,
+         AR_MSG_ISLAND(DBG_ERROR_PRIO,
                 "spr_driver_deinit: Failed. Couldn't free the stream reader, 0x%x. ",
                 temp_strm_rd_ptr->id);
 #endif
@@ -120,7 +120,7 @@ ar_result_t spr_driver_deinit(spr_driver_t **drv_ptr_pptr, uint32_t driver_insta
       if (result != AR_EOK)
       {
 #ifdef DEBUG_SPR_DRIVER
-         AR_MSG(DBG_ERROR_PRIO,
+         AR_MSG_ISLAND(DBG_ERROR_PRIO,
                 "spr_driver_deinit: Failed. Couldn't free the stream writer, 0x%x ",
                 temp_strm_wr_ptr->id);
 #endif
@@ -147,7 +147,7 @@ ar_result_t spr_driver_set_chunk_size(spr_driver_t *drv_ptr, uint32_t preferred_
    {
       drv_ptr->preferred_chunk_size = preferred_chunk_size;
 #ifdef DEBUG_SPR_DRIVER
-      AR_MSG(DBG_ERROR_PRIO, "spr_driver_set_chunk_size: set the preferred chunk size = %lu", preferred_chunk_size);
+      AR_MSG_ISLAND(DBG_ERROR_PRIO, "spr_driver_set_chunk_size: set the preferred chunk size = %lu", preferred_chunk_size);
 #endif
    }
 
@@ -165,7 +165,7 @@ ar_result_t spr_stream_writer_create(spr_driver_t *        drv_ptr,
    if ((NULL == drv_ptr) || (NULL == writer_handle_pptr))
    {
 #ifdef DEBUG_SPR_DRIVER
-      AR_MSG(DBG_ERROR_PRIO, "SPR_DRIVER: Writer allocation failed. Bad input params.");
+      AR_MSG_ISLAND(DBG_ERROR_PRIO, "SPR_DRIVER: Writer allocation failed. Bad input params.");
 #endif
       return AR_EBADPARAM;
    }
@@ -175,7 +175,7 @@ ar_result_t spr_stream_writer_create(spr_driver_t *        drv_ptr,
    if ((num_channels > MAX_CHANNELS_PER_STREAM) || (0 == num_channels) || (NULL == ch_id_arr))
    {
 #ifdef DEBUG_SPR_DRIVER
-      AR_MSG(DBG_ERROR_PRIO, "SPR_DRIVER: Writer allocation failed. num channels=%d not supported. ", num_channels);
+      AR_MSG_ISLAND(DBG_ERROR_PRIO, "SPR_DRIVER: Writer allocation failed. num channels=%d not supported. ", num_channels);
 #endif
       return AR_EBADPARAM;
    }
@@ -225,7 +225,7 @@ ar_result_t spr_stream_writer_create(spr_driver_t *        drv_ptr,
       if (NULL != _spr_find_circ_buf(drv_ptr, ch_id))
       {
 #ifdef DEBUG_SPR_DRIVER
-         AR_MSG(DBG_ERROR_PRIO, "SPR_DRIVER: writer channel id = 0x%x is already used.", ch_id);
+         AR_MSG_ISLAND(DBG_ERROR_PRIO, "SPR_DRIVER: writer channel id = 0x%x is already used.", ch_id);
 #endif
          spr_stream_writer_destroy(drv_ptr, writer_handle_pptr);
          return AR_EFAILED;
@@ -241,7 +241,7 @@ ar_result_t spr_stream_writer_create(spr_driver_t *        drv_ptr,
       if (buf_res != CIRCBUF_SUCCESS)
       {
 #ifdef DEBUG_SPR_DRIVER
-         AR_MSG(DBG_ERROR_PRIO, "SPR_DRIVER: Circular buffer allocation failed. iter = %d", iter);
+         AR_MSG_ISLAND(DBG_ERROR_PRIO, "SPR_DRIVER: Circular buffer allocation failed. iter = %d", iter);
 #endif
          spr_stream_writer_destroy(drv_ptr, writer_handle_pptr);
          return AR_EFAILED;
@@ -253,7 +253,7 @@ ar_result_t spr_stream_writer_create(spr_driver_t *        drv_ptr,
       if (buf_res != CIRCBUF_SUCCESS)
       {
 #ifdef DEBUG_SPR_DRIVER
-         AR_MSG(DBG_ERROR_PRIO, "SPR_DRIVER: Writer client registration failed. iter = %d", iter);
+         AR_MSG_ISLAND(DBG_ERROR_PRIO, "SPR_DRIVER: Writer client registration failed. iter = %d", iter);
 #endif
          spr_stream_writer_destroy(drv_ptr, writer_handle_pptr);
          return AR_EFAILED;
@@ -261,7 +261,7 @@ ar_result_t spr_stream_writer_create(spr_driver_t *        drv_ptr,
    }
 
 #ifdef DEBUG_SPR_DRIVER
-   AR_MSG(DBG_HIGH_PRIO, "SPR_DRIVER: Writer Allocation successful num_channel =%d", num_channels);
+   AR_MSG_ISLAND(DBG_HIGH_PRIO, "SPR_DRIVER: Writer Allocation successful num_channel =%d", num_channels);
 #endif
 
    return result;
@@ -277,7 +277,7 @@ ar_result_t spr_stream_reader_create(spr_driver_t *        drv_ptr,
    if ((NULL == drv_ptr) || (NULL == reader_handle_pptr))
    {
 #ifdef DEBUG_SPR_DRIVER
-      AR_MSG(DBG_ERROR_PRIO, "SPR_DRIVER: Reader allocation failed. Bad input params.");
+      AR_MSG_ISLAND(DBG_ERROR_PRIO, "SPR_DRIVER: Reader allocation failed. Bad input params.");
 #endif
       return AR_EBADPARAM;
    }
@@ -326,7 +326,7 @@ ar_result_t spr_stream_reader_create(spr_driver_t *        drv_ptr,
          result |= AR_ENOMEMORY;
 
 #ifdef DEBUG_SPR_DRIVER
-         AR_MSG(DBG_ERROR_PRIO, "SPR_DRIVER: Channel buffer ch_id=%d couldn't be found. iter = %d", ch_id, iter);
+         AR_MSG_ISLAND(DBG_ERROR_PRIO, "SPR_DRIVER: Channel buffer ch_id=%d couldn't be found. iter = %d", ch_id, iter);
 #endif
          result |= spr_stream_reader_destroy(drv_ptr, reader_handle_pptr);
          return result;
@@ -342,7 +342,7 @@ ar_result_t spr_stream_reader_create(spr_driver_t *        drv_ptr,
          result |= AR_EFAILED;
 
 #ifdef DEBUG_SPR_DRIVER
-         AR_MSG(DBG_ERROR_PRIO, "SPR_DRIVER: Reader client regsitration failed. ch_id=%d, iter = %d", ch_id, iter);
+         AR_MSG_ISLAND(DBG_ERROR_PRIO, "SPR_DRIVER: Reader client regsitration failed. ch_id=%d, iter = %d", ch_id, iter);
 #endif
          result |= spr_stream_reader_destroy(drv_ptr, reader_handle_pptr);
          return result;
@@ -356,7 +356,7 @@ ar_result_t spr_stream_reader_create(spr_driver_t *        drv_ptr,
    (*reader_handle_pptr)->id = drv_ptr->num_readers++;
 
 #ifdef DEBUG_SPR_DRIVER
-   AR_MSG(DBG_HIGH_PRIO, "SPR_DRIVER: Reader Allocation successful num_channel =%d", num_channels);
+   AR_MSG_ISLAND(DBG_HIGH_PRIO, "SPR_DRIVER: Reader Allocation successful num_channel =%d", num_channels);
 #endif
 
    return AR_EOK;
@@ -382,7 +382,7 @@ ar_result_t spr_stream_write(spr_stream_writer_t *writer_handle,
       if ((CIRCBUF_SUCCESS != circ_buf_res) && (CIRCBUF_OVERRUN != circ_buf_res))
       {
 #ifdef DEBUG_SPR_DRIVER
-         AR_MSG(DBG_ERROR_PRIO,
+         AR_MSG_ISLAND(DBG_ERROR_PRIO,
                 "SPR_DRIVER: Stream writer buffering failed. ch_id=%d, iter = %d",
                 writer_handle->wr_client_arr_ptr[iter].circ_buf_ptr->id,
                 iter);
@@ -391,7 +391,7 @@ ar_result_t spr_stream_write(spr_stream_writer_t *writer_handle,
          result |= AR_EFAILED;
       }
 #ifdef DEBUG_SPR_DRIVER
-      AR_MSG(DBG_HIGH_PRIO,
+      AR_MSG_ISLAND(DBG_HIGH_PRIO,
              "SPR_DRIVER: Stream writer buffering done. ch_id=%d, iter = %d, actual_data_len = %d",
              writer_handle->wr_client_arr_ptr[iter].circ_buf_ptr->id,
              iter,
@@ -399,7 +399,7 @@ ar_result_t spr_stream_write(spr_stream_writer_t *writer_handle,
 #endif
    }
 #ifdef DEBUG_SPR_DRIVER
-   AR_MSG(DBG_HIGH_PRIO,
+   AR_MSG_ISLAND(DBG_HIGH_PRIO,
           "SPR_DRIVER: Stream writer buffering done. actual_data_len = %d Timestamp %ld",
           input_buf_arr[0].actual_data_len,
           (uint32_t)timestamp);
@@ -420,7 +420,7 @@ ar_result_t spr_stream_read(spr_stream_reader_t *reader_handle, capi_buf_t *outp
       {
 
 #ifdef DEBUG_SPR_DRIVER
-         AR_MSG(DBG_MED_PRIO,
+         AR_MSG_ISLAND(DBG_MED_PRIO,
                 "SPR_DRIVER: Stream reader, output buffer full. ch_id=%d, iter = %d, actual_data_len=%d ",
                 reader_handle->rd_client_arr_ptr[iter].circ_buf_ptr->id,
                 iter,
@@ -443,7 +443,7 @@ ar_result_t spr_stream_read(spr_stream_reader_t *reader_handle, capi_buf_t *outp
       else if (CIRCBUF_UNDERRUN == buf_result)
       {
 #ifdef DEBUG_SPR_DRIVER
-         AR_MSG(DBG_ERROR_PRIO,
+         AR_MSG_ISLAND(DBG_ERROR_PRIO,
                 "SPR_DRIVER: Stream reader under run on ch_id=%d, iter = %d space left in output %d",
                 reader_handle->rd_client_arr_ptr[iter].circ_buf_ptr->id,
                 iter,
@@ -456,7 +456,7 @@ ar_result_t spr_stream_read(spr_stream_reader_t *reader_handle, capi_buf_t *outp
       else
       {
 #ifdef DEBUG_SPR_DRIVER
-         AR_MSG(DBG_ERROR_PRIO,
+         AR_MSG_ISLAND(DBG_ERROR_PRIO,
                 "SPR_DRIVER: Stream reader, read data failed.  ch_id=%d, iter = %d",
                 reader_handle->rd_client_arr_ptr[iter].circ_buf_ptr->id,
                 iter);
@@ -465,7 +465,7 @@ ar_result_t spr_stream_read(spr_stream_reader_t *reader_handle, capi_buf_t *outp
       }
 
 #ifdef DEBUG_SPR_DRIVER
-      AR_MSG(DBG_ERROR_PRIO,
+      AR_MSG_ISLAND(DBG_ERROR_PRIO,
              "SPR_DRIVER: Stream reader, data read done. ch_id=%d, iter = %d, actual_data_len=%d ",
              reader_handle->rd_client_arr_ptr[iter].circ_buf_ptr->id,
              iter,
@@ -476,7 +476,7 @@ ar_result_t spr_stream_read(spr_stream_reader_t *reader_handle, capi_buf_t *outp
 #ifdef DEBUG_SPR_DRIVER
    uint32_t num_unread_bytes = 0;
    spr_circ_buf_query_unread_bytes(reader_handle->rd_client_arr_ptr, &num_unread_bytes);
-   AR_MSG(DBG_HIGH_PRIO,
+   AR_MSG_ISLAND(DBG_HIGH_PRIO,
           "SPR_DRIVER: Stream reader, data read done. error_code %x, actual_data_len=%d unread_bytes = %ld",
           result,
           output_buf_arr[0].actual_data_len,
@@ -495,7 +495,7 @@ ar_result_t spr_stream_read_adjust(spr_stream_reader_t *reader_handle,
    if (NULL == reader_handle)
    {
 #ifdef DEBUG_SPR_DRIVER
-      AR_MSG(DBG_ERROR_PRIO, "SPR_DRIVER: Stream Reader adjust failed. Bad input params.");
+      AR_MSG_ISLAND(DBG_ERROR_PRIO, "SPR_DRIVER: Stream Reader adjust failed. Bad input params.");
 #endif
       return AR_EFAILED;
    }
@@ -535,7 +535,7 @@ ar_result_t spr_stream_read_adjust(spr_stream_reader_t *reader_handle,
       if (CIRCBUF_SUCCESS != circ_buf_read_adjust(rd_client_ptr, read_offset + sync_offset_in_bytes, &ch_un_read_bytes))
       {
 #ifdef DEBUG_SPR_DRIVER
-         AR_MSG(DBG_ERROR_PRIO,
+         AR_MSG_ISLAND(DBG_ERROR_PRIO,
                 "SPR_DRIVER: Stream reader, read adjust failed. ch_id=%d, iter = %d",
                 rd_client_ptr->circ_buf_ptr->id,
                 iter);
@@ -545,7 +545,7 @@ ar_result_t spr_stream_read_adjust(spr_stream_reader_t *reader_handle,
       }
 
 #ifdef DEBUG_SPR_DRIVER
-      AR_MSG(DBG_ERROR_PRIO,
+      AR_MSG_ISLAND(DBG_ERROR_PRIO,
              "SPR_DRIVER: Stream reader, read adjust successful. ch_id=%d, ch_un_read_bytes = %lu, min_unread_bytes "
              "=%lu",
              rd_client_ptr->circ_buf_ptr->id,
@@ -564,7 +564,7 @@ ar_result_t spr_stream_read_adjust(spr_stream_reader_t *reader_handle,
       *actual_read_offset = min_unread_bytes;
    }
 
-   AR_MSG(DBG_MED_PRIO,
+   AR_MSG_ISLAND(DBG_MED_PRIO,
           "SPR_DRIVER: Stream reader, read adjust done. read_offset = %d, actual_read_offset= %lu",
           read_offset,
           actual_read_offset);
@@ -581,7 +581,7 @@ ar_result_t spr_stream_reader_req_resize(spr_stream_reader_t *reader_handle,
    if (NULL == reader_handle)
    {
 #ifdef DEBUG_SPR_DRIVER
-      AR_MSG(DBG_ERROR_PRIO, "SPR_DRIVER: Stream Reader resize failed. Bad input params.");
+      AR_MSG_ISLAND(DBG_ERROR_PRIO, "SPR_DRIVER: Stream Reader resize failed. Bad input params.");
 #endif
       return AR_EFAILED;
    }
@@ -593,7 +593,7 @@ ar_result_t spr_stream_reader_req_resize(spr_stream_reader_t *reader_handle,
           circ_buf_read_client_resize(&reader_handle->rd_client_arr_ptr[iter], requested_alloc_size, is_register))
       {
 #ifdef DEBUG_SPR_DRIVER
-         AR_MSG(DBG_ERROR_PRIO,
+         AR_MSG_ISLAND(DBG_ERROR_PRIO,
                 "SPR_DRIVER: Stream reader, read adjust failed. ch_id=%d, iter = %d",
                 reader_handle->rd_client_arr_ptr[iter].circ_buf_ptr->id,
                 iter);
@@ -603,7 +603,7 @@ ar_result_t spr_stream_reader_req_resize(spr_stream_reader_t *reader_handle,
       }
    }
 
-   AR_MSG(DBG_MED_PRIO,
+   AR_MSG_ISLAND(DBG_MED_PRIO,
           "SPR_DRIVER: Stream reader, resize done. requested_alloc_size: %lu, is_register: %lu",
           requested_alloc_size,
           is_register);
@@ -627,7 +627,7 @@ ar_result_t spr_stream_reader_get_unread_bytes(spr_stream_reader_t *reader_handl
    {
 
 #ifdef DEBUG_SPR_DRIVER
-      AR_MSG(DBG_ERROR_PRIO, "SPR_DRIVER: Stream reader, read unread bytes failed with result 0x%x", buf_result);
+      AR_MSG_ISLAND(DBG_ERROR_PRIO, "SPR_DRIVER: Stream reader, read unread bytes failed with result 0x%x", buf_result);
 #endif
       return AR_EFAILED;
    }
@@ -658,7 +658,7 @@ ar_result_t _spr_stream_writer_free_util(spr_driver_t *        drv_ptr,
       if (strm_wr_ptr->circ_buf_arr_ptr[i].head_chunk_ptr && strm_wr_ptr->wr_client_arr_ptr[i].circ_buf_ptr)
       {
 #ifdef DEBUG_SPR_DRIVER
-         AR_MSG(DBG_ERROR_PRIO,
+         AR_MSG_ISLAND(DBG_ERROR_PRIO,
                 "_spr_stream_writer_free_util: De registering writer client for wr_id=%d, ch_id=%d",
                 strm_wr_ptr->id,
                 strm_wr_ptr->circ_buf_arr_ptr[i].id);
@@ -741,7 +741,7 @@ circ_buf_t *_spr_find_circ_buf(spr_driver_t *drv_ptr, uint32_t ch_id)
          if (ch_id == temp_strm_wr_ptr->circ_buf_arr_ptr[iter].id)
          {
 #ifdef DEBUG_SPR_DRIVER
-            AR_MSG(DBG_HIGH_PRIO,
+            AR_MSG_ISLAND(DBG_HIGH_PRIO,
                    "_spr_find_circ_buf: Found circular buffer. wr_id = %d, ch_id=0x%x",
                    temp_strm_wr_ptr->id,
                    ch_id);

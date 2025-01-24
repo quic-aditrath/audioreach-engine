@@ -83,7 +83,7 @@ circbuf_result_t circ_buf_alloc(circ_buf_t *  circ_buf_ptr,
    if ((NULL == circ_buf_ptr) || (0 == preferred_chunk_size))
    {
 #ifdef DEBUG_CIRC_BUF_UTILS
-      AR_MSG(DBG_ERROR_PRIO, "CIRC_BUF: Bad init params. Allocation failed.");
+      AR_MSG_ISLAND(DBG_ERROR_PRIO, "CIRC_BUF: Bad init params. Allocation failed.");
 #endif
       return CIRCBUF_FAIL;
    }
@@ -110,13 +110,13 @@ circbuf_result_t circ_buf_alloc(circ_buf_t *  circ_buf_ptr,
    if (CIRCBUF_SUCCESS != _circ_buf_add_chunks(circ_buf_ptr, circ_buf_size))
    {
 #ifdef DEBUG_CIRC_BUF_UTILS
-      AR_MSG(DBG_ERROR_PRIO, "CIRC_BUF: Chunk allocation failed.");
+      AR_MSG_ISLAND(DBG_ERROR_PRIO, "CIRC_BUF: Chunk allocation failed.");
 #endif
       return CIRCBUF_FAIL;
    }
 
 #ifdef DEBUG_CIRC_BUF_UTILS
-   AR_MSG(DBG_HIGH_PRIO,
+   AR_MSG_ISLAND(DBG_HIGH_PRIO,
           "CIRC_BUF: Allocated Circ buf size = %lu, preferred_chunk_size: %lu, num_chunks: %lu",
           circ_buf_ptr->circ_buf_size,
           circ_buf_ptr->preferred_chunk_size,
@@ -135,7 +135,7 @@ circbuf_result_t circ_buf_register_client(circ_buf_t *       circ_buf_struct_ptr
    if ((NULL == circ_buf_struct_ptr) || (NULL == client_hdl_ptr))
    {
 #ifdef DEBUG_CIRC_BUF_UTILS
-      AR_MSG(DBG_HIGH_PRIO,
+      AR_MSG_ISLAND(DBG_HIGH_PRIO,
              "circ_buf_register_client: Failed to register. is_read_client = %d, wr_client_ptr=0x%x ",
              is_read_client,
              circ_buf_struct_ptr->wr_client_ptr);
@@ -147,7 +147,7 @@ circbuf_result_t circ_buf_register_client(circ_buf_t *       circ_buf_struct_ptr
    if (!is_read_client && (circ_buf_struct_ptr->wr_client_ptr))
    {
 #ifdef DEBUG_CIRC_BUF_UTILS
-      AR_MSG(DBG_HIGH_PRIO, "circ_buf_register_client: Failed to register writer client");
+      AR_MSG_ISLAND(DBG_HIGH_PRIO, "circ_buf_register_client: Failed to register writer client");
 #endif
       return CIRCBUF_FAIL;
    }
@@ -185,7 +185,7 @@ circbuf_result_t circ_buf_register_client(circ_buf_t *       circ_buf_struct_ptr
    }
 
 #ifdef DEBUG_CIRC_BUF_UTILS
-   AR_MSG(DBG_HIGH_PRIO,
+   AR_MSG_ISLAND(DBG_HIGH_PRIO,
           "circ_buf_register_client: Done. is_read_client = %d, req_alloc_size = %lu, circ buf sz = %lu, "
           "num_read_clients= %u ",
           is_read_client,
@@ -217,7 +217,7 @@ circbuf_result_t circ_buf_read_client_resize(circ_buf_client_t *rd_client_ptr,
    }
 
 #ifdef DEBUG_CIRC_BUF_UTILS
-   AR_MSG(DBG_HIGH_PRIO,
+   AR_MSG_ISLAND(DBG_HIGH_PRIO,
           "CIRC_BUF: Received client resize request. buf = 0x%x, alloc_request_size: %u, is_register: %d",
           rd_client_ptr->circ_buf_ptr,
           req_buffer_resize,
@@ -233,7 +233,7 @@ circbuf_result_t circ_buf_deregister_client(circ_buf_client_t *client_hdl_ptr)
    if ((NULL == client_hdl_ptr) || (NULL == client_hdl_ptr->circ_buf_ptr))
    {
 #ifdef DEBUG_CIRC_BUF_UTILS
-      AR_MSG(DBG_HIGH_PRIO, "circ_buf_deregister_client: null arguments. Failed to De-register.");
+      AR_MSG_ISLAND(DBG_HIGH_PRIO, "circ_buf_deregister_client: null arguments. Failed to De-register.");
 #endif
       return CIRCBUF_FAIL;
    }
@@ -258,7 +258,7 @@ circbuf_result_t circ_buf_deregister_client(circ_buf_client_t *client_hdl_ptr)
    }
 
 #ifdef DEBUG_CIRC_BUF_UTILS
-   AR_MSG(DBG_HIGH_PRIO,
+   AR_MSG_ISLAND(DBG_HIGH_PRIO,
           "circ_buf_deregister_client: Done. is_read_client = %d, circ buf size = %d, "
           "num_read_clients=%lu ",
           is_read_client,
@@ -285,7 +285,7 @@ circbuf_result_t circ_buf_read(circ_buf_client_t *rd_client_ptr,
        (NULL == num_bytes_read_ptr))
    {
 #ifdef DEBUG_CIRC_BUF_UTILS
-      AR_MSG(DBG_ERROR_PRIO, "CIRC_BUF: Read failed. Invalid input params. Rcvd bytes to read = %u", bytes_to_read);
+      AR_MSG_ISLAND(DBG_ERROR_PRIO, "CIRC_BUF: Read failed. Invalid input params. Rcvd bytes to read = %u", bytes_to_read);
 #endif
       return CIRCBUF_FAIL;
    }
@@ -296,13 +296,13 @@ circbuf_result_t circ_buf_read(circ_buf_client_t *rd_client_ptr,
 //   if (CIRCBUF_FAIL == circ_buf_check_if_corrupted(rd_client_ptr->circ_buf_handle))
 //   {
 //#ifdef DEBUG_CIRC_BUF_UTILS
-//      AR_MSG(DBG_ERROR_PRIO, "Circ buf corrupted");
+//      AR_MSG_ISLAND(DBG_ERROR_PRIO, "Circ buf corrupted");
 //#endif
 //      return CIRCBUF_FAIL;
 //   }
 
 #ifdef DEBUG_CIRC_BUF_UTILS
-   AR_MSG(DBG_HIGH_PRIO,
+   AR_MSG_ISLAND(DBG_HIGH_PRIO,
           "CIRC_BUF: Circ Buf read, bytes_to_read= %u ; un_read_bytes = %u",
           bytes_to_read,
           rd_client_ptr->unread_bytes);
@@ -311,7 +311,7 @@ circbuf_result_t circ_buf_read(circ_buf_client_t *rd_client_ptr,
    if (0 == rd_client_ptr->unread_bytes) // TODO: revisit - check if un read bytes is correct.
    {
 #ifdef DEBUG_CIRC_BUF_UTILS
-      AR_MSG(DBG_ERROR_PRIO,
+      AR_MSG_ISLAND(DBG_ERROR_PRIO,
              "Circ Buf underrun, bytes to read = %u, unread bytes = %u",
              bytes_to_read,
              rd_client_ptr->unread_bytes);
@@ -331,7 +331,7 @@ circbuf_result_t circ_buf_read(circ_buf_client_t *rd_client_ptr,
    if (bytes_to_read > rd_client_ptr->unread_bytes) // TODO: revisit - check if un read bytes is correct.
    {
 #ifdef DEBUG_CIRC_BUF_UTILS
-      AR_MSG(DBG_ERROR_PRIO,
+      AR_MSG_ISLAND(DBG_ERROR_PRIO,
              "Circ Buf partial underrun, bytes to read = %u, unread bytes = %u",
              bytes_to_read,
              rd_client_ptr->unread_bytes);
@@ -350,7 +350,7 @@ circbuf_result_t circ_buf_read(circ_buf_client_t *rd_client_ptr,
       chunk_buffer_t *chunk_ptr = (chunk_buffer_t *)(*rd_chunk_ptr_ptr)->obj_ptr;
 
 #ifdef DEBUG_CIRC_BUF_UTILS
-      AR_MSG(DBG_HIGH_PRIO,
+      AR_MSG_ISLAND(DBG_HIGH_PRIO,
              "circ_buf_read: buf_id: 0x%x, chunk:%d, chunk_ptr: 0x%x, offset: %lu, buf_size: %lu, counter: %lu",
              rd_client_ptr->circ_buf_ptr->id,
              chunk_ptr->id,
@@ -466,7 +466,7 @@ static circbuf_result_t _circ_buf_read_advance(circ_buf_client_t *rd_client_ptr,
    if ((NULL == rd_client_ptr) || (NULL == rd_client_ptr->rw_chunk_node_ptr))
    {
 #ifdef DEBUG_CIRC_BUF_UTILS
-      AR_MSG(DBG_ERROR_PRIO,
+      AR_MSG_ISLAND(DBG_ERROR_PRIO,
              "_circ_buf_read_advance: Reader client position not intialized.",
              bytes_to_advance,
              rd_client_ptr->unread_bytes);
@@ -477,7 +477,7 @@ static circbuf_result_t _circ_buf_read_advance(circ_buf_client_t *rd_client_ptr,
    if (bytes_to_advance > rd_client_ptr->unread_bytes)
    {
 #ifdef DEBUG_CIRC_BUF_UTILS
-      AR_MSG(DBG_ERROR_PRIO,
+      AR_MSG_ISLAND(DBG_ERROR_PRIO,
              "_circ_buf_read_advance: circ_buf_read_advance fail, needed_size = %u, unread bytes = %u",
              bytes_to_advance,
              rd_client_ptr->unread_bytes);
@@ -486,7 +486,7 @@ static circbuf_result_t _circ_buf_read_advance(circ_buf_client_t *rd_client_ptr,
    }
 
 #ifdef DEBUG_CIRC_BUF_UTILS
-   AR_MSG(DBG_HIGH_PRIO,
+   AR_MSG_ISLAND(DBG_HIGH_PRIO,
           "circ_buf_read_advance: needed_size = %u, unread bytes = %u",
           bytes_to_advance,
           rd_client_ptr->unread_bytes);
@@ -505,7 +505,7 @@ static circbuf_result_t _circ_buf_read_advance(circ_buf_client_t *rd_client_ptr,
    rd_client_ptr->unread_bytes -= bytes_to_advance;
 
 #ifdef DEBUG_CIRC_BUF_UTILS
-   AR_MSG(DBG_HIGH_PRIO,
+   AR_MSG_ISLAND(DBG_HIGH_PRIO,
           "circ_buf_read_advance: Done. current read position is (chunk= 0x%x, offset= %u), unread_bytes=%u",
           rd_client_ptr->rw_chunk_node_ptr,
           rd_client_ptr->rw_chunk_offset,
@@ -529,7 +529,7 @@ circbuf_result_t circ_buf_read_adjust(circ_buf_client_t *rd_client_ptr,
    }
 
 #ifdef DEBUG_CIRC_BUF_UTILS
-   AR_MSG(DBG_HIGH_PRIO,
+   AR_MSG_ISLAND(DBG_HIGH_PRIO,
           "circ_buf_read_adjust: Requested read adjust, read_offset= %u, unread_bytes=%u ",
           read_offset,
           rd_client_ptr->unread_bytes);
@@ -689,7 +689,7 @@ static circbuf_result_t _circ_buf_write_util(circ_buf_client_t *wr_client_ptr,
    if ((NULL == wr_client_ptr) || (NULL == wr_client_ptr->rw_chunk_node_ptr) || (NULL == wr_client_ptr->circ_buf_ptr))
    {
 #ifdef DEBUG_CIRC_BUF_UTILS
-      AR_MSG(DBG_ERROR_PRIO, "_circ_buf_write_util: Writer client position not set.");
+      AR_MSG_ISLAND(DBG_ERROR_PRIO, "_circ_buf_write_util: Writer client position not set.");
 #endif
       return CIRCBUF_FAIL;
    }
@@ -700,7 +700,7 @@ static circbuf_result_t _circ_buf_write_util(circ_buf_client_t *wr_client_ptr,
    if ((bytes_to_write > circ_buf_size))
    {
 #ifdef DEBUG_CIRC_BUF_UTILS
-      AR_MSG(DBG_ERROR_PRIO,
+      AR_MSG_ISLAND(DBG_ERROR_PRIO,
              "_circ_buf_write_util: Received invalid bytes to write = %u, max buffer size = %lu ",
              bytes_to_write,
              circ_buf_size);
@@ -711,7 +711,7 @@ static circbuf_result_t _circ_buf_write_util(circ_buf_client_t *wr_client_ptr,
    //   if (CIRCBUF_FAIL == circ_buf_check_if_corrupted(wr_client_ptr))
    //   {
    //#ifdef DEBUG_CIRC_BUF_UTILS
-   //      AR_MSG(DBG_ERROR_PRIO, "Circ buf corrupted");
+   //      AR_MSG_ISLAND(DBG_ERROR_PRIO, "Circ buf corrupted");
    //#endif
    //      return CIRCBUF_FAIL;
    //   }
@@ -729,7 +729,7 @@ static circbuf_result_t _circ_buf_write_util(circ_buf_client_t *wr_client_ptr,
       chunk_buffer_t *chunk_ptr = (chunk_buffer_t *)(*wr_chunk_ptr_ptr)->obj_ptr;
 
 #ifdef DEBUG_CIRC_BUF_UTILS
-      AR_MSG(DBG_HIGH_PRIO,
+      AR_MSG_ISLAND(DBG_HIGH_PRIO,
              "_circ_buf_write_util: buf_id=0x%x chunk= %d, chunk_ptr= 0x%x, offset= %lu, chunk_size= %lu, counter= "
              "%lu ",
              circ_buf_ptr->id,
@@ -806,7 +806,7 @@ static circbuf_result_t _circ_buf_write_util(circ_buf_client_t *wr_client_ptr,
       if (temp_rd_client_ptr->unread_bytes > circ_buf_size)
       {
 #ifdef DEBUG_CIRC_BUF_UTILS
-         AR_MSG(DBG_HIGH_PRIO,
+         AR_MSG_ISLAND(DBG_HIGH_PRIO,
                 "_circ_buf_write_util: Buffer overflow detected, buf_id=0x%x, rd_client_id=0x%x ",
                 temp_rd_client_ptr->circ_buf_ptr->id,
                 temp_rd_client_ptr);
@@ -826,7 +826,7 @@ static circbuf_result_t _circ_buf_add_chunks(circ_buf_t *circ_buf_ptr, uint32_t 
    uint32_t prev_circ_buf_size    = circ_buf_ptr->circ_buf_size;
 
 #ifdef DEBUG_CIRC_BUF_UTILS
-   AR_MSG(DBG_HIGH_PRIO,
+   AR_MSG_ISLAND(DBG_HIGH_PRIO,
           "CIRC_BUF: Add chunks. buf_id = 0x%x, additional_size: %u, prev_circ_buf_size: %u, prev_num_chunks: %u ",
           circ_buf_ptr->id,
           additional_size,
@@ -869,7 +869,7 @@ static circbuf_result_t _circ_buf_add_chunks(circ_buf_t *circ_buf_ptr, uint32_t 
       if (NULL == buf_ptr)
       {
 #ifdef DEBUG_CIRC_BUF_UTILS
-         AR_MSG(DBG_ERROR_PRIO, "Circular Buffer allocation is failed ");
+         AR_MSG_ISLAND(DBG_ERROR_PRIO, "Circular Buffer allocation is failed ");
 #endif
          return CIRCBUF_FAIL;
       }
@@ -906,7 +906,7 @@ static circbuf_result_t _circ_buf_add_chunks(circ_buf_t *circ_buf_ptr, uint32_t 
       if (NULL == temp_tail_chunk_ptr)
       {
 #ifdef DEBUG_CIRC_BUF_UTILS
-         AR_MSG(DBG_ERROR_PRIO, "CIRC_BUF: Tail node not found.");
+         AR_MSG_ISLAND(DBG_ERROR_PRIO, "CIRC_BUF: Tail node not found.");
 #endif
          return CIRCBUF_FAIL;
       }
@@ -947,7 +947,7 @@ static circbuf_result_t _circ_buf_add_chunks(circ_buf_t *circ_buf_ptr, uint32_t 
    }
 
 #ifdef DEBUG_CIRC_BUF_UTILS
-   AR_MSG(DBG_HIGH_PRIO,
+   AR_MSG_ISLAND(DBG_HIGH_PRIO,
           "CIRC_BUF: Adding chunks. buf_id = 0x%x, additional_size: %u, new_circ_buf_size: %u, num_chunks: %u ",
           circ_buf_ptr->id,
           additional_size,
@@ -963,7 +963,7 @@ static circbuf_result_t _circ_buf_remove_chunks(circ_buf_t *circ_buf_ptr, uint32
    uint32_t preferred_chunk_size = circ_buf_ptr->preferred_chunk_size;
 
 #ifdef DEBUG_CIRC_BUF_UTILS
-   AR_MSG(DBG_HIGH_PRIO,
+   AR_MSG_ISLAND(DBG_HIGH_PRIO,
           "CIRC_BUF: Remove chunks. buf_id = 0x%x, removable_size: %u, new_circ_buf_size: %u, num_chunks: %u ",
           circ_buf_ptr->id,
           removable_size,
@@ -1035,7 +1035,7 @@ static circbuf_result_t _circ_buf_remove_chunks(circ_buf_t *circ_buf_ptr, uint32
    }
 
 #ifdef DEBUG_CIRC_BUF_UTILS
-   AR_MSG(DBG_HIGH_PRIO,
+   AR_MSG_ISLAND(DBG_HIGH_PRIO,
           "CIRC_BUF: Remove chunks. buf_id = 0x%x, removable_size: %u, new_circ_buf_size: %u, num_chunks: %u ",
           circ_buf_ptr->id,
           removable_size,
@@ -1081,7 +1081,7 @@ static circbuf_result_t _circ_buf_client_resize(circ_buf_t *circ_buf_ptr)
    }
 
 #ifdef DEBUG_CIRC_BUF_UTILS
-   AR_MSG(DBG_HIGH_PRIO,
+   AR_MSG_ISLAND(DBG_HIGH_PRIO,
           "CIRC_BUF: Found max of resize requests. buf_id = 0x%x, prev_max_req_alloc_size: %u, max_req_alloc_size: %u",
           circ_buf_ptr->id,
           circ_buf_ptr->max_req_buf_resize,
@@ -1128,7 +1128,7 @@ static circbuf_result_t _circ_buf_detect_and_handle_overflow(circ_buf_t *circ_bu
 // TODO: print error if the gate is opened and overrun happens.
 // add a a flag to each reader check if the overrun happened when gate is opened.
 #ifdef DEBUG_CIRC_BUF_UTILS
-         AR_MSG(DBG_HIGH_PRIO,
+         AR_MSG_ISLAND(DBG_HIGH_PRIO,
                 "CIRC_BUF: Detected Overrun. client: 0x%x, bytes to write = %u, free_bytes = %u",
                 (uint32_t)temp_rd_client_ptr,
                 bytes_to_write,
@@ -1169,7 +1169,7 @@ circbuf_result_t circ_buf_query_unread_bytes(circ_buf_client_t *rd_client_ptr, u
        (NULL == rd_client_ptr->circ_buf_ptr) || (FALSE == rd_client_ptr->is_read_client))
    {
 #ifdef DEBUG_CIRC_BUF_UTILS
-      AR_MSG(DBG_ERROR_PRIO, "CIRC_BUF: Query unread bytes failed. Invalid input params");
+      AR_MSG_ISLAND(DBG_ERROR_PRIO, "CIRC_BUF: Query unread bytes failed. Invalid input params");
 #endif
       return CIRCBUF_FAIL;
    }
@@ -1177,7 +1177,7 @@ circbuf_result_t circ_buf_query_unread_bytes(circ_buf_client_t *rd_client_ptr, u
    *unread_bytes_ptr = rd_client_ptr->unread_bytes;
 
 #ifdef DEBUG_CIRC_BUF_UTILS
-   AR_MSG(DBG_HIGH_PRIO, "CIRC_BUF: Circ Buf read, un_read_bytes = %u", rd_client_ptr->unread_bytes);
+   AR_MSG_ISLAND(DBG_HIGH_PRIO, "CIRC_BUF: Circ Buf read, un_read_bytes = %u", rd_client_ptr->unread_bytes);
 #endif
 
    return CIRCBUF_SUCCESS;
@@ -1207,7 +1207,7 @@ circbuf_result_t circ_buf_query_unread_bytes(circ_buf_client_t *rd_client_ptr, u
 //   //      if (write_read_gap < 0)
 //   //      {
 //   //#ifdef DEBUG_CIRC_BUF_UTILS
-//   //         AR_MSG(DBG_ERROR_PRIO, "Circ buf read/write corrupted");
+//   //         AR_MSG_ISLAND(DBG_ERROR_PRIO, "Circ buf read/write corrupted");
 //   //#endif
 //   //         return CIRCBUF_FAIL;
 //   //      }
@@ -1215,7 +1215,7 @@ circbuf_result_t circ_buf_query_unread_bytes(circ_buf_client_t *rd_client_ptr, u
 //   //   if (write_read_gap > (int32_t)frag_circ_buf_ptr->circ_buf_size)
 //   //   {
 //   //#ifdef DEBUG_CIRC_BUF_UTILS
-//   //      AR_MSG(DBG_ERROR_PRIO, "Circ buf read/write corrupted");
+//   //      AR_MSG_ISLAND(DBG_ERROR_PRIO, "Circ buf read/write corrupted");
 //   //#endif
 //   //      return CIRCBUF_FAIL;
 //   //   }
@@ -1232,7 +1232,7 @@ static void print_client_chunk_positions(circ_buf_t *circ_buf_ptr)
       circ_buf_client_t *rd_client_ptr = (circ_buf_client_t *)client_list_ptr->obj_ptr;
       circ_buf_client_t *wr_client_ptr = rd_client_ptr->circ_buf_ptr->wr_client_ptr;
 
-      AR_MSG(DBG_HIGH_PRIO,
+      AR_MSG_ISLAND(DBG_HIGH_PRIO,
              "Reader client:0x%X, current read position is rd(chunk= 0x%x, offset= %u), unread_bytes=%u,"
              "wr(chunk= 0x%x, offset= %u,  write_byte_counter:%d)",
              rd_client_ptr,

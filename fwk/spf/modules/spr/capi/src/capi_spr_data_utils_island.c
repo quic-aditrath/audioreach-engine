@@ -68,7 +68,7 @@ static capi_stream_data_v2_t *spr_setup_input_stream_to_process(capi_spr_t *    
    bool_t process_input = spr_should_input_stream_process(input_ptr);
 
 #ifdef DEBUG_SPR_MODULE
-   SPR_MSG(me_ptr->miid,
+   SPR_MSG_ISLAND(me_ptr->miid,
            DBG_HIGH_PRIO,
            "process: incoming stream timestamp %ld, is_valid %d, process_input %d is erasure %d",
            input_ptr->timestamp,
@@ -89,7 +89,7 @@ static capi_stream_data_v2_t *spr_setup_input_stream_to_process(capi_spr_t *    
       spr_mf_handler_t *head_mf_obj_ptr = spr_get_cached_mf_list_head_obj_ptr(me_ptr);
       if (!head_mf_obj_ptr)
       {
-         SPR_MSG(me_ptr->miid, DBG_ERROR_PRIO, "Failed to get head of media format list though it exists");
+         SPR_MSG_ISLAND(me_ptr->miid, DBG_ERROR_PRIO, "Failed to get head of media format list though it exists");
          *result_ptr = CAPI_EFAILED;
          return NULL;
       }
@@ -118,7 +118,7 @@ static capi_stream_data_v2_t *spr_setup_input_stream_to_process(capi_spr_t *    
 
          if (AR_DID_FAIL(*result_ptr))
          {
-            SPR_MSG(me_ptr->miid,
+            SPR_MSG_ISLAND(me_ptr->miid,
                     DBG_ERROR_PRIO,
                     "Failed to add input stream to hold list with error 0x%x",
                     *result_ptr);
@@ -166,7 +166,7 @@ static capi_err_t capi_spr_process_input(capi_spr_t *           me_ptr,
       uint32_t PORT_IS_ACTIVE = 0;
       capi_spr_set_is_input_at_gap(me_ptr, PORT_IS_ACTIVE);
 #ifdef DEBUG_SPR_MODULE
-      SPR_MSG(me_ptr->miid, DBG_HIGH_PRIO, "input port is active now");
+      SPR_MSG_ISLAND(me_ptr->miid, DBG_HIGH_PRIO, "input port is active now");
 #endif
    }
 
@@ -189,7 +189,7 @@ static capi_err_t capi_spr_process_input(capi_spr_t *           me_ptr,
                                        input_ptr->timestamp);
 
 #ifdef DEBUG_SPR_MODULE
-            SPR_MSG(me_ptr->miid,
+            SPR_MSG_ISLAND(me_ptr->miid,
                     DBG_LOW_PRIO,
                     "process: Input consumed timestamp %ld is_ts_valid %d actual_data_len %d",
                     input_ptr->timestamp,
@@ -205,7 +205,7 @@ static capi_err_t capi_spr_process_input(capi_spr_t *           me_ptr,
 #ifdef DEBUG_SPR_MODULE
          else
          {
-            SPR_MSG(me_ptr->miid, DBG_LOW_PRIO, "Not writing erasure buffer into SPR");
+            SPR_MSG_ISLAND(me_ptr->miid, DBG_LOW_PRIO, "Not writing erasure buffer into SPR");
          }
 #endif
       } // if input & output streams exist
@@ -227,7 +227,7 @@ static capi_err_t capi_spr_process_input(capi_spr_t *           me_ptr,
       // if no hold buffer is configured, then SPR cannot hold the data, drop right away
       if (!spr_avsync_is_hold_buf_configured(me_ptr->avsync_ptr))
       {
-         SPR_MSG(me_ptr->miid,
+         SPR_MSG_ISLAND(me_ptr->miid,
                  DBG_ERROR_PRIO,
                  "Hold buffer not configured. dropping %d bytes per channel",
                  input_ptr->buf_ptr->actual_data_len);
@@ -238,7 +238,7 @@ static capi_err_t capi_spr_process_input(capi_spr_t *           me_ptr,
          if (spr_avsync_is_input_strm_hold_buf_head(me_ptr->avsync_ptr, (void *)input_ptr))
          {
 #ifdef AVSYNC_DEBUG
-            SPR_MSG(me_ptr->miid, DBG_HIGH_PRIO, "Not adding stream to hold list again");
+            SPR_MSG_ISLAND(me_ptr->miid, DBG_HIGH_PRIO, "Not adding stream to hold list again");
 #endif
          }
          else
@@ -251,7 +251,7 @@ static capi_err_t capi_spr_process_input(capi_spr_t *           me_ptr,
             {
 
 #ifdef DEBUG_SPR_MODULE
-               SPR_MSG(me_ptr->miid,
+               SPR_MSG_ISLAND(me_ptr->miid,
                        DBG_HIGH_PRIO,
                        "process: input strm timestamp %ld belongs to cached mf list and is being moved to the hold "
                        "buffer. ",
@@ -270,7 +270,7 @@ static capi_err_t capi_spr_process_input(capi_spr_t *           me_ptr,
 
                if (AR_DID_FAIL(result))
                {
-                  SPR_MSG(me_ptr->miid,
+                  SPR_MSG_ISLAND(me_ptr->miid,
                           DBG_ERROR_PRIO,
                           "Failed to add input stream to hold list with error 0x%x",
                           result);
@@ -318,7 +318,7 @@ static void capi_spr_insert_eos_for_us_gap(capi_spr_t *me_ptr, capi_stream_data_
       eos_md_ptr->cntr_ref_ptr          = NULL;
       new_md_ptr->tracking_ptr          = NULL;
 
-      SPR_MSG(me_ptr->miid, DBG_HIGH_PRIO, "Created and inserted internal, flushing eos at output offset :%lu", new_md_ptr->offset);
+      SPR_MSG_ISLAND(me_ptr->miid, DBG_HIGH_PRIO, "Created and inserted internal, flushing eos at output offset :%lu", new_md_ptr->offset);
    }
 }
 
@@ -369,7 +369,7 @@ static void spr_process_output_metadata(capi_spr_t *me_ptr, capi_stream_data_v2_
 
          if (CAPI_FAILED(result))
          {
-            SPR_MSG(me_ptr->miid,
+            SPR_MSG_ISLAND(me_ptr->miid,
                     DBG_ERROR_PRIO,
                     "SPR_MD_DBG: Failed to modify_md ID 0x%X with error %x",
                     md_id,
@@ -430,13 +430,13 @@ static capi_err_t capi_spr_process_output(capi_spr_t *me_ptr, capi_stream_data_v
       if ((NULL == output[port_index]) || (NULL == output[port_index]->buf_ptr) ||
           (NULL == output[port_index]->buf_ptr[0].data_ptr))
       {
-         SPR_MSG(me_ptr->miid, DBG_LOW_PRIO, "Output buffers not available port_id=0x%x ", port_index);
+         SPR_MSG_ISLAND(me_ptr->miid, DBG_LOW_PRIO, "Output buffers not available port_id=0x%x ", port_index);
          continue;
       }
 
       if (output[port_index]->buf_ptr->max_data_len > me_ptr->frame_dur_bytes_per_ch)
       {
-         SPR_MSG(me_ptr->miid,
+         SPR_MSG_ISLAND(me_ptr->miid,
                  DBG_LOW_PRIO,
                  "process: warning: output %d max_data_len %d is greater than frame dur %d ",
                  port_index,
@@ -482,7 +482,7 @@ static capi_err_t capi_spr_process_output(capi_spr_t *me_ptr, capi_stream_data_v
                   is_ts_valid = me_ptr->out_port_info_arr[arr_idx].is_prev_ts_valid;
 
 #ifdef DEBUG_SPR_MODULE
-                  SPR_MSG(me_ptr->miid,
+                  SPR_MSG_ISLAND(me_ptr->miid,
                           DBG_ERROR_PRIO,
                           "process: underrun ts update incr_ts %ld prev out ts %ld",
                           incr_ts,
@@ -498,7 +498,7 @@ static capi_err_t capi_spr_process_output(capi_spr_t *me_ptr, capi_stream_data_v
                }
                else
                {
-                  SPR_MSG(me_ptr->miid, DBG_MED_PRIO, "Not inserting zeros as SPR Timer is disabled ");
+                  SPR_MSG_ISLAND(me_ptr->miid, DBG_MED_PRIO, "Not inserting zeros as SPR Timer is disabled ");
                   num_underrun_zeroes_per_ch = 0;
                }
             }
@@ -545,7 +545,7 @@ static capi_err_t capi_spr_process_output(capi_spr_t *me_ptr, capi_stream_data_v
          bool_t is_steady_state = (DATA_NOT_AVAILABLE == status);
          if (capi_spr_check_print_underrun(&me_ptr->underrun_info, is_steady_state))
          {
-            SPR_MSG(me_ptr->miid,
+            SPR_MSG_ISLAND(me_ptr->miid,
                     DBG_ERROR_PRIO,
                     "process: underrun detected at output port index %d inserted %d zeroes (in bytes) per ch "
                     "is_erasure "
@@ -560,7 +560,7 @@ static capi_err_t capi_spr_process_output(capi_spr_t *me_ptr, capi_stream_data_v
       }
 
 #ifdef DEBUG_SPR_MODULE
-      SPR_MSG(me_ptr->miid,
+      SPR_MSG_ISLAND(me_ptr->miid,
               DBG_HIGH_PRIO,
               "process: out timestamp %ld,%ld for port index %d ts valid %d actual_data_len %d",
               (uint32_t)(input_ts>>32),
@@ -615,7 +615,7 @@ void capi_spr_evaluate_simple_process_criteria(capi_spr_t *me_ptr, bool_t is_inp
    } while (0);
 
    //#ifdef DEBUG_SPR_MODULE
-   SPR_MSG(me_ptr->miid,
+   SPR_MSG_ISLAND(me_ptr->miid,
            DBG_HIGH_PRIO,
            "process: uses_simple_process [prev %d, curr %d]",
            me_ptr->flags.uses_simple_process,
@@ -649,7 +649,7 @@ static capi_err_t capi_spr_simple_process_input(capi_spr_t *me_ptr, capi_stream_
       {
          spr_avsync_set_dfg_flag(avsync_ptr, FALSE);
 #ifdef AVSYNC_DEBUG_SIMPLE_PROCESS
-         SPR_MSG(me_ptr->miid, DBG_HIGH_PRIO, "avsync: simple process: Data flow begin");
+         SPR_MSG_ISLAND(me_ptr->miid, DBG_HIGH_PRIO, "avsync: simple process: Data flow begin");
 #endif
       }
 
@@ -665,7 +665,7 @@ static capi_err_t capi_spr_simple_process_input(capi_spr_t *me_ptr, capi_stream_
 
       capi_spr_avsync_update_input_info(me_ptr, (capi_stream_data_t *)input);
 #ifdef AVSYNC_DEBUG_SIMPLE_PROCESS
-      SPR_MSG(me_ptr->miid, DBG_HIGH_PRIO, "avsync: simple process: render buffer");
+      SPR_MSG_ISLAND(me_ptr->miid, DBG_HIGH_PRIO, "avsync: simple process: render buffer");
 #endif
    }
 
@@ -675,7 +675,7 @@ static capi_err_t capi_spr_simple_process_input(capi_spr_t *me_ptr, capi_stream_
       uint32_t PORT_IS_ACTIVE = 0;
       capi_spr_set_is_input_at_gap(me_ptr, PORT_IS_ACTIVE);
 #ifdef DEBUG_SPR_MODULE_SIMPLE_PROCESS
-      SPR_MSG(me_ptr->miid, DBG_HIGH_PRIO, "input port is active now");
+      SPR_MSG_ISLAND(me_ptr->miid, DBG_HIGH_PRIO, "input port is active now");
 #endif
    }
 
@@ -719,7 +719,7 @@ static capi_err_t capi_spr_simple_process_output(capi_spr_t *me_ptr, capi_stream
           (NULL == output[port_index]->buf_ptr[0].data_ptr) ||
           (output[port_index]->buf_ptr->actual_data_len == output[port_index]->buf_ptr->max_data_len))
       {
-         SPR_MSG(me_ptr->miid, DBG_LOW_PRIO, "Output buffers not available port_idx=0x%x ", port_index);
+         SPR_MSG_ISLAND(me_ptr->miid, DBG_LOW_PRIO, "Output buffers not available port_idx=0x%x ", port_index);
          continue;
       }
 
@@ -753,7 +753,7 @@ static capi_err_t capi_spr_simple_process_output(capi_spr_t *me_ptr, capi_stream
 
          if (spr_output_stream_has_space(me_ptr, output[port_index]))
          {
-            SPR_MSG(me_ptr->miid,
+            SPR_MSG_ISLAND(me_ptr->miid,
                     DBG_LOW_PRIO,
                     "Warning: Output buffers for port_idx=0x%x not filled completely actual length = %d frame dur %d ",
                     port_index,
@@ -774,7 +774,7 @@ static capi_err_t capi_spr_simple_process_output(capi_spr_t *me_ptr, capi_stream
          }
          else
          {
-            SPR_MSG(me_ptr->miid, DBG_MED_PRIO, "Not inserting zeros as SPR Timer is disabled ");
+            SPR_MSG_ISLAND(me_ptr->miid, DBG_MED_PRIO, "Not inserting zeros as SPR Timer is disabled ");
          }
       }
 
@@ -786,7 +786,7 @@ static capi_err_t capi_spr_simple_process_output(capi_spr_t *me_ptr, capi_stream
          }
          else
          {
-            SPR_MSG(me_ptr->miid, DBG_LOW_PRIO, "Warning: Ignoring underrun for timer disable Mode");
+            SPR_MSG_ISLAND(me_ptr->miid, DBG_LOW_PRIO, "Warning: Ignoring underrun for timer disable Mode");
          }
       }
 
@@ -817,7 +817,7 @@ static capi_err_t capi_spr_simple_process_output(capi_spr_t *me_ptr, capi_stream
          bool_t is_steady_state = (DATA_NOT_AVAILABLE == status);
          if (capi_spr_check_print_underrun(&me_ptr->underrun_info, is_steady_state))
          {
-            SPR_MSG(me_ptr->miid,
+            SPR_MSG_ISLAND(me_ptr->miid,
                     DBG_ERROR_PRIO,
                     "simple process: underrun detected at output port index %d inserted %d zeroes (in bytes) per ch "
                     "is_erasure "
@@ -943,7 +943,7 @@ static void spr_process_input_metadata(capi_spr_t *me_ptr, capi_stream_data_v2_t
                                                             TRUE /*dropped*/,
                                                             &input_strm_ptr->metadata_list_ptr);
 
-         SPR_MSG(me_ptr->miid,
+         SPR_MSG_ISLAND(me_ptr->miid,
                  DBG_HIGH_PRIO,
                  "SPR_MD_DBG: Found Reset Session Time MD. Absorbed with result 0x%x",
                  result);
@@ -959,8 +959,8 @@ static void spr_process_input_metadata(capi_spr_t *me_ptr, capi_stream_data_v2_t
 
     	  if(is_spr_avsync_enabled(me_ptr->avsync_ptr))
     	  {
-    	      SPR_MSG(me_ptr->miid, DBG_HIGH_PRIO, "SPR_MD_DBG: Found Scale Session Time MD");
-    	      SPR_MSG(me_ptr->miid, DBG_HIGH_PRIO, "SPR_MD_DBG: current speed factor = %d new speed factor = %d offset = %d", me_ptr->avsync_ptr->tsm_info.tsm_speed_factor, tsm_md_ptr->speed_factor, md_ptr->offset);
+    	      SPR_MSG_ISLAND(me_ptr->miid, DBG_HIGH_PRIO, "SPR_MD_DBG: Found Scale Session Time MD");
+    	      SPR_MSG_ISLAND(me_ptr->miid, DBG_HIGH_PRIO, "SPR_MD_DBG: current speed factor = %d new speed factor = %d offset = %d", me_ptr->avsync_ptr->tsm_info.tsm_speed_factor, tsm_md_ptr->speed_factor, md_ptr->offset);
 
             // If MD offset is not at the beginning, cache and handle the calculations accordingly.
             // Say current speed factor is 1x and new speed factor is 0.5x with an offset N,
@@ -984,12 +984,12 @@ static void spr_process_input_metadata(capi_spr_t *me_ptr, capi_stream_data_v2_t
         }
     	  else
     	  {
-    	      SPR_MSG(me_ptr->miid, DBG_HIGH_PRIO, "SPR_MD_DBG: AVSync not enabled. Ignoring Scale Session Time MD");
+    	      SPR_MSG_ISLAND(me_ptr->miid, DBG_HIGH_PRIO, "SPR_MD_DBG: AVSync not enabled. Ignoring Scale Session Time MD");
         }
 
     	  result = me_ptr->metadata_handler.metadata_destroy(me_ptr->metadata_handler.context_ptr, node_ptr, TRUE/*dropped*/, &input_strm_ptr->metadata_list_ptr);
 
-         SPR_MSG(me_ptr->miid, DBG_HIGH_PRIO,
+         SPR_MSG_ISLAND(me_ptr->miid, DBG_HIGH_PRIO,
                "SPR_MD_DBG: Found Scale Session Time MD. Absorbed with result 0x%x",
                result);
       }
@@ -1022,7 +1022,7 @@ static void capi_spr_check_remove_processed_int_buf(capi_spr_t *      me_ptr,
    else if (spr_has_cached_mf(me_ptr) && (spr_cached_mf_is_input_strm_head(me_ptr, input_strm_ptr)))
    {
 #ifdef DEBUG_SPR_MODULE
-      SPR_MSG(me_ptr->miid,
+      SPR_MSG_ISLAND(me_ptr->miid,
               DBG_HIGH_PRIO,
               "input strm timestamp %ld belongs to cached mf list",
               ((capi_stream_data_v2_t *)input_strm_ptr)->timestamp);
@@ -1053,7 +1053,7 @@ static void capi_spr_check_remove_processed_int_buf(capi_spr_t *      me_ptr,
                (spr_mf_handler_t *)spf_list_pop_head((spf_list_node_t **)&me_ptr->in_port_info_arr->mf_handler_list_ptr,
                                                      TRUE /*pool_used*/);
 #ifdef DEBUG_SPR_MODULE
-            SPR_MSG(me_ptr->miid,
+            SPR_MSG_ISLAND(me_ptr->miid,
                     DBG_HIGH_PRIO,
                     "popped cached mf node with sr %d",
                     mf_handler_ptr->media_fmt.format.sampling_rate);
@@ -1101,7 +1101,7 @@ capi_err_t capi_spr_process(capi_t *capi_ptr, capi_stream_data_t *input[], capi_
 
    if (NULL == capi_ptr)
    {
-      AR_MSG(DBG_ERROR_PRIO, "capi_spr: received NULL instance pointer in process");
+      AR_MSG_ISLAND(DBG_ERROR_PRIO, "capi_spr: received NULL instance pointer in process");
       return CAPI_EFAILED;
    }
 
@@ -1122,7 +1122,7 @@ capi_err_t capi_spr_process(capi_t *capi_ptr, capi_stream_data_t *input[], capi_
    if (!me_ptr->flags.is_input_media_fmt_set)
    {
       result |= capi_spr_calc_set_timer(me_ptr);
-      SPR_MSG(me_ptr->miid, DBG_HIGH_PRIO, "process invoked without input media format set");
+      SPR_MSG_ISLAND(me_ptr->miid, DBG_HIGH_PRIO, "process invoked without input media format set");
       return result;
    }
    else
@@ -1169,7 +1169,7 @@ capi_err_t capi_spr_process(capi_t *capi_ptr, capi_stream_data_t *input[], capi_
 
    if (me_ptr->flags.uses_simple_process)
    {
-      SPR_MSG(me_ptr->miid,
+      SPR_MSG_ISLAND(me_ptr->miid,
               DBG_HIGH_PRIO,
               "process: transition is_simple_process = %d is_ts_valid = %d",
               me_ptr->flags.uses_simple_process,
@@ -1187,13 +1187,13 @@ capi_err_t capi_spr_process(capi_t *capi_ptr, capi_stream_data_t *input[], capi_
       capi_err_t mf_result      = capi_spr_check_apply_mf_change(me_ptr, &was_mf_applied);
       if (CAPI_FAILED(mf_result))
       {
-         SPR_MSG(me_ptr->miid, DBG_ERROR_PRIO, "error 0x%x in applying media format", mf_result);
+         SPR_MSG_ISLAND(me_ptr->miid, DBG_ERROR_PRIO, "error 0x%x in applying media format", mf_result);
          return mf_result;
       }
 
       if (was_mf_applied)
       {
-         SPR_MSG(me_ptr->miid, DBG_HIGH_PRIO, "media format was applied. return from process");
+         SPR_MSG_ISLAND(me_ptr->miid, DBG_HIGH_PRIO, "media format was applied. return from process");
          return CAPI_EOK;
          // TODO: Check if it is okay to set timer at 954
       }
@@ -1208,7 +1208,7 @@ capi_err_t capi_spr_process(capi_t *capi_ptr, capi_stream_data_t *input[], capi_
 
    if (CAPI_FAILED(input_setup_result))
    {
-      SPR_MSG(me_ptr->miid,
+      SPR_MSG_ISLAND(me_ptr->miid,
               DBG_ERROR_PRIO,
               "Failed to setup input stream to process with error 0x%x",
               input_setup_result);
@@ -1218,7 +1218,7 @@ capi_err_t capi_spr_process(capi_t *capi_ptr, capi_stream_data_t *input[], capi_
    if (proc_input_strm_ptr)
    {
 #ifdef DEBUG_SPR_MODULE
-      SPR_MSG(me_ptr->miid,
+      SPR_MSG_ISLAND(me_ptr->miid,
               DBG_LOW_PRIO,
               "processing input with timestamp %ld",
               (uint32_t)proc_input_strm_ptr->timestamp);

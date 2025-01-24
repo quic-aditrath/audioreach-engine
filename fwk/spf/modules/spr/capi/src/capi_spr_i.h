@@ -86,6 +86,8 @@ extern "C" {
 /* SPR timer duration */
 #define SPR_TIMER_DURATION_5_MS  5
 
+static const uint32_t TSM_UNITY_SPEED_FACTOR = 1<<24; //Q24 format
+
 /**
  * maximum number of corrections per a ms of Q timer interrupt, in us.
  * This constant is decided based on the constraint that if drift is such that it
@@ -96,6 +98,8 @@ extern "C" {
 
 #define SPR_MSG_PREFIX "capi_spr: %08lX: "
 #define SPR_MSG(ID, xx_ss_mask, xx_fmt, ...) AR_MSG(xx_ss_mask, SPR_MSG_PREFIX xx_fmt, ID, ##__VA_ARGS__)
+#define SPR_MSG_ISLAND(ID, xx_ss_mask, xx_fmt, ...) AR_MSG_ISLAND(xx_ss_mask, SPR_MSG_PREFIX xx_fmt, ID, ##__VA_ARGS__)
+
 
 // forward declaration
 typedef struct avsync_t avsync_t;
@@ -518,6 +522,11 @@ capi_err_t capi_spr_create_port_structures(capi_spr_t *me_ptr);
 uint32_t   spr_get_arr_index_from_port_id(capi_spr_t *me_ptr, uint32_t port_id);
 uint32_t   spr_get_arr_index_from_port_index(capi_spr_t *me_ptr, uint32_t port_index, bool_t is_input);
 capi_err_t capi_spr_set_data_port_property(capi_spr_t *me_ptr, capi_buf_t *params_ptr);
+capi_err_t capi_spr_check_reinit_ports(capi_spr_t *         me_ptr,
+                                              capi_media_fmt_v2_t *media_fmt_ptr,
+                                              bool_t               reinit_spr_ports,
+                                              bool_t               check_cache_mf);
+
 
 /**------------------------------- capi_spr_md ----------------------------------------------------------------------*/
 bool_t spr_check_input_for_eos_md(capi_spr_t *me_ptr, capi_stream_data_t *input[]);
@@ -525,6 +534,8 @@ capi_err_t spr_handle_metadata_util_(capi_spr_t *        me_ptr,
                                     capi_stream_data_t *input[],
                                     capi_stream_data_t *output[],
                                     bool_t              is_drop_metadata);
+bool_t spr_can_reinit_with_new_mf(capi_spr_t *me_ptr);
+
 /**------------------------------- capi_spr_data_utils --------------------------------------------------------------*/
 capi_err_t capi_spr_process(capi_t *_pif, capi_stream_data_t *input[], capi_stream_data_t *output[]);
 void capi_spr_evaluate_simple_process_criteria(capi_spr_t *me_ptr, bool_t is_input_ts_valid);
@@ -540,6 +551,10 @@ capi_err_t capi_spr_add_input_to_mf_list(capi_spr_t *me_ptr, capi_stream_data_v2
 #ifdef DEBUG_SPR_MODULE
 void capi_spr_print_media_fmt(capi_spr_t *me_ptr, capi_media_fmt_v2_t *media_fmt_ptr);
 #endif
+
+bool_t spr_has_old_mf_data_pending(capi_spr_t *me_ptr);
+
+
 
 /**-------------------------------- capi_int_buf_utils --------------------------------------------------------------*/
 void *capi_spr_get_list_head_obj_ptr(void *list_ptr);
@@ -561,6 +576,7 @@ capi_err_t capi_spr_move_int_buf_node(spf_list_node_t *    node_ptr,
                                       spr_int_buffer_t *   src_buf_ptr,
                                       spr_int_buffer_t *   dst_buf_ptr,
                                       capi_media_fmt_v2_t *media_fmt_ptr);
+capi_err_t spr_does_strm_reader_have_data(capi_spr_t *me_ptr, bool_t *has_data_ptr);
 
 /********************  Static inline function ********************************/
 

@@ -49,19 +49,6 @@ static bool_t capi_spr_is_ctrl_port_mapped_to_output_port(capi_spr_t *me_ptr, ui
    return FALSE;
 }
 
-void capi_spr_imcl_get_drift(capi_spr_t *me_ptr, spr_ctrl_port_t *port_info_ptr)
-{
-   imcl_tdi_hdl_t *timer_drift_hdl_ptr = port_info_ptr->timer_drift_info_hdl_ptr;
-
-   if ((NULL != timer_drift_hdl_ptr) && (NULL != timer_drift_hdl_ptr->get_drift_fn_ptr))
-   {
-#ifdef DEBUG_SPR_MODULE
-      SPR_MSG(me_ptr->miid, DBG_HIGH_PRIO, "reading from handle %lx", timer_drift_hdl_ptr);
-#endif
-      timer_drift_hdl_ptr->get_drift_fn_ptr(timer_drift_hdl_ptr, &port_info_ptr->acc_drift);
-   }
-}
-
 /* Create mutex and setting drift function */
 capi_err_t capi_spr_init_out_drift_info(spr_drift_info_t *drift_info_ptr, imcl_tdi_get_acc_drift_fn_t get_drift_fn_ptr)
 {
@@ -598,28 +585,6 @@ capi_err_t capi_spr_imcl_port_operation(capi_spr_t *me_ptr, capi_buf_t *params_p
    }
 
    return result;
-}
-
-spr_ctrl_port_t *spr_get_ctrl_port_instance(capi_spr_t *me_ptr, uint32_t ctrl_port_id)
-{
-   spr_ctrl_port_t *ret_inst_ptr = NULL;
-
-   spr_ctrl_port_list_t *list_ptr = me_ptr->ctrl_port_list_ptr;
-
-   while (list_ptr)
-   {
-      spr_ctrl_port_t *node_ptr = list_ptr->port_info_ptr;
-
-      if (node_ptr->port_id == ctrl_port_id)
-      {
-         ret_inst_ptr = node_ptr;
-         break;
-      }
-
-      list_ptr = list_ptr->next_ptr;
-   }
-
-   return ret_inst_ptr;
 }
 
 static spr_ctrl_port_list_t *spr_get_ctrl_port_list_node(capi_spr_t *me_ptr, uint32_t ctrl_port_id)
