@@ -25,7 +25,6 @@ SPDX-License-Identifier: BSD-3-Clause
 #include "apm.h"
 #include "apm_cntr_if.h"
 #include "irm.h"
-#include "thread_prio_devcfg.h"
 #include "rtm_logging_api.h"
 //#include "irm_offload_utils.h"
 #include "spf_sys_util.h"
@@ -75,7 +74,7 @@ typedef struct irm_static_module_info_t
 {
    uint32_t static_miid; // instance ID of the static service
    uint32_t heap_id;     // heap id used by static service for tracking
-   uint32_t tid;         // thread id of the service (to query for profiling metrics)
+   int64_t  tid;         // thread id of the service (to query for profiling metrics)
 } irm_static_module_info_t;
 
 // Common structure used to store information for block, instance and Metirc IDs

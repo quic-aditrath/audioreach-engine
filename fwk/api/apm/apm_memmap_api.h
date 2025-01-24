@@ -232,6 +232,7 @@ struct apm_cmd_shared_satellite_mem_map_regions_t
 
         @valuesbul
         - #APM_PROC_DOMAIN_ID_MDSP
+        - #APM_PROC_DOMAIN_ID_APPS
         - #APM_PROC_DOMAIN_ID_SDSP
         - #APM_PROC_DOMAIN_ID_CDSP
         - #APM_PROC_DOMAIN_ID_GDSP_0
@@ -516,6 +517,7 @@ struct apm_cmd_shared_satellite_mem_unmap_regions_t
 
         @valuesbul
         - #APM_PROC_DOMAIN_ID_MDSP
+        - #APM_PROC_DOMAIN_ID_APPS
         - #APM_PROC_DOMAIN_ID_SDSP
         - #APM_PROC_DOMAIN_ID_CDSP
         - #APM_PROC_DOMAIN_ID_GDSP_0

@@ -649,6 +649,9 @@ ar_result_t apm_cfg_container_prop(apm_container_t *container_node_ptr, uint8_t 
 
             break;
          }
+         case APM_CONTAINER_PROP_ID_THREAD_PRIORITY:
+         case APM_CONTAINER_PROP_ID_THREAD_SCHED_POLICY:
+         case APM_CONTAINER_PROP_ID_THREAD_CORE_AFFINITY:
          case APM_CONTAINER_PROP_ID_FRAME_SIZE:
          {
             break;

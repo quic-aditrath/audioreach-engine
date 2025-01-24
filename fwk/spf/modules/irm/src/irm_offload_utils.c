@@ -290,7 +290,7 @@ ar_result_t irm_route_cmd_to_satellite(irm_t     *irm_ptr,
       }
 
       memscpy(curr_cmd_ctrl_ptr->loaned_mem_ptr, irm_payload_size, irm_payload_ptr, irm_payload_size);
-      posal_cache_flush((uint32_t)curr_cmd_ctrl_ptr->loaned_mem_ptr, irm_payload_size);
+      posal_cache_flush_v2((posal_mem_addr_t)curr_cmd_ctrl_ptr->loaned_mem_ptr, irm_payload_size);
 
 #ifdef IRM_OFFLOAD_DBG
       AR_MSG(DBG_HIGH_PRIO,
@@ -465,12 +465,12 @@ ar_result_t irm_route_basic_rsp_to_client(irm_t *irm_ptr, spf_msg_t *msg_ptr)
 
       if (ctrl_obj_ptr->is_out_of_band)
       {
-         posal_cache_invalidate((uint32_t)ctrl_obj_ptr->loaned_mem_ptr, cmd_apm_header_ptr->payload_size);
+         posal_cache_invalidate_v2((posal_mem_addr_t)ctrl_obj_ptr->loaned_mem_ptr, cmd_apm_header_ptr->payload_size);
          memscpy(ctrl_obj_ptr->master_payload_ptr,
                  cmd_apm_header_ptr->payload_size,
                  ctrl_obj_ptr->loaned_mem_ptr,
                  cmd_apm_header_ptr->payload_size);
-         posal_cache_flush((uint32_t)ctrl_obj_ptr->master_payload_ptr, cmd_apm_header_ptr->payload_size);
+         posal_cache_flush_v2((posal_mem_addr_t)ctrl_obj_ptr->master_payload_ptr, cmd_apm_header_ptr->payload_size);
       }
 
       __gpr_cmd_free(basic_rsp_pkt_ptr);
@@ -623,12 +623,18 @@ ar_result_t irm_route_get_cfg_rsp_to_client(irm_t *irm_ptr, spf_msg_t *msg_ptr)
                                             &alignment_size,
                                             NULL,
                                             apm_get_mem_map_client());
-
-      result = irm_send_get_cfg_gpr_resp(gpr_rsp_pkt_ptr,
+	  if (cmd_payload_ptr)
+	  {		  
+         result = irm_send_get_cfg_gpr_resp(gpr_rsp_pkt_ptr,
                                          original_gpr_pkt_ptr,
                                          cmd_header_ptr->payload_size,
                                          cmd_payload_ptr,
                                          ctrl_obj_ptr->is_out_of_band);
+	  }
+	  else
+	  {
+		  AR_MSG(DBG_ERROR_PRIO, "IRM: cmd payload NULL");
+	  }
 
       gpr_packet_t *cmd_gpr_payload_ptr = (gpr_packet_t *)ctrl_obj_ptr->cmd_msg.payload_ptr;
       if (SPF_MSG_CMD_GPR == original_msg_ptr->msg_opcode)

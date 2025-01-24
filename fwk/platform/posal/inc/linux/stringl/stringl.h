@@ -33,8 +33,6 @@ extern "C" {
 		size_t      src_size
 	);// __attribute__ ((visibility ("default") ));
 
-
-
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */

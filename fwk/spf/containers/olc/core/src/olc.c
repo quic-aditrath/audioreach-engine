@@ -334,6 +334,9 @@ ar_result_t olc_create(cntr_cmn_init_params_t *init_params_ptr, spf_handle_t **h
    // Get the Host domain ID
    __gpr_cmd_get_host_domain_id(&host_domain_id);
    me_ptr->host_domain_id = host_domain_id;
+   me_ptr->cu.configured_thread_prio                = APM_CONT_PRIO_IGNORE; // Assume configured priority, to be updated by tools
+   me_ptr->cu.configured_sched_policy               = APM_CONT_SCHED_POLICY_IGNORE;
+   me_ptr->cu.configured_core_affinity              = APM_CONT_CORE_AFFINITY_IGNORE;
 
    // Parse the container configuration
    TRY(result, olc_parse_container_cfg(me_ptr, init_params_ptr->container_cfg_ptr));
@@ -347,7 +350,6 @@ ar_result_t olc_create(cntr_cmn_init_params_t *init_params_ptr, spf_handle_t **h
 
    // Init to default scale factor in q4 format
    me_ptr->cu.pm_info.weighted_kpps_scale_factor_q4 = UNITY_Q4;
-   me_ptr->cu.configured_thread_prio                = 0; // Assume configured priority, to be updated by tools
 
    // Init the topo and setup cu pointers to topo and gu fields.
    memset(&init_data, 0, sizeof(init_data));

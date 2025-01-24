@@ -47,7 +47,7 @@ uint32_t cu_gpr_callback(gpr_packet_t *packet, void *callback_data)
    /*Validate handles and queue pointers */
    VERIFY(result, (handle_ptr && handle_ptr->cmd_handle_ptr && handle_ptr->cmd_handle_ptr->cmd_q_ptr));
 
-   thread_id = (uint32_t)posal_thread_get_tid(handle_ptr->cmd_handle_ptr->thread_id);
+   thread_id = (uint32_t)posal_thread_get_tid_v2(handle_ptr->cmd_handle_ptr->thread_id);
 
    switch (cu_get_bits(packet->opcode, AR_GUID_TYPE_MASK, AR_GUID_TYPE_SHIFT))
    {

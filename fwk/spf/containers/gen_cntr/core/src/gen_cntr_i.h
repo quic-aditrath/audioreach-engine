@@ -98,6 +98,12 @@ Processes after START, before voting for island participation. */
 // microseconds
 #define GEN_CNTR_PROC_DUR_THRESH_FOR_PRIO_BUMP_UP 2500
 
+// A scale factor for decreasing the thread processing time can be specified.
+// Suppose nominal frame duration is 1ms. For command handling available time may reduce to 0.5 ms.
+// The scale factor in this case is 2
+// This is used only for started signal triggered containers which have frame duration less than GEN_CNTR_PROC_DUR_THRESH_FOR_PRIO_BUMP_UP
+#define GEN_CNTR_PROC_DUR_SCALE_FACTOR_FOR_CMD_PROC 2
+
 /* In GC spf msg token upper nibble of MSB is  used to indicate if the data msg created was according to
  * deinterleaved (SPF_MSG_DATA_BUFFER_V2) OR (SPF_MSG_DATA_BUFFER) definitions. The token_data is populated when created
  * and read when popped in re-alloc context. SPF_MSG_DATA_BUFFER_V2 is currently only supported in GCs hence the handling

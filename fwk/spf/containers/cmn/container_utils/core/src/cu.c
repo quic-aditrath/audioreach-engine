@@ -302,14 +302,16 @@ ar_result_t cu_check_launch_thread(cu_base_t *me_ptr,
       // different.
       me_ptr->thread_id_to_exit = old_thread_id;
 
-      if (AR_DID_FAIL(result = posal_thread_launch2(&(me_ptr->cmd_handle.thread_id),
+      if (AR_DID_FAIL(result = posal_thread_launch3(&(me_ptr->cmd_handle.thread_id),
                                                     thread_name,
                                                     new_stack_size,
                                                     new_root_stack_size,
                                                     thread_priority,
                                                     cu_workloop_entry,
                                                     (void *)me_ptr,
-                                                    me_ptr->heap_id)))
+                                                    me_ptr->heap_id,
+                                                    me_ptr->configured_sched_policy,
+                                                    me_ptr->configured_core_affinity)))
       {
          // Restoring the thread ID from the cached value because on failure posal_thread_launch clears the thread ID.
          me_ptr->cmd_handle.thread_id = old_thread_id;
@@ -326,8 +328,8 @@ ar_result_t cu_check_launch_thread(cu_base_t *me_ptr,
       CU_MSG(me_ptr->gu_ptr->log_id,
              DBG_HIGH_PRIO,
              "old thread id = 0x%lX, new thread id = 0x%lX",
-             posal_thread_get_tid(old_thread_id),
-             posal_thread_get_tid(me_ptr->cmd_handle.thread_id));
+             posal_thread_get_tid_v2(old_thread_id),
+             posal_thread_get_tid_v2(me_ptr->cmd_handle.thread_id));
    }
 
    CATCH(result, CU_MSG_PREFIX, me_ptr->gu_ptr->log_id)
@@ -780,6 +782,51 @@ ar_result_t cu_parse_container_cfg(cu_base_t *me_ptr, apm_container_cfg_t *conta
          case APM_CONTAINER_PROP_ID_PARENT_CONTAINER_ID:
          {
             TRY(result, cu_create_offload_info(me_ptr, cntr_prop_ptr));
+
+            break;
+         }
+         case APM_CONTAINER_PROP_ID_THREAD_PRIORITY:
+         {
+            VERIFY(result, cntr_prop_ptr->prop_size >= sizeof(apm_cont_prop_id_thread_priority_t));
+
+            apm_cont_prop_id_thread_priority_t *prio_cfg_ptr = (apm_cont_prop_id_thread_priority_t *)(cntr_prop_ptr + 1);
+
+            me_ptr->configured_thread_prio = prio_cfg_ptr->priority;
+
+            CU_MSG(me_ptr->gu_ptr->log_id,
+                   DBG_MED_PRIO,
+                   "Configured container thread priority %lu",
+                   me_ptr->configured_thread_prio);
+
+            break;
+         }
+         case APM_CONTAINER_PROP_ID_THREAD_SCHED_POLICY:
+         {
+            VERIFY(result, cntr_prop_ptr->prop_size >= sizeof(apm_cont_prop_id_thread_sched_policy_t));
+
+            apm_cont_prop_id_thread_sched_policy_t *sched_cfg_ptr = (apm_cont_prop_id_thread_sched_policy_t *)(cntr_prop_ptr + 1);
+
+            me_ptr->configured_sched_policy = sched_cfg_ptr->sched_policy;
+
+            CU_MSG(me_ptr->gu_ptr->log_id,
+                   DBG_MED_PRIO,
+                   "Configured container thread sched policy %lu",
+                   me_ptr->configured_sched_policy);
+
+            break;
+         }
+         case APM_CONTAINER_PROP_ID_THREAD_CORE_AFFINITY:
+         {
+            VERIFY(result, cntr_prop_ptr->prop_size >= sizeof(apm_cont_prop_id_thread_core_affinity_t));
+
+            apm_cont_prop_id_thread_core_affinity_t *prio_cfg_ptr = (apm_cont_prop_id_thread_core_affinity_t *)(cntr_prop_ptr + 1);
+
+            me_ptr->configured_core_affinity = prio_cfg_ptr->core_affinity;
+
+            CU_MSG(me_ptr->gu_ptr->log_id,
+                   DBG_MED_PRIO,
+                   "Configured container thread core affinity 0x%lx",
+                   me_ptr->configured_core_affinity);
 
             break;
          }

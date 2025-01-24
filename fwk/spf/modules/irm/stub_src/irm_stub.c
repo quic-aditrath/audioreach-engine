@@ -23,7 +23,7 @@ bool_t irm_is_cntr_or_mod_prof_enabled()
    return FALSE;
 }
 
-ar_result_t irm_register_static_module(uint32_t mid, uint32_t heap_id, uint32_t tid)
+ar_result_t irm_register_static_module(uint32_t mid, uint32_t heap_id, int64_t tid)
 {
    return AR_EOK;
 }

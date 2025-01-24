@@ -195,7 +195,7 @@ ar_result_t irm_cmdq_gpr_cmd_handler(irm_t *irm_ptr, spf_msg_t *msg_ptr)
          {
             if (is_oob)
             {
-               posal_cache_flush((uint32_t)cmd_payload_ptr, cmd_header_ptr->payload_size);
+               posal_cache_flush_v2((posal_mem_addr_t)cmd_payload_ptr, cmd_header_ptr->payload_size);
             }
          }
 
@@ -2246,7 +2246,7 @@ ar_result_t irm_send_get_cfg_gpr_resp(gpr_packet_t *gpr_rsp_pkt_ptr,
    }
    else
    {
-      posal_cache_flush((uint32_t)cmd_payload_ptr, payload_size);
+      posal_cache_flush_v2((posal_mem_addr_t)cmd_payload_ptr, payload_size);
       apm_cmd_rsp_get_cfg_t cmd_get_cfg_rsp = { 0 };
       cmd_get_cfg_rsp.status                = result;
 

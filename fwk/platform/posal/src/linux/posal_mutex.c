@@ -70,7 +70,11 @@ ar_result_t posal_mutex_create(posal_mutex_t *pposal_mutex, POSAL_HEAP_ID heap_i
         goto fail;
     }
 
+#if defined (ARSPF_PLATFORM_QNX)
+    rc = pthread_mutexattr_setrecursive(&attr, PTHREAD_RECURSIVE_ENABLE );
+#else
     rc = pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
+#endif
     if (rc) {
         rc = AR_EFAILED;
         AR_MSG(DBG_ERROR_PRIO,"%s: failed to set mutex attribute\n", __func__);

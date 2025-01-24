@@ -63,7 +63,7 @@ bool_t irm_is_cntr_or_mod_prof_enabled();
  (audio_process_r), not any static module thread. This is to avoid any race condition on the registration
  data structure before a mutex is setup.
 ----------------------------------------------------------------------------------------------------------------------*/
-ar_result_t irm_register_static_module(uint32_t mid, uint32_t heap_id, uint32_t tid);
+ar_result_t irm_register_static_module(uint32_t mid, uint32_t heap_id, int64_t tid);
 
 #ifdef __cplusplus
 }

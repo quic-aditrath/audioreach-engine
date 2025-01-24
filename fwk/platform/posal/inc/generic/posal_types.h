@@ -19,10 +19,17 @@
  */
 #include "stdint.h"
 
+
+typedef float         float32_t; /*floating point 32 bit value*/
+typedef double        float64_t; /*floating point 64 bit value*/
+
 #elif defined(_WIN64)
 
 #include <stdint.h>
 #include <sal.h>
+
+typedef float         float32_t; /*floating point 32 bit value*/
+typedef double        float64_t; /*floating point 64 bit value*/
 
 #else /* Unsupported Compilers */
 
@@ -38,6 +45,9 @@ typedef signed long long   int64_t;   /* Signed 64 bit value */
 typedef signed long int    int32_t;   /* Signed 32 bit value */
 typedef signed short       int16_t;   /* Signed 16 bit value */
 typedef signed char        int8_t;    /* Signed 8  bit value */
+
+typedef float         float32_t; /*floating point 32 bit value*/
+typedef double        float64_t; /*floating point 64 bit value*/
 
 /* ------------------------------------------------------------------------
  ** Constants

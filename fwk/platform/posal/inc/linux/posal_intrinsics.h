@@ -3,7 +3,7 @@
 /**
  * \file posal_intrinsics.h
  * \brief
- *  	 This file contains generic implementation of some intrinsics
+ *  	 This file contains linux implementation of some intrinsics
  *
  * \copyright
  *  Copyright (c) Qualcomm Innovation Center, Inc. All Rights Reserved.
@@ -18,6 +18,7 @@
 // 64 bit alignment by default.
 static const uint32_t CACHE_ALIGNMENT = 0x7;
 
+#if !defined(uses_s32_ct1_s32)
 /** Counts the trailing ones starting from the LSB.*/
 static inline int32_t s32_ct1_s32(int32_t x)
 {
@@ -33,7 +34,10 @@ static inline int32_t s32_ct1_s32(int32_t x)
    }
    return num;
 }
+#define uses_s32_ct1_s32
+#endif /* uses_s32_ct1_s32 */
 
+#if !defined(uses_s32_cl1_s32)
 /** Counts the leading ones starting from the MSB.*/
 static inline int32_t s32_cl1_s32(int32_t x)
 {
@@ -48,7 +52,10 @@ static inline int32_t s32_cl1_s32(int32_t x)
 
    return num;
 }
+#define uses_s32_cl1_s32
+#endif /* uses_s32_cl1_s32 */
 
+#if !defined(uses_s32_cl0_s32)
 /** Counts the leading zeros starting from the MSB.*/
 static inline int32_t s32_cl0_s32(int32_t x)
 {
@@ -60,7 +67,10 @@ static inline int32_t s32_cl0_s32(int32_t x)
    }
    return num;
 }
+#define uses_s32_cl0_s32
+#endif /* uses_s32_cl0_s32 */
 
+#if !defined(uses_s32_get_lsb_s32)
 /** Counts the trailing zeros starting from the LSB.*/
 static inline int32_t s32_get_lsb_s32(int32_t x)
 {
@@ -72,8 +82,10 @@ static inline int32_t s32_get_lsb_s32(int32_t x)
    }
    return num;
 }
+#define uses_s32_get_lsb_s32
+#endif /* uses_s32_get_lsb_s32 */
 
-
+#if !defined(uses_u32_popcount_u64)
 /** Counts all the ones in the 64 bit unsigned int */
 static inline uint32_t u32_popcount_u64(uint64_t x)
 {
@@ -84,8 +96,11 @@ static inline uint32_t u32_popcount_u64(uint64_t x)
 	}
 	return sum;
 }
+#define uses_u32_popcount_u64
+#endif /* uses_u32_popcount_u64 */
 
 
+#if !defined(uses_s32_shl_s32_sat)
 /**
  * Airthmetic left shift
  */
@@ -105,7 +120,10 @@ static inline int32_t s32_shl_s32_sat(int32_t x, int16_t shift)
 
    return y;
 }
+#define uses_s32_shl_s32_sat
+#endif /* uses_s32_shl_s32_sat */
 
+#if !defined(uses_s32_shr_s32_sat)
 /**
  * Airthmetic right shift
  */
@@ -125,7 +143,10 @@ static inline int32_t s32_shr_s32_sat(int32_t x, int16_t shift)
 
    return y;
 }
+#define uses_s32_shr_s32_sat
+#endif /* uses_s32_shr_s32_sat */
 
+#if !defined(uses_s24_cl0_s24)
 /** Counts the leading zeros starting from the MSB. 24 bit*/
 static inline int32_t s24_cl0_s24(int32_t x)
 {
@@ -142,6 +163,8 @@ static inline int32_t s24_cl0_s24(int32_t x)
     }
     return count;
 }
+#define uses_s24_cl0_s24
+#endif /* uses_s24_cl0_s24 */
 
 #endif /* #ifndef POSAL_TYPES_H */
 

@@ -203,6 +203,12 @@ ar_result_t spl_cntr_get_thread_stack_size(spl_cntr_t *me_ptr, uint32_t *stack_s
  */
 static ar_result_t spl_cntr_get_thread_priority(spl_cntr_t *me_ptr, posal_thread_prio_t *priority_ptr)
 {
+   /**
+    * If container prio is configured, then it is used independent of whether container is started, or
+    * running commands during data processing or if it's FTRT or if its frame size is not known or
+    * if a module changes container priority.
+    */
+   posal_thread_prio_t temp;
    // If no subgraphs are running, we should use a low thread priority.
    if (!me_ptr->cu.flags.is_cntr_started)
    {
@@ -226,7 +232,14 @@ static ar_result_t spl_cntr_get_thread_priority(spl_cntr_t *me_ptr, posal_thread
       query_tbl.is_interrupt_trig = FALSE;
 
       posal_thread_calc_prio(&query_tbl, priority_ptr);
-      *priority_ptr = MAX(*priority_ptr, me_ptr->cu.configured_thread_prio);
+      //*priority_ptr = MAX(*priority_ptr, me_ptr->cu.configured_thread_prio); configured prio may be lower.
+   }
+
+   temp = *priority_ptr;
+
+   if (APM_CONT_PRIO_IGNORE != me_ptr->cu.configured_thread_prio)
+   {
+      *priority_ptr = me_ptr->cu.configured_thread_prio;
    }
 
    SPL_CNTR_MSG(me_ptr->topo.t_base.gu.log_id,
@@ -241,6 +254,13 @@ static ar_result_t spl_cntr_get_thread_priority(spl_cntr_t *me_ptr, posal_thread
                 TRUE,
                 FALSE,
                 me_ptr->cu.flags.is_cntr_started);
+
+   if (temp != *priority_ptr)
+   {
+      SPL_CNTR_MSG(me_ptr->topo.t_base.gu.log_id,
+                         DBG_HIGH_PRIO,
+                         "Warning: thread priority: configured %d prio overrides internal logic %d", me_ptr->cu.configured_thread_prio, temp);
+   }
 
    return AR_EOK;
 }
@@ -405,6 +425,9 @@ ar_result_t spl_cntr_create(cntr_cmn_init_params_t *init_params_ptr, spf_handle_
    me_ptr->cu.cntr_type          = APM_CONTAINER_TYPE_ID_SC;
    me_ptr->cu.topo_ptr           = (void *)&me_ptr->topo;
    me_ptr->cu.gu_ptr             = &me_ptr->topo.t_base.gu;
+   me_ptr->cu.configured_thread_prio                = APM_CONT_PRIO_IGNORE; // Assume configured priority, to be updated by tools
+   me_ptr->cu.configured_sched_policy               = APM_CONT_SCHED_POLICY_IGNORE;
+   me_ptr->cu.configured_core_affinity              = APM_CONT_CORE_AFFINITY_IGNORE;
 
    TRY(result, spl_cntr_parse_container_cfg(me_ptr, init_params_ptr->container_cfg_ptr));
 
@@ -416,7 +439,6 @@ ar_result_t spl_cntr_create(cntr_cmn_init_params_t *init_params_ptr, spf_handle_
    me_ptr->cu.cmd_handler_table_size = SIZE_OF_ARRAY(spl_cntr_cmd_handler_table);
 
    me_ptr->cu.pm_info.weighted_kpps_scale_factor_q4 = UNITY_Q4;
-   me_ptr->cu.configured_thread_prio                = 0; // Assume configured priority, to be updated by tools
 
    // Init the topo and setup cu pointers to topo and gu fields.
    memset(&init_data, 0, sizeof(init_data));
@@ -432,9 +454,6 @@ ar_result_t spl_cntr_create(cntr_cmn_init_params_t *init_params_ptr, spf_handle_
    me_ptr->cu.ext_ctrl_port_cu_offset = offsetof(spl_cntr_ext_ctrl_port_t, cu);
    me_ptr->cu.int_ctrl_port_cu_offset = offsetof(spl_cntr_int_ctrl_port_t, cu);
    me_ptr->cu.module_cu_offset        = offsetof(spl_cntr_module_t, cu);
-
-   // Assume configured priority, to be updated by tools
-   me_ptr->cu.configured_thread_prio = 0;
 
    // Initially all bit masks are available.
    me_ptr->cu.available_bit_mask = 0xFFFFFFFF;

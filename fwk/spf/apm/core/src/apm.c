@@ -269,6 +269,7 @@ ar_result_t apm_create()
    char                    apm_thread_name[] = "APM";
    prio_query_t            query_tbl;
    posal_queue_init_attr_t q_attr;
+   uint32_t sched_policy = 0, affinity_mask = 0;
 
    apm_q_info_t q_info_list[APM_MAX_NUM_PROC_Q] = { { "apm_cmd_q", APM_MAX_CMD_Q_ELEMENTS, APM_CMD_Q_MASK },
                                                     { "apm_rsp_q", APM_MAX_RSP_Q_ELEMENTS, APM_RSP_Q_MASK } };
@@ -356,20 +357,23 @@ ar_result_t apm_create()
    query_tbl.is_interrupt_trig = FALSE;
    query_tbl.static_req_id     = SPF_THREAD_STAT_APM_ID;
 
-   if (AR_EOK != (result = posal_thread_calc_prio(&query_tbl, &apm_thread_prio)))
+   if (AR_EOK != (result = posal_thread_determine_attributes(&query_tbl, &apm_thread_prio, &sched_policy, &affinity_mask)))
    {
       AR_MSG(DBG_ERROR_PRIO, "APM: Failed to get thread priority result: %lu", result);
       return result;
    }
 
    /** Launch the thread */
-   if (AR_DID_FAIL(result = posal_thread_launch(&apm_info_ptr->cmd_handle.thread_id,
+   if (AR_DID_FAIL(result = posal_thread_launch3(&apm_info_ptr->cmd_handle.thread_id,
                                                 apm_thread_name,
                                                 APM_THREAD_STACK_SIZE,
+                                                0,
                                                 apm_thread_prio,
                                                 apm_work_loop,
                                                 (void *)apm_info_ptr,
-                                                APM_INTERNAL_STATIC_HEAP_ID)))
+                                                APM_INTERNAL_STATIC_HEAP_ID,
+                                                sched_policy,
+                                                affinity_mask)))
    {
       AR_MSG(DBG_ERROR_PRIO, "Failed to launch APM Thread, result: %lu", result);
 
@@ -402,7 +406,7 @@ ar_result_t apm_create()
                        (posal_queue_t *)apm_info_ptr->q_list_ptr[APM_RSP_Q_IDX]);
 
    /** Register with IRM */
-   if (AR_EOK != (result = irm_register_static_module(APM_MODULE_INSTANCE_ID, APM_INTERNAL_STATIC_HEAP_ID, posal_thread_get_tid(apm_info_ptr->handle.cmd_handle_ptr->thread_id))))
+   if (AR_EOK != (result = irm_register_static_module(APM_MODULE_INSTANCE_ID, APM_INTERNAL_STATIC_HEAP_ID, posal_thread_get_tid_v2(apm_info_ptr->handle.cmd_handle_ptr->thread_id))))
    {
       AR_MSG(DBG_ERROR_PRIO, "APM INIT: Failed to register with IRM, result: 0x%8x", result);
    }

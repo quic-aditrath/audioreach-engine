@@ -16,8 +16,16 @@ INCLUDE FILES FOR MODULE
 ========================================================================== */
 
 #include "ar_defs.h"
+#include "ar_error_codes.h"
 #include "posal_memory.h"
-#include <stdatomic.h>
+#ifndef __cplusplus
+# include <stdatomic.h>
+#else
+# include <atomic>
+# define _Atomic(X) std::atomic< X >
+using std::atomic_int;
+using std::atomic_char32_t;
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -30,8 +38,13 @@ extern "C" {
 ** Global definitions/forward declarations
 ** ----------------------------------------------------------------------- */
 /** Atomic variable type. @newpage */
-typedef atomic_int* posal_atomic_word_t;
-typedef posal_atomic_word_t posal_atomic_word_internal_t;
+typedef struct
+{
+  atomic_int value;
+} atomic_word_t;
+
+typedef atomic_word_t posal_atomic_word_internal_t;
+typedef void* posal_atomic_word_t;
 
 /****************************************************************************
 ** Atomic Ops
@@ -54,7 +67,8 @@ typedef posal_atomic_word_t posal_atomic_word_internal_t;
 */
 static inline void posal_atomic_set(posal_atomic_word_t pWord, int val)
 {
-   atomic_store(pWord, val);
+   posal_atomic_word_internal_t *pWord_tmp = (posal_atomic_word_internal_t *)pWord;
+   atomic_store(&pWord_tmp->value, val);
 }
 
 
@@ -74,7 +88,8 @@ static inline void posal_atomic_set(posal_atomic_word_t pWord, int val)
 */
 static inline int posal_atomic_get(posal_atomic_word_t pWord)
 {
-  return atomic_load(pWord);
+  posal_atomic_word_internal_t *pWord_tmp = (posal_atomic_word_internal_t *)pWord;
+  return atomic_load(&pWord_tmp->value);
 }
 
 
@@ -96,38 +111,46 @@ static inline int posal_atomic_get(posal_atomic_word_t pWord)
   */
 static inline ar_result_t posal_atomic_word_create(posal_atomic_word_t *ppatomic_word, POSAL_HEAP_ID heap_id)
 {
-  posal_atomic_word_t tmp = (posal_atomic_word_t)posal_memory_malloc(sizeof(atomic_char32_t), heap_id);
-  if (NULL == tmp)
+  if (NULL == ppatomic_word)
+  {
+    return AR_EFAILED;
+  }
+  *ppatomic_word = (posal_atomic_word_t)posal_memory_malloc(sizeof(posal_atomic_word_internal_t), heap_id);
+  if (NULL == *ppatomic_word)
   {
     return AR_ENOMEMORY;
   }
   else
   {
-    *ppatomic_word = tmp;
+    posal_atomic_set(*ppatomic_word, 0);
     return AR_EOK;
   }
 }
 
- /**
-   Deletes the atmoic word. This function must be called for each corresponding
-   posal_atomic_word_create() function to clean up all resources.
+/**
+  Deletes the atmoic word. This function must be called for each corresponding
+  posal_atomic_word_create() function to clean up all resources.
 
-   @datatypes
-   posal_atomic_word_t
+  @datatypes
+  posal_atomic_word_t
 
-   @param[in] patomic_word object handle.
+  @param[in] patomic_word object handle.
 
-   @return
-   None.
+  @return
+  None.
 
-   @dependencies
-   Before calling this function, the object must be created.
-   @newpage
-  */
- static inline void posal_atomic_word_destroy(posal_atomic_word_t patomic_word)
- {
-   posal_memory_free(patomic_word);
- }
+  @dependencies
+  Before calling this function, the object must be created.
+  @newpage
+ */
+static inline void posal_atomic_word_destroy(posal_atomic_word_t patomic_word)
+{
+  if (patomic_word)
+  {
+    posal_memory_free(patomic_word);
+  }
+  return;
+}
 
 
 
@@ -147,8 +170,9 @@ static inline ar_result_t posal_atomic_word_create(posal_atomic_word_t *ppatomic
 */
 static inline int posal_atomic_increment(posal_atomic_word_t pWord)
 {
-   atomic_fetch_add(pWord, 1);
-   return (int)atomic_load(pWord);
+   posal_atomic_word_internal_t *pWord_tmp = (posal_atomic_word_internal_t *)pWord;
+   atomic_fetch_add(&pWord_tmp->value, 1);
+   return (int)atomic_load(&pWord_tmp->value);
 }
 
 
@@ -169,7 +193,8 @@ static inline int posal_atomic_increment(posal_atomic_word_t pWord)
 */
 static inline void posal_atomic_add(posal_atomic_word_t pWord, uint32_t unVal)
 {
-   atomic_fetch_add(pWord, (int) unVal);
+   posal_atomic_word_internal_t *pWord_tmp = (posal_atomic_word_internal_t *)pWord;
+   atomic_fetch_add(&pWord_tmp->value, (int) unVal);
 }
 
 
@@ -189,8 +214,9 @@ static inline void posal_atomic_add(posal_atomic_word_t pWord, uint32_t unVal)
 */
 static inline int posal_atomic_decrement(posal_atomic_word_t pWord)
 {
-   atomic_fetch_sub(pWord, 1);
-   return (int)atomic_load(pWord);
+   posal_atomic_word_internal_t *pWord_tmp = (posal_atomic_word_internal_t *)pWord;
+   atomic_fetch_sub(&pWord_tmp->value, 1);
+   return (int)atomic_load(&pWord_tmp->value);
 }
 
 
@@ -211,7 +237,8 @@ static inline int posal_atomic_decrement(posal_atomic_word_t pWord)
 */
 static inline void posal_atomic_subtract(posal_atomic_word_t pWord, uint32_t unVal)
 {
-   atomic_fetch_sub(pWord, (int) unVal);
+   posal_atomic_word_internal_t *pWord_tmp = (posal_atomic_word_internal_t *)pWord;
+   atomic_fetch_sub(&pWord_tmp->value, (int) unVal);
 }
 
 
@@ -232,7 +259,8 @@ static inline void posal_atomic_subtract(posal_atomic_word_t pWord, uint32_t unV
 */
 static inline void posal_atomic_or(posal_atomic_word_t word_ptr, uint32_t val)
 {
-   atomic_fetch_or(word_ptr, (int) val);
+   posal_atomic_word_internal_t *pWord_tmp = (posal_atomic_word_internal_t *)word_ptr;
+   atomic_fetch_or(&pWord_tmp->value, (int) val);
 }
 
 
@@ -253,7 +281,8 @@ static inline void posal_atomic_or(posal_atomic_word_t word_ptr, uint32_t val)
 */
 static inline void posal_atomic_and(posal_atomic_word_t word_ptr, uint32_t val)
 {
-   atomic_fetch_and(word_ptr, (int) val);
+   posal_atomic_word_internal_t *pWord_tmp = (posal_atomic_word_internal_t *)word_ptr;
+   atomic_fetch_and(&pWord_tmp->value, (int) val);
 }
 
 

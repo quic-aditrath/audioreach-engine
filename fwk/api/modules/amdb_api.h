@@ -211,6 +211,7 @@ struct amdb_module_registration_t
         @valuesbul
         - #APM_PROC_DOMAIN_ID_MDSP
         - #APM_PROC_DOMAIN_ID_ADSP
+        - #APM_PROC_DOMAIN_ID_APPS
         - #APM_PROC_DOMAIN_ID_SDSP
         - #APM_PROC_DOMAIN_ID_CDSP
         - #APM_PROC_DOMAIN_ID_GDSP_0

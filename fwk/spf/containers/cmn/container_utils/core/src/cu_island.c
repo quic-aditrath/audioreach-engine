@@ -60,7 +60,7 @@ ar_result_t cu_workloop_entry(void *instance_ptr)
       CU_MSG(me_ptr->gu_ptr->log_id,
              DBG_HIGH_PRIO,
              "Joining thread ID 0x%lX",
-             posal_thread_get_tid(me_ptr->thread_id_to_exit));
+             posal_thread_get_tid_v2(me_ptr->thread_id_to_exit));
 
       posal_thread_join(me_ptr->thread_id_to_exit, &result);
       me_ptr->thread_id_to_exit = 0;
@@ -134,12 +134,12 @@ ar_result_t cu_workloop(cu_base_t *me_ptr)
          }
 
          // In case new thread got created.
-         if (posal_thread_get_tid(me_ptr->thread_id_to_exit) == posal_thread_get_curr_tid())
+         if (posal_thread_get_tid_v2(me_ptr->thread_id_to_exit) == posal_thread_get_curr_tid())
          {
             CU_MSG(me_ptr->gu_ptr->log_id,
                    DBG_MED_PRIO,
                    "Thread ID 0x%lX exited",
-                   posal_thread_get_tid(me_ptr->thread_id_to_exit));
+                   posal_thread_get_tid_v2(me_ptr->thread_id_to_exit));
             SPF_CRITICAL_SECTION_END(me_ptr->gu_ptr);
             return AR_EOK;
          }

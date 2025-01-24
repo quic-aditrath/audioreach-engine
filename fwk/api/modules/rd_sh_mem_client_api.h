@@ -28,23 +28,21 @@
 */
 
 
-/**
- * Input port ID of the Read Shared Memory CLIENT
- */
+/** @ingroup ar_spf_mod_rs_mem_client_macros
+ *  Input port ID of the Read Shared Memory Client. */
 #define PORT_ID_RD_SHARED_MEM_CLIENT_INPUT                            0x2
 
-/**
- * Output port ID of the Read Shared Memory CLIENT
- */
+/** @ingroup ar_spf_mod_rs_mem_client_macros
+    Output port ID of the Read Shared Memory Client. */
 #define PORT_ID_RD_SHARED_MEM_CLIENT_OUTPUT                            0x1
 
-/**
- * ID of the Read Shared Memory Client Module
- *
- * This module has only one static input port with ID 2 and one output port with ID 1
- *
- * Supported Input Media Format:
- *    - Any
+/** @ingroup ar_spf_mod_rs_mem_client_macros
+    ID of the Read Shared Memory Client module.
+
+    This module has only one static input port with ID 2 and one output port with ID 1.
+
+    @subhead4{Supported input media format ID}
+    - Any
  */
 #define MODULE_ID_RD_SHARED_MEM_CLIENT                                0x0700105D
 /**

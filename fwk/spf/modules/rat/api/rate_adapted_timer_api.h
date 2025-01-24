@@ -2,9 +2,9 @@
 #define _RATE_ADAPTED_TIMER_API_H_
 /**
  * \file rate_adapted_timer_api.h
- * \brief
+ * \brief 
  *  	 This file contains RATE_ADAPTED_TIMER module APIs
- *
+ * 
  * \copyright
  *  Copyright (c) Qualcomm Innovation Center, Inc. All Rights Reserved.
  *  SPDX-License-Identifier: BSD-3-Clause
@@ -20,61 +20,74 @@
 /*==============================================================================
    Constants
 ==============================================================================*/
-/* IMCL static port id's to receive drifts*/
+/** @ingroup ar_spf_mod_rat_macros
+    IMCL static port IDs to receive drifts. */
 #define QT_REFCLK_TIMING_INPUT AR_NON_GUID(0xC0000001)
 #define REFCLK_REMOTE_TIMING_INPUT AR_NON_GUID(0xC0000002)
 #define QT_REMOTE_TIMING_INPUT AR_NON_GUID(0xC0000003)
 
-
-/* define the RAT Time Duration configuration modes
-DEFAULT_MODE            - Timer duration is based on Sub-graph performance mode
-CONFIGURED_IN_TIME      - Timer duration is specified in time
-CONFIGURED_IN_SAMPLES   - Timer duration configured in samples, time is derived based on sample rate
-*/
+/** @ingroup ar_spf_mod_rat_macros
+    Timer duration is based on Sub-graph performance mode. */
 #define    RAT_TIMER_DURATION_DEFAULT_MODE             0
+
+/** @ingroup ar_spf_mod_rat_macros
+    Timer duration is specified in time. */
 #define    RAT_TIMER_DURATION_CONFIGURED_IN_TIME       2
+
+/** @ingroup ar_spf_mod_rat_macros
+    Timer duration configured in samples, time is derived based on sample rate. */
 #define    RAT_TIMER_DURATION_CONFIGURED_IN_SAMPLES    3
 
-
-/* define the RAT Time Duration resolution control modes
-CONFIGURED_SAMPLE_RATE_MODE   - the sample rate is set as the sample rate configured in the PARAM_ID_RAT_MEDIA_FORMAT
-MINIMUM_SAMPLE_RATE_MODE      - the sample rate is set as the minimum sample rate supported by the RAT module.
-*/
+/** @ingroup ar_spf_mod_rat_macros
+    Sample rate is set as the sample rate configured in the PARAM_ID_RAT_MEDIA_FORMAT. */
 #define RAT_TIMER_DURATION_RESOLUTION_CONTROL_CONFIGURED_SAMPLE_RATE_MODE 0
+
+/** @ingroup ar_spf_mod_rat_macros
+    sample rate is set as the minimum sample rate supported by the RAT module. */
 #define RAT_TIMER_DURATION_RESOLUTION_CONTROL_MINIMUM_SAMPLE_RATE_MODE 1
 
-/* minimum value of RAT timer duration configuration specified in time (us) */
+/** @ingroup ar_spf_mod_rat_macros
+    Minimum value of RAT timer duration configuration specified in time (us). */
 #define    RAT_TIMER_DURATION_TIME_IN_US_MIN_VALUE     1000
 
-/* maximum value of RAT timer duration configuration specified in time (us) */
+/** @ingroup ar_spf_mod_rat_macros
+    Maximum value of RAT timer duration configuration specified in time (us). */
 #define    RAT_TIMER_DURATION_TIME_IN_US_MAX_VALUE     40000
 
-/* minimum value of RAT timer duration configuration specified in samples */
+/** @ingroup ar_spf_mod_rat_macros
+    Minimum value of RAT timer duration configuration specified in samples. */
 #define    RAT_TIMER_DURATION_IN_SAMPLES_MIN_VALUE     8      // 1ms * 8KHz
 
-/* maximum value of RAT timer duration configuration specified in samples */
+/** @ingroup ar_spf_mod_rat_macros
+    Maximum value of RAT timer duration configuration specified in samples. */
 #define    RAT_TIMER_DURATION_IN_SAMPLES_MAX_VALUE     15360  // 40ms * 38KHz
 
-/* default value of RAT timer duration configuration specified in samples */
+/** @ingroup ar_spf_mod_rat_macros
+    Default value of RAT timer duration configuration specified in samples. */
 #define    RAT_TIMER_DURATION_IN_SAMPLES_DEFAULT_VALUE     48      // 1ms * 48KHz
 
-/* minimum fractional sample rate supported by RAT module */
+/** @ingroup ar_spf_mod_rat_macros
+    Minimum fractional sample rate supported by RAT module. */
 #define RAT_MIN_SUPPORTED_FRACTIONAL_SAMPLING_RATE 11025
 
-/* minimum integer sample rate supported by RAT module */
+/** @ingroup ar_spf_mod_rat_macros
+    Minimum integer sample rate supported by RAT module. */
 #define RAT_MIN_SUPPORTED_INTEGER_SAMPLING_RATE 8000
 
-
-/* RAT module stack size*/
+/** @ingroup ar_spf_mod_rat_macros
+    RAT module stack size. */
 #define RATE_ADAPTED_TIMER_STACK_SIZE 4096
 
-/* Input port ID of Rate Adapted Timer module */
+/** @ingroup ar_spf_mod_rat_macros
+    Input port ID of Rate Adapted Timer module. */
 #define PORT_ID_RATE_ADAPTED_TIMER_INPUT 0x2
 
-/* Output port ID of Rate Adapted Timer module */
+/** @ingroup ar_spf_mod_rat_macros
+    Output port ID of Rate Adapted Timer module. */
 #define PORT_ID_RATE_ADAPTED_TIMER_OUTPUT 0x1
 
-/** ID of the parameter used to configure the RAT media format */
+/** @ingroup ar_spf_mod_rat_macros
+    ID of the parameter used to configure the RAT media format. */
 #define PARAM_ID_RAT_MEDIA_FORMAT 0x080010D0
 
 /** @h2xmlp_parameter   {"PARAM_ID_RAT_MEDIA_FORMAT",
@@ -85,9 +98,14 @@ MINIMUM_SAMPLE_RATE_MODE      - the sample rate is set as the minimum sample rat
 
 #include "spf_begin_pack.h"
 #include "spf_begin_pragma.h"
+
+/** @ingroup ar_spf_mod_rat_macros
+    Configures the media format of both RAT and MIMO RAT modules and is mandatory. */
 struct param_id_rat_mf_t
 {
    uint32_t sample_rate;
+   /**< Defines sample rate. */
+
    /**< @h2xmle_description {Defines sample rate.}
         @h2xmle_rangelist   {"8 kHz"=8000;
                              "11.025 kHz"=11025;
@@ -108,6 +126,8 @@ struct param_id_rat_mf_t
    */
 
    uint16_t bits_per_sample;
+   /**< Bits per sample. */
+
    /**< @h2xmle_description {bits per sample.}
         @h2xmle_rangeList   {"16-bit"=16;
                              "32-bit"=32}
@@ -115,6 +135,10 @@ struct param_id_rat_mf_t
    */
 
    uint16_t q_factor;
+   /**< Q factor.
+        - If bits per sample is 16, q_factor should be 15
+        - If bits per sample is 32, q_factor can be 27 or 31 */
+
    /**< @h2xmle_description {q factor \n
                              -> If bits per sample is 16, q_factor should be 15 \n
                              -> If bits per sample is 32, q_factor can be 27 or 31}
@@ -125,18 +149,27 @@ struct param_id_rat_mf_t
    */
 
    uint32_t data_format;
+   /**< Format of the data. */
+
    /**< @h2xmle_description {Format of the data}
         @h2xmle_rangeList   {"DATA_FORMAT_FIXED_POINT"=1}
         @h2xmle_default     {1}
    */
 
    uint32_t num_channels;
+   /**< Number of channels. */
+
    /**< @h2xmle_description {Number of channels.}
-        @h2xmle_range       {1...MODULE_CMN_MAX_CHANNEL}
+        @h2xmle_range       {1...MODULE_CMN_MAX_CHANNEL} 
         @h2xmle_default     {1}
    */
 
    uint16_t channel_map[0];
+   /**< Channel mapping array.
+        - Specify a channel mapping for each output channel
+        - If the number of channels is not a multiple of four, zero padding must be added
+          to the channel type array to align the packet to a multiple of 32 bits */
+
    /**< @h2xmle_description  {Channel mapping array. \n
                               ->Specify a channel mapping for each output channel \n
                               ->If the number of channels is not a multiple of four, zero padding must be added
@@ -153,7 +186,8 @@ struct param_id_rat_mf_t
 typedef struct param_id_rat_mf_t param_id_rat_mf_t;
 
 
-/** ID of the parameter used to configure the RAT timer duration configuration */
+/** @ingroup ar_spf_mod_rat_macros
+    ID of the parameter used to configure the RAT timer duration configuration. */
 #define PARAM_ID_RAT_TIMER_DURATION_CONFIG 0x08001A6D
 
 /** @h2xmlp_parameter   {"PARAM_ID_RAT_TIMER_DURATION_CONFIG",
@@ -163,11 +197,14 @@ typedef struct param_id_rat_mf_t param_id_rat_mf_t;
 
 #include "spf_begin_pack.h"
 #include "spf_begin_pragma.h"
+
+/** @ingroup ar_spf_mod_rat_macros
+    Configures the timer duration of RAT module. */
 struct param_id_rat_timer_duration_config_t
 {
 	uint32_t timer_config_mode;
-    /**< specifies the options to configure the timer duration.
-     *   Set to default to be backward compatible with existing functionality
+    /**< Specifies the options to configure the timer duration.
+         Set to default to be backward compatible with existing functionality
 
 	       @valuesbul
 	        - 0 -- RAT_TIMER_DURATION_DEFAULT_MODE          - Timer duration is based on Sub-graph performance mode
@@ -175,7 +212,7 @@ struct param_id_rat_timer_duration_config_t
 	        - 3 -- RAT_TIMER_DURATION_CONFIGURED_IN_SAMPLES - Timer duration configured in samples, time is derived based on sample rate
 	         @tablebulletend */
 
-	   /*#< @h2xmle_description {Specifies the options to configure the timer duration.
+	   /**< @h2xmle_description {Specifies the options to configure the timer duration.
 	                             Set to default to be backward compatible with existing functionality.
 
 	                             default - Timer duration is based on Sub-graph performance mode.
@@ -215,7 +252,7 @@ struct param_id_rat_timer_duration_config_t
 	        - 1 -- minimum_sample_rate_mode - timer_duration_resolution is adjusted based on minimum supported sample rate
 	         @tablebulletend */
 
-	   /*#< @h2xmle_description {Specifies the options to configure the resolution control for the timer duration.
+	   /**< @h2xmle_description {Specifies the options to configure the resolution control for the timer duration.
 
          						 The effective resolution of timer duration is a function of the sample duration,
          						 which is dependent on the sample rate. This API provides the flexibility to control
@@ -246,7 +283,7 @@ struct param_id_rat_timer_duration_config_t
 	                             }
    */
     uint32_t duration_in_time_us;
-   /**< specifies the configuration of timer duration in time (units of micro-seconds)
+   /**< Specifies the configuration of timer duration in time (units of micro-seconds)
         The actual timer duration is would depend on the time resolution of the sample (sample_duration) and can be approximated as below
 
         Effective operating timer duration can be approximated as duration_in_time - ( duration_in_time % sample_duration),
@@ -256,8 +293,8 @@ struct param_id_rat_timer_duration_config_t
 
         Supported range of values : 1000 to 40,000 us */
 
-   /*#< @h2xmle_description {specifies the configuration of timer duration in time (units of micro-seconds)    *
-                             The actual timer duration would depend on the time resolution of the sample (sample_duration) and can be approximated as below
+   /**< @h2xmle_description {specifies the configuration of timer duration in time (units of micro-seconds)    *
+                             The actual timer duration would depend on the time resolution of the sample (sample_duration) and can be approximated as                                below
 
                              Effective operating timer duration can be approximated as duration_in_time - ( duration_in_time % sample_duration),
         					 sample_duration is defined as 10^6/sample_rate,
@@ -271,7 +308,7 @@ struct param_id_rat_timer_duration_config_t
    */
 
     uint32_t duration_in_samples;
-   /**< specifies the configuration of timer duration in units of samples. Time is derived based on static port configured sample rate by the RAT module
+   /**< Specifies the configuration of timer duration in units of samples. Time is derived based on static port configured sample rate by the RAT module
 
         This value is used when timer_config_mode is set to RAT_TD_CONFIGURED_IN_SAMPLES and this value is set to non-zero value.
 
@@ -286,7 +323,7 @@ struct param_id_rat_timer_duration_config_t
 
         */
 
-   /*#< @h2xmle_description {specifies the configuration of timer duration in units of samples.
+   /**< @h2xmle_description {specifies the configuration of timer duration in units of samples.
                              Time is derived based on static port configured sample rate by the RAT module.
                              This value is used when timer_config_mode is set to RAT_TD_CONFIGURED_IN_SAMPLES and this value is set to non-zero value.
                              Supported range of values : Any value that would effectively map to time duration of 1000 to 40,000 us
@@ -310,7 +347,26 @@ typedef struct param_id_rat_timer_duration_config_t param_id_rat_timer_duration_
 /*------------------------------------------------------------------------------
    Module
 ------------------------------------------------------------------------------*/
-/** Module ID for Rate Adapted Timer module */
+/** @ingroup ar_spf_mod_rat_macros
+    Rate Adapted Timer module.
+
+    @subhead4{Supported parameter IDs}
+    - #PARAM_ID_RAT_MEDIA_FORMAT
+
+    @subhead4{Supported input media format ID}
+    - Data Format          : FIXED_POINT, IEC61937_PACKETIZED, IEC60958_PACKETIZED,
+    -                        DSD_OVER_PCM, GENERIC_COMPRESSED, RAW_COMPRESSED @lstsp1
+    - fmt_id               : Don't care @lstsp1
+    - Sample Rates         : 8, 11.025, 12, 16, 22.05, 24, 32, 44.1, 48,
+                             88.2, 96, 176.4, 192, 352.8, 384 kHz @lstsp1
+    - Number of channels   : 1 to 128 (for certain products this module supports only 32 channels) @lstsp1
+    - Channel type         : Don't care @lstsp1
+    - Bit Width            : 16 (bits per sample 16 and Q15),
+                           : 24 (bits per sample 24 and Q27)
+                           : 32 (bits per sample 32 and Q31)
+    - Q format             : Q15, Q23, Q27, Q31 @lstsp1
+    - Interleaving         : Module needs de-interleaved unpacked
+*/
 #define MODULE_ID_RATE_ADAPTED_TIMER 0x07001041
 /** @h2xmlm_module             {"MODULE_ID_RATE_ADAPTED_TIMER",
                                  MODULE_ID_RATE_ADAPTED_TIMER}
@@ -331,7 +387,7 @@ typedef struct param_id_rat_timer_duration_config_t param_id_rat_timer_duration_
                                  -                      : 24 (bits per sample 24 and Q27) \n
                                  -                      : 32 (bits per sample 32 and Q31)	\n
                                  - Q format             : Q15, Q23, Q27, Q31 \n
-                                 - Interleaving         : Module needs de-interleaved unpacked or interleaved }
+                                 - Interleaving         : Module needs de-interleaved unpacked }
 
     @h2xmlm_dataInputPorts      {IN = PORT_ID_RATE_ADAPTED_TIMER_INPUT}
     @h2xmlm_dataOutputPorts     {OUT = PORT_ID_RATE_ADAPTED_TIMER_OUTPUT}
@@ -354,7 +410,43 @@ typedef struct param_id_rat_timer_duration_config_t param_id_rat_timer_duration_
     @h2xmlm_InsertParameter
     @}                   <-- End of the Module -->*/
 
-/** Module ID for MIMO Rate Adapted Timer module */
+/** @ingroup ar_spf_mod_rat_macros
+    Multiple-Input Multiple-Output (MIMO) Rate Adapted Timer module.
+    - MIMO RAT has one static input and one static output port. It has
+      infinite dynamic input and output ports.
+    - It has a one to one mapping between input and output ports i.e. only
+      one input corresponds to only one output.
+    - Static output port needs mandatory media format config via
+      PARAM_ID_RAT_MEDIA_FORMAT.
+    - As far as input data is concerned, it behaves as a pass through
+      module.
+    - If input is not available, if the static output port of MIMO RAT is
+      connected and started and media format is configured, RAT will pump zeroes at the output.
+    - If input is not available, if dynamic output port of MIMO RAT is
+      connected and started, it will not send any output until input media format is received.
+      Once input media format is received, it will send silence data with this format if there is
+      no input available.
+    - RAT can only support one family of rates - either ineger or fractional.
+    - If mandatory static port config has integer sample rate then all ports must be integer
+      family of rates.
+
+    @subhead4{Supported parameter IDs}
+    - #PARAM_ID_RAT_MEDIA_FORMAT
+
+    @subhead4{Supported input media format ID}
+    - Data Format          : FIXED_POINT, IEC61937_PACKETIZED, IEC60958_PACKETIZED,
+                             DSD_OVER_PCM, GENERIC_COMPRESSED, RAW_COMPRESSED @lstsp1
+    - fmt_id               : Don't care @lstsp1
+    - Sample Rates         : 8, 11.025, 12, 16, 22.05, 24, 32, 44.1, 48,
+                             88.2, 96, 176.4, 192, 352.8, 384 kHz @lstsp1
+    - Number of channels   : 1 to 128 (for certain products this module supports only 32 channels) @lstsp1
+    - Channel type         : Don't care @lstsp1
+    - Bit Width            : 16 (bits per sample 16 and Q15),
+                           : 24 (bits per sample 24 and Q27)
+                           : 32 (bits per sample 32 and Q31) @lstsp1
+    - Q format             : Q15, Q23, Q27, Q31 @lstsp1
+    - Interleaving         : Module needs de-interleaved unpacked or interleaved.
+*/
 #define MODULE_ID_MIMO_RATE_ADAPTED_TIMER 0x07001170
 /** @h2xmlm_module             {"MODULE_ID_MIMO_RATE_ADAPTED_TIMER",
                                  MODULE_ID_MIMO_RATE_ADAPTED_TIMER}

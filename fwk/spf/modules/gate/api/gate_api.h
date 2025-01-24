@@ -13,38 +13,60 @@
 #include "module_cmn_api.h"
 #include "imcl_fwk_intent_api.h"
 
+
+/** @h2xml_title1           {GATE API}
+    @h2xml_title_agile_rev  {GATE API}
+    @h2xml_title_date       {July 7, 2019} */
+
 /*==============================================================================
    Constants
 ==============================================================================*/
 
-/* Input port ID of GATE */
+/** @ingroup ar_spf_mod_gate_macros
+    Input port ID of the Gate module. */
 #define GATE_DATA_INPUT_PORT   0x2
 
-/* Output port ID of GATE */
+/** @ingroup ar_spf_mod_gate_macros
+    Output port ID of the Gate module. */
 #define GATE_DATA_OUTPUT_PORT  0x1
 
-/* Max number of input ports of GATE */
+/** @ingroup ar_spf_mod_gate_macros
+    Maximum number of input ports of the Gate module. */
 #define GATE_DATA_MAX_INPUT_PORTS 0x1
 
-/* Max number of output ports of GATE */
+/** @ingroup ar_spf_mod_gate_macros
+    Maximum number of output ports of the Gate module. */
 #define GATE_DATA_MAX_OUTPUT_PORTS 0x1
 
-/* Stack size of GATE */
+/** @ingroup ar_spf_mod_gate_macros
+    Stack size of the Gate module. */
 #define GATE_STACK_SIZE 1024
 
-/* Control port for receiving deadline time*/
+/** @ingroup ar_spf_mod_gate_macros
+    Control port for receiving deadline time. */
 #define DEADLINE_TIME_INFO_IN AR_NON_GUID(0xC0000001)
 
 /*==============================================================================
    Module
 ==============================================================================*/
 
-/** @h2xml_title1           {GATE API}
-    @h2xml_title_agile_rev  {GATE API}
-    @h2xml_title_date       {July 7, 2019} */
+/** @ingroup ar_spf_mod_gate_macros
+    The Gate module gates data flow based on calculated deadline time.
+    It does not modify data in any way.
 
-/**
- * Module ID for Gate Module
+    @subhead4{Supported parameter IDs}
+    - PARAM_ID_GATE_EP_TRANSMISSION_DELAY
+
+    @subhead4{Supported input media format ID}
+    - Data Format         : FIXED_POINT @lstsp1
+    - fmt_id              : Don't care @lstsp1
+    - Sample Rates         : 8, 11.025, 12, 16, 22.05, 24, 32, 44.1, 48, @lstsp1
+                             88.2, 96, 176.4, 192, 352.8, 384 kHz @lstsp1
+    - Number of channels   : 1 to 128 (for certain products this module supports only 32 channels) @lstsp1
+    - Channel type         : Don't care @lstsp1
+    - Bit Width            : Don't care @lstsp1
+    - Q format             : Don't care @lstsp1
+    - Interleaving         : Dont care
  */
 #define MODULE_ID_GATE			0x07001042
 

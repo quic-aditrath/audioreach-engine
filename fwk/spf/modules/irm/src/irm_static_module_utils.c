@@ -128,7 +128,7 @@ static ar_result_t irm_fill_sm_info(irm_node_obj_t *instance_node_ptr)
    return AR_EFAILED;
 }
 
-ar_result_t irm_register_static_module(uint32_t mid, uint32_t heap_id, uint32_t tid)
+ar_result_t irm_register_static_module(uint32_t mid, uint32_t heap_id, int64_t tid)
 {
    for (uint8_t i = 0; i < IRM_MAX_ALLOWED_STATIC_SERVICES; i++)
    {

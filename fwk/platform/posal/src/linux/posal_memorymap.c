@@ -17,8 +17,16 @@
 
 #include "posal_globalstate.h"
 #include <stringl.h>
+#include <errno.h>
 #include <sys/mman.h>
 #include "spf_hashtable.h"
+#if defined (ARSPF_PLATFORM_LRH)
+#include "plat_vfio.h"
+#endif //defined (ARSPF_PLATFORM_LRH)
+
+#if defined (ARSPF_PLATFORM_QNX)
+extern void *mdf_mem_base_va_addr;
+#endif
 
 /* ----------------------------------------------------------------------------
  * Global Declarations/Definitions
@@ -29,6 +37,13 @@
 
 #define POSAL_MEMORYMAP_HASH_TABLE_SIZE 16
 #define POSAL_MEMORYMAP_HASH_TABLE_RESIZE_FACTOR 2
+
+#if defined (ARSPF_PLATFORM_LRH)
+#define VFIO_DEV_NAME "soc@0:umd_audio_hlos@1"
+struct plat_vfio g_pvfio;
+static uint32_t pa_key_index;
+#endif //defined (ARSPF_PLATFORM_LRH)
+
 /* -----------------------------------------------------------------------
  ** Constant / Define Declarations
  ** ----------------------------------------------------------------------- */
@@ -223,6 +238,15 @@ void posal_memorymap_global_init()
    {
       AR_MSG(DBG_ERROR_PRIO, "posal_memorymap: Failed to create hashtable for posal_memorymap_shm_map.");
    }
+
+#if defined (ARSPF_PLATFORM_LRH)
+   result = plat_vfio_device_init(VFIO_DEV_NAME, &g_pvfio);
+   if (result != AR_EOK)
+   {
+      AR_MSG(DBG_ERROR_PRIO, "posal_memorymap: plat_vfio_device_init failed with result : %d", result);
+   }
+   pa_key_index = 1;
+#endif //defined (ARSPF_PLATFORM_LRH)
 }
 
 void posal_memorymap_global_deinit()
@@ -260,6 +284,10 @@ void posal_memorymap_global_deinit()
    memset(&g_posal_memorymap_internal, 0, sizeof(g_posal_memorymap_internal));
 
    posal_mutex_unlock(posal_globalstate.mutex);
+
+#if defined (ARSPF_PLATFORM_LRH)
+   plat_vfio_device_deinit(&g_pvfio);
+#endif //defined (ARSPF_PLATFORM_LRH)
 }
 
 void posal_memorymap_global_unmap_all()
@@ -472,6 +500,41 @@ ar_result_t posal_memorymap_shm_mem_map(uint32_t                      client_tok
    }
    memset(new_shm_map_hashnode_ptr, 0, sizeof(new_shm_map_hashnode_ptr));
 
+#if defined (ARSPF_PLATFORM_LRH)
+   new_shm_map_hashnode_ptr->hash_node.key_ptr  = &new_shm_map_hashnode_ptr->fd;
+   new_shm_map_hashnode_ptr->hash_node.key_size = sizeof(pa_key_index);
+   new_shm_map_hashnode_ptr->hash_node.next_ptr = NULL;
+
+   new_shm_map_hashnode_ptr->fd = pa_key_index;
+   new_shm_map_hashnode_ptr->shm_node = mem_map_node_ptr;
+   pa_key_index++;
+
+   /* Create records for each region */
+   for (int idx = 0; idx < num_shm_reg; ++idx)
+   {
+      cont_phys_regions_ptr[idx].shm_addr.mem_addr_32b.lsw = shm_mem_reg_ptr[idx].shm_addr_lsw;
+      cont_phys_regions_ptr[idx].shm_addr.mem_addr_32b.msw = shm_mem_reg_ptr[idx].shm_addr_msw;
+      cont_phys_regions_ptr[idx].mem_size                  = shm_mem_reg_ptr[idx].mem_size;
+
+      cont_phys_regions_ptr[idx].virt_addr_ptr = plat_vfio_map_mem(&g_pvfio, 0);
+      if (cont_phys_regions_ptr[idx].virt_addr_ptr == MAP_FAILED)
+      {
+         AR_MSG(DBG_FATAL_PRIO,
+                "posal_memorymap_shm_mem_map Failed! (PA 0x%X%8X, size %d)",
+                cont_phys_regions_ptr[idx].shm_addr.mem_addr_32b.msw,
+                cont_phys_regions_ptr[idx].shm_addr.mem_addr_32b.lsw,
+                cont_phys_regions_ptr[idx].mem_size);
+         for (uint16_t j = 0; j < idx; ++j)
+         {
+            plat_vfio_unmap_mem(&g_pvfio, cont_phys_regions_ptr[j].virt_addr_ptr ,0);
+         }
+
+         /* Free the memory allocated node. */
+         posal_memory_aligned_free(mem_map_node_ptr);
+         posal_memory_free(new_shm_map_hashnode_ptr);
+         return AR_ENOMEMORY;
+      }
+#else
    new_shm_map_hashnode_ptr->hash_node.key_ptr  = &new_shm_map_hashnode_ptr->fd;
    new_shm_map_hashnode_ptr->hash_node.key_size = sizeof(cont_phys_regions_ptr[0].shm_addr.mem_addr_32b.lsw);
    new_shm_map_hashnode_ptr->hash_node.next_ptr = NULL;
@@ -486,16 +549,31 @@ ar_result_t posal_memorymap_shm_mem_map(uint32_t                      client_tok
       cont_phys_regions_ptr[idx].shm_addr.mem_addr_32b.msw = shm_mem_reg_ptr[idx].shm_addr_msw;
       cont_phys_regions_ptr[idx].mem_size                  = shm_mem_reg_ptr[idx].mem_size;
 
+#ifdef ARSPF_PLATFORM_QNX
+      uint64_t phy_addr_64bits = ((uint64_t)cont_phys_regions_ptr[idx].shm_addr.mem_addr_32b.msw << 32)
+         | (cont_phys_regions_ptr[idx].shm_addr.mem_addr_32b.lsw);
+      void* mmap_va_addr = mmap (NULL, cont_phys_regions_ptr[idx].mem_size,
+                        PROT_READ | PROT_WRITE, MAP_SHARED ,
+                        NOFD, (off_t)(phy_addr_64bits));
+      //Ideally mmap_va_addr got from above line should be used. It doesnt seem to work
+      //For now - extern the va addr in the osal and get it working for QNX.
+      //TODO: To find the proper solution without externing the mdf_mem_base_va_addr
+      cont_phys_regions_ptr[idx].virt_addr_ptr = mdf_mem_base_va_addr;
+#else
       cont_phys_regions_ptr[idx].virt_addr_ptr  = mmap (NULL, cont_phys_regions_ptr[idx].mem_size,
                         PROT_READ | PROT_WRITE, MAP_SHARED,
                         cont_phys_regions_ptr[idx].shm_addr.mem_addr_32b.lsw, 0);
+#endif
+
       if (cont_phys_regions_ptr[idx].virt_addr_ptr == MAP_FAILED)
       {
          AR_MSG(DBG_FATAL_PRIO,
-                "posal_memorymap_shm_mem_map Failed! (PA 0x%X%8X, size %d)",
+                "posal_memorymap_shm_mem_map Failed! (PA 0x%X%8X, size %d). err=%s",
                 cont_phys_regions_ptr[idx].shm_addr.mem_addr_32b.msw,
                 cont_phys_regions_ptr[idx].shm_addr.mem_addr_32b.lsw,
-                cont_phys_regions_ptr[idx].mem_size);
+                cont_phys_regions_ptr[idx].mem_size,
+                strerror(errno));
+
          for (uint16_t j = 0; j < idx; ++j)
          {
             munmap(cont_phys_regions_ptr[j].virt_addr_ptr, cont_phys_regions_ptr[j].mem_size);
@@ -505,9 +583,11 @@ ar_result_t posal_memorymap_shm_mem_map(uint32_t                      client_tok
          posal_memory_free(new_shm_map_hashnode_ptr);
          return AR_ENOMEMORY;
       }
+#endif //defined (ARSPF_PLATFORM_LRH)
    }
 
    spf_hashtable_insert(&g_posal_memorymap_internal_ptr->shmmap_ht, &new_shm_map_hashnode_ptr->hash_node);
+
    /* return mem map handle pointer */
    *shm_mem_map_handle_ptr = new_shm_map_hashnode_ptr->fd;
 
@@ -546,9 +626,123 @@ ar_result_t posal_memorymap_virtaddr_mem_map(uint32_t                      clien
                                              uint32_t *                    shm_mem_map_handle_ptr,
                                              POSAL_HEAP_ID                 heap_id)
 {
-   //Temporary solution until posal memory map is fully ported to linux
-   AR_MSG(DBG_ERROR_PRIO, "posal_memorymap_virtaddr_mem_map(): Temporary solution until posal memory map file is ported to linux");
-   *shm_mem_map_handle_ptr = (uint64_t)((((uint64_t)(shm_mem_reg_ptr[0].shm_addr_msw)) << 32) | (shm_mem_reg_ptr[0].shm_addr_lsw));
+
+   ar_result_t          rc;
+   POSAL_MEMORYPOOLTYPE mem_pool_id = pool_id;
+
+   /* initialize the return handle*/
+   *shm_mem_map_handle_ptr = 0;
+
+   /************************** Validating input parameters ********************************/
+
+   /* check if number of shared mem regions is non zero */
+   if (0 == num_shm_reg)
+   {
+      AR_MSG(DBG_FATAL_PRIO,
+             "posal_memorymap invalid num of shm regions %d; client token %lu, pool ID %lu",
+             num_shm_reg,
+             client_token,
+             pool_id);
+      return AR_EBADPARAM;
+   }
+
+   /* no lock to access the Client, since the assumption is ideally client register once and does not unregister.
+    * Even if it unregister, Client must call unregister after ensuring all its dynamic services have exit. */
+   if (AR_EOK != (rc = memorymap_util_find_client(client_token)))
+   {
+      AR_MSG(DBG_ERROR_PRIO,
+             "posal_memorymap cannot find the (client token,status) 0x%x 0x%x)",
+             (unsigned int)client_token,
+             rc);
+      return rc;
+   }
+
+
+   /* Allocate a node for this mapping (the global linklist for a client's
+    * mapped regions is organized as one-node-per-invocation) */
+
+   posal_memorymap_node_t *mem_map_node_ptr = NULL; // Node Pointer
+
+   /* Get the pointer to first phys region: */
+   posal_memorymap_region_record_t *cont_phys_regions_ptr = NULL; // Pointer to the first phys region record in the node.
+
+   uint32_t total_node_alloc_size =
+      sizeof(posal_memorymap_node_t) + sizeof(posal_memorymap_region_record_t) * (num_shm_reg);
+   // Allocate node
+   if ((NULL ==
+        (mem_map_node_ptr =
+            (posal_memorymap_node_t *)posal_memory_aligned_malloc(total_node_alloc_size, 8, heap_id))))
+   {
+      AR_MSG(DBG_ERROR_PRIO, "posal_memorymap fail to allocate memory for the memory map node");
+      return AR_ENOMEMORY;
+   }
+
+   // Initialize the node
+   memset(mem_map_node_ptr, 0, total_node_alloc_size);
+   mem_map_node_ptr->unNumContPhysReg = num_shm_reg;
+   mem_map_node_ptr->MemPool          = pool_id;
+   // Bookmark the first phys region:
+   cont_phys_regions_ptr =
+      (posal_memorymap_region_record_t *)((uint8_t *)mem_map_node_ptr + sizeof(posal_memorymap_node_t));
+   // Copy addr and size to the record in the node.
+   /* Initialize records for each region */
+
+   posal_memorymap_shm_map_hashnode_t *new_shm_map_hashnode_ptr =
+      posal_memory_malloc(sizeof(posal_memorymap_shm_map_hashnode_t), POSAL_HEAP_DEFAULT);
+   if (NULL == new_shm_map_hashnode_ptr)
+   {
+      AR_MSG(DBG_ERROR_PRIO, "posal_memorymap: Failed to allocate memory for shm hash node.");
+      return AR_ENOMEMORY;
+   }
+   memset(new_shm_map_hashnode_ptr, 0, sizeof(new_shm_map_hashnode_ptr));
+
+#if defined (ARSPF_PLATFORM_LRH)
+   new_shm_map_hashnode_ptr->hash_node.key_ptr  = &new_shm_map_hashnode_ptr->fd;
+   new_shm_map_hashnode_ptr->hash_node.key_size = sizeof(pa_key_index);
+   new_shm_map_hashnode_ptr->hash_node.next_ptr = NULL;
+
+   new_shm_map_hashnode_ptr->fd = pa_key_index;
+   new_shm_map_hashnode_ptr->shm_node = mem_map_node_ptr;
+   pa_key_index++;
+#endif
+
+   /* Create records for each region */
+   for (int idx = 0; idx < num_shm_reg; ++idx)
+   {
+      cont_phys_regions_ptr[idx].shm_addr.mem_addr_32b.lsw = shm_mem_reg_ptr[idx].shm_addr_lsw;
+      cont_phys_regions_ptr[idx].shm_addr.mem_addr_32b.msw = shm_mem_reg_ptr[idx].shm_addr_msw;
+      cont_phys_regions_ptr[idx].mem_size                  = shm_mem_reg_ptr[idx].mem_size;
+
+      cont_phys_regions_ptr[idx].virt_addr_ptr = (uint64_t)((((uint64_t)(shm_mem_reg_ptr[idx].shm_addr_msw)) << 32) | (shm_mem_reg_ptr[idx].shm_addr_lsw));
+   }
+
+   spf_hashtable_insert(&g_posal_memorymap_internal_ptr->shmmap_ht, &new_shm_map_hashnode_ptr->hash_node);
+
+   /* return mem map handle pointer */
+   *shm_mem_map_handle_ptr = new_shm_map_hashnode_ptr->fd;
+
+   /* Set the mapping mode  */
+   if (is_offset_map)
+   {
+      mem_map_node_ptr->mapping_mode = POSAL_MEMORYMAP_VIRTUAL_OFFSET_MAPPING;
+   }
+   else
+   {
+      mem_map_node_ptr->mapping_mode = POSAL_MEMORYMAP_VIRTUAL_ADDR_MAPPING;
+   }
+
+   /* add this memory map to the client */
+   memorymap_util_add_mem_map_node_to_client(client_token, mem_map_node_ptr);
+
+#ifdef DEBUG_POSAL_MEMORYMAP
+   AR_MSG(DBG_HIGH_PRIO,
+          "posal_memorymap successfully mapped all virt regions and added'"
+          "to client's list (token,ar_handle,num of regions) = (0x%x,0x%x,%d)",
+          (unsigned int)client_token,
+          (unsigned int)mem_map_node_ptr,
+          num_shm_reg);
+#endif
+
    return AR_EOK;
 }
 
@@ -587,15 +781,17 @@ ar_result_t posal_memorymap_get_mapping_mode(uint32_t                        cli
 
 ar_result_t posal_memorymap_shm_mem_unmap(uint32_t client_token, uint32_t shm_mem_map_handle)
 {
-   ar_result_t result;
+   ar_result_t result = AR_EOK;
 
    /* Use utility command handler to unmap the region */
+#ifdef DISABLE_UNIT_TEST
    result = memorymap_util_cmd_handler(client_token, shm_mem_map_handle, CMD_SHM_MEM_UNMAP, NULL);
    if (AR_EOK != result)
    {
       AR_MSG(DBG_HIGH_PRIO, "posal_memorymap_shm_mem_unmap failed 0x%x", result);
       return result;
    }
+#endif
 
 #ifdef DEBUG_POSAL_MEMORYMAP
    AR_MSG(DBG_HIGH_PRIO,
@@ -654,10 +850,21 @@ ar_result_t posal_memorymap_unmap_all(uint32_t client_token)
       posal_memorymap_region_record_t *cont_phys_regions_ptr =
          (posal_memorymap_region_record_t *)((uint8_t *)current_mem_map_node_ptr + sizeof(posal_memorymap_node_t));
 
+#if defined (ARSPF_PLATFORM_LRH)
+      for (int i = 0; i < current_mem_map_node_ptr->unNumContPhysReg; ++i)
+      {
+         plat_vfio_unmap_mem(&g_pvfio, cont_phys_regions_ptr[i].virt_addr_ptr ,0);
+      }
+#else
+#if defined(ARSPF_PLATFORM_QNX)
+
+#else
       for (int i = 0; i < current_mem_map_node_ptr->unNumContPhysReg; ++i)
       {
          munmap(cont_phys_regions_ptr[i].virt_addr_ptr, cont_phys_regions_ptr[i].mem_size);
       }
+#endif
+#endif //defined (ARSPF_PLATFORM_LRH)
 
       /* update the Global state */
       posal_atomic_subtract((posal_globalstate.nMemRegions), current_mem_map_node_ptr->unNumContPhysReg);
@@ -775,6 +982,7 @@ ar_result_t posal_memorymap_get_virtual_addr_from_shm_handle_v2(uint32_t  client
    mra_struct.mem_reg_attrib_ptr = &mem_reg_attrib;
    mra_struct.is_ref_counted = is_ref_counted;
 
+#ifdef DISABLE_UNIT_TEST
    rc = memorymap_util_cmd_handler(client_token, shm_mem_map_handle, CMD_GET_SHM_ATTRIB, (void *)&mra_struct);
    if (AR_EOK != rc)
    {
@@ -783,6 +991,9 @@ ar_result_t posal_memorymap_get_virtual_addr_from_shm_handle_v2(uint32_t  client
    }
 
    *virt_addr_ptr = (uint64_t)mra_struct.req_virt_addr;
+#else
+   *virt_addr_ptr = (uint64_t)((((uint64_t)(shm_addr_msw)) << 32) | (shm_addr_lsw));
+#endif
 
 #ifdef DEBUG_POSAL_MEMORYMAP
    AR_MSG(DBG_HIGH_PRIO,
@@ -859,12 +1070,22 @@ static ar_result_t memorymap_util_find_client(uint32_t client_token)
 
 ar_result_t posal_memorymap_shm_incr_refcount(uint32_t client_token, uint32_t shm_mem_map_handle)
 {
+#ifdef DISABLE_UNIT_TEST
    return memorymap_util_shm_update_refcount(client_token, shm_mem_map_handle, 1);
+#else
+   AR_MSG(DBG_ERROR_PRIO, "Stubbed out");
+   return AR_EOK;
+#endif
 }
 
 ar_result_t posal_memorymap_shm_decr_refcount(uint32_t client_token, uint32_t shm_mem_map_handle)
 {
+#ifdef DISABLE_UNIT_TEST
    return memorymap_util_shm_update_refcount(client_token, shm_mem_map_handle, -1);
+#else
+   AR_MSG(DBG_ERROR_PRIO, "Stubbed out");
+   return AR_EOK;
+#endif
 }
 
 static ar_result_t memorymap_util_shm_update_refcount(uint32_t client_token,
@@ -1028,6 +1249,7 @@ static ar_result_t memorymap_util_cmd_handler(uint32_t client_token,
             rc = AR_EBADPARAM;
             goto _bailout_1;
          }
+
          mra_struct_ptr->req_virt_addr             = base_virtual_addr + phy_addr_64bits;
          mem_reg_attrib_ptr->req_virt_adrr             = phy_addr_64bits;
          mem_reg_attrib_ptr->base_phy_addr_lsw = cont_phy_regions_ptr[0].shm_addr.mem_addr_32b.lsw;
@@ -1038,6 +1260,31 @@ static ar_result_t memorymap_util_cmd_handler(uint32_t client_token,
                (cont_phy_regions_ptr[0].virt_addr + cont_phy_regions_ptr[0].mem_size) - mem_reg_attrib_ptr->req_virt_adrr;
          virt_addr                                     = mem_reg_attrib_ptr->req_virt_adrr;
       }
+	  else if ((POSAL_MEMORYMAP_VIRTUAL_ADDR_MAPPING == found_mem_map_node_ptr->mapping_mode) ||
+          (POSAL_MEMORYMAP_VIRTUAL_OFFSET_MAPPING == found_mem_map_node_ptr->mapping_mode))
+	  {
+
+         /* Book mark the first (and only) region: */
+         posal_memorymap_region_record_t *cont_phy_regions_ptr =
+            (posal_memorymap_region_record_t *)((uint8_t *)mem_map_node_ptr + sizeof(posal_memorymap_node_t));
+
+         uint8_t* base_virtual_addr = (uint8_t*) cont_phy_regions_ptr[0].virt_addr_ptr;
+
+		#ifdef DEBUG_POSAL_MEMORYMAP
+				 AR_MSG(DBG_HIGH_PRIO, "virt addr mapping mode query: virt addr mapped 0x%lx, incoming virt addr 0x%lx", cont_phy_regions_ptr[0].virt_addr_ptr, phy_addr_64bits);
+		#endif
+
+		 // when GSL and SPF-on-ARM are in same processor, virtual addr = lsw/msw being passed = so called phy_addr_64bits.
+         mra_struct_ptr->req_virt_addr             = phy_addr_64bits;
+         mem_reg_attrib_ptr->req_virt_adrr         = phy_addr_64bits;
+         mem_reg_attrib_ptr->base_phy_addr_lsw = cont_phy_regions_ptr[0].shm_addr.mem_addr_32b.lsw;
+         mem_reg_attrib_ptr->base_phy_addr_msw = cont_phy_regions_ptr[0].shm_addr.mem_addr_32b.msw;
+         mem_reg_attrib_ptr->base_virt_addr    = cont_phy_regions_ptr[0].virt_addr;
+         mem_reg_attrib_ptr->mem_reg_size              = cont_phy_regions_ptr[0].mem_size;
+         mem_reg_attrib_ptr->rem_reg_size              =
+               (cont_phy_regions_ptr[0].virt_addr + cont_phy_regions_ptr[0].mem_size) - mem_reg_attrib_ptr->req_virt_adrr;
+         virt_addr                                     = mem_reg_attrib_ptr->req_virt_adrr;		  
+	  }		  
       else
       {
          //TODO implementation for address mapping
@@ -1087,10 +1334,21 @@ static ar_result_t memorymap_util_cmd_handler(uint32_t client_token,
          posal_memorymap_region_record_t *cont_phys_regions_ptr =
             (posal_memorymap_region_record_t *)((uint8_t *)found_mem_map_node_ptr + sizeof(posal_memorymap_node_t));
 
+#if defined(ARSPF_PLATFORM_LRH)
+         for (int i = 0; i < found_mem_map_node_ptr->unNumContPhysReg; ++i)
+         {
+            plat_vfio_unmap_mem(&g_pvfio, cont_phys_regions_ptr[i].virt_addr_ptr ,0);
+	 }
+
+#else
+#if defined(ARSPF_PLATFORM_QNX)
+#else
          for (int i = 0; i < found_mem_map_node_ptr->unNumContPhysReg; ++i)
          {
             munmap(cont_phys_regions_ptr[i].virt_addr_ptr, cont_phys_regions_ptr[i].mem_size);
          }
+#endif
+#endif //defined (ARSPF_PLATFORM_LRH)
       }
 #ifdef DEBUG_POSAL_MEMORYMAP
       else

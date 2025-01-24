@@ -38,27 +38,40 @@ set (lib_srcs_list
      ${LIB_ROOT}/src/${TGT_SPECIFIC_FOLDER}/posal.c
      ${LIB_ROOT}/src/${TGT_SPECIFIC_FOLDER}/posal_cache_island.c
      ${LIB_ROOT}/src/${TGT_SPECIFIC_FOLDER}/posal_cache.c
-     ${LIB_ROOT}/src/${TGT_SPECIFIC_FOLDER}/posal_data_log_sim.c
      ${LIB_ROOT}/src/${TGT_SPECIFIC_FOLDER}/posal_memory_island.c
      ${LIB_ROOT}/src/${TGT_SPECIFIC_FOLDER}/posal_memory.c
      ${LIB_ROOT}/src/${TGT_SPECIFIC_FOLDER}/posal_memorymap_island.c
      ${LIB_ROOT}/src/${TGT_SPECIFIC_FOLDER}/posal_memory_stats.c
      ${LIB_ROOT}/src/${TGT_SPECIFIC_FOLDER}/posal_memorymap.c
      ${LIB_ROOT}/src/${TGT_SPECIFIC_FOLDER}/posal_mem_prof.c
-     ${LIB_ROOT}/src/${TGT_SPECIFIC_FOLDER}/posal_mems_util.c
      ${LIB_ROOT}/src/${TGT_SPECIFIC_FOLDER}/posal_mutex.c
      ${LIB_ROOT}/src/${TGT_SPECIFIC_FOLDER}/posal_power_mgr.c
-     #${LIB_ROOT}/src/${TGT_SPECIFIC_FOLDER}/posal_timer_timerqueue.c
-     ${LIB_ROOT}/src/${TGT_SPECIFIC_FOLDER}/posal_timer_mmtimer.c
-     #${LIB_ROOT}/src/${TGT_SPECIFIC_FOLDER}/posal_timer_waitable_timers.c
      ${LIB_ROOT}/src/${TGT_SPECIFIC_FOLDER}/posal_${TGT_SPECIFIC_FOLDER}_signal.c
      ${LIB_ROOT}/src/${TGT_SPECIFIC_FOLDER}/posal_${TGT_SPECIFIC_FOLDER}_stubs.c
      ${LIB_ROOT}/src/${TGT_SPECIFIC_FOLDER}/posal_${TGT_SPECIFIC_FOLDER}_thread.c
+     ${LIB_ROOT}/src/${TGT_SPECIFIC_FOLDER}/posal_thread_attr_cfg.c
     )
 
+
+
+if(ARSPF_WIN_PORTING) #platform windows
+   list (APPEND lib_srcs_list
+      ${LIB_ROOT}/src/${TGT_SPECIFIC_FOLDER}/posal_timer_mmtimer.c
+      ${LIB_ROOT}/src/${TGT_SPECIFIC_FOLDER}/posal_mems_util.c
+     #${LIB_ROOT}/src/${TGT_SPECIFIC_FOLDER}/posal_timer_timerqueue.c
+     #${LIB_ROOT}/src/${TGT_SPECIFIC_FOLDER}/posal_timer_waitable_timers.c	  
+      )
+else() # for QNX & LRH
+   list (APPEND lib_srcs_list
+        ${LIB_ROOT}/src/${TGT_SPECIFIC_FOLDER}/posal_timer.c
+        ${LIB_ROOT}/src/${TGT_SPECIFIC_FOLDER}/posal_mems_util.c
+	)
+endif()
+         
 if(USE_SIM)
    list (APPEND lib_srcs_list
-         ${LIB_ROOT}/src/${TGT_SPECIFIC_FOLDER}/posal_data_log_sim.c
+	 ${LIB_ROOT}/src/${TGT_SPECIFIC_FOLDER}/posal_data_log.c
+	 #${LIB_ROOT}/src/${TGT_SPECIFIC_FOLDER}/posal_data_log_sim.c
         )
 else()
    list (APPEND lib_srcs_list
@@ -67,9 +80,14 @@ else()
 endif()
 
 #Set the libraries to link with the target
-set (lib_link_libs_list
-     winmm.lib
-    )
+if(ARSPF_WIN_PORTING)
+	set (lib_link_libs_list
+		 winmm.lib
+		)
+else()
+	set (lib_link_libs_list
+		)
+endif()
 
 #Call spf_build_static_library to generate the static library
 spf_build_static_library(posal

@@ -736,7 +736,7 @@ ar_result_t dls_init()
    /** Register with IRM */
    if (AR_EOK != (result = irm_register_static_module(DLS_MODULE_INSTANCE_ID,
                                                       POSAL_HEAP_DEFAULT,
-                                                      posal_thread_get_tid(dls_info_ptr->dls_cmd_handle.thread_id))))
+                                                      posal_thread_get_tid_v2(dls_info_ptr->dls_cmd_handle.thread_id))))
    {
       AR_MSG(DBG_ERROR_PRIO, "DLS: Failed to register with IRM, result: 0x%8x", result);
    }

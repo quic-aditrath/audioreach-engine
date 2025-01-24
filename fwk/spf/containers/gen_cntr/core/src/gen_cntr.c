@@ -162,6 +162,9 @@ ar_result_t gen_cntr_create(cntr_cmn_init_params_t *init_params_ptr, spf_handle_
    me_ptr->cu.gu_ptr      = &me_ptr->topo.gu;
    me_ptr->topo.gu.log_id = log_id;
    me_ptr->cu.cntr_type   = cntr_type;
+   me_ptr->cu.configured_thread_prio                = APM_CONT_PRIO_IGNORE; // Assume configured priority, to be updated by tools
+   me_ptr->cu.configured_sched_policy               = APM_CONT_SCHED_POLICY_IGNORE;
+   me_ptr->cu.configured_core_affinity              = APM_CONT_CORE_AFFINITY_IGNORE;
 
 #ifdef CONTAINER_ASYNC_CMD_HANDLING
    posal_mutex_create(&me_ptr->cu.gu_ptr->critical_section_lock_, my_heap_id);
@@ -174,7 +177,6 @@ ar_result_t gen_cntr_create(cntr_cmn_init_params_t *init_params_ptr, spf_handle_
    me_ptr->cu.cmd_handler_table_ptr                 = gen_cntr_cmd_handler_table;
    me_ptr->cu.cmd_handler_table_size                = g_sizeof_gen_cntr_cmd_handler_table;
    me_ptr->cu.pm_info.weighted_kpps_scale_factor_q4 = UNITY_Q4;
-   me_ptr->cu.configured_thread_prio                = 0; // Assume configured priority, to be updated by tools
 
    /* Init the topo and setup cu pointers to topo and gu fields. */
    memset(&topo_init, 0, sizeof(topo_init));

@@ -67,7 +67,8 @@ ar_result_t olc_get_set_thread_priority(olc_t *me_ptr, int32_t *priority_ptr, bo
    ar_result_t         result       = AR_EOK;
    bool_t              is_real_time = FALSE;
    posal_thread_prio_t curr_prio    = posal_thread_prio_get();
-   posal_thread_prio_t new_prio     = curr_prio;
+   posal_thread_prio_t new_prio     = curr_prio, new_prio1;
+
 
    if (!me_ptr->cu.flags.is_cntr_started)
    {
@@ -101,7 +102,17 @@ ar_result_t olc_get_set_thread_priority(olc_t *me_ptr, int32_t *priority_ptr, bo
             }
          }
       }
-      new_prio = MAX(new_prio, me_ptr->cu.configured_thread_prio);
+   }
+
+   new_prio1 = new_prio;
+   /**
+    * If container prio is configured, then it is used independent of whether container is started, or
+    * running commands during data processing or if it's FTRT or if its frame size is not known or
+    * if a module changes container priority.
+    */
+   if (APM_CONT_PRIO_IGNORE != me_ptr->cu.configured_thread_prio)
+   {
+      new_prio = me_ptr->cu.configured_thread_prio;
    }
 
    if (curr_prio != new_prio)
@@ -116,6 +127,13 @@ ar_result_t olc_get_set_thread_priority(olc_t *me_ptr, int32_t *priority_ptr, bo
               me_ptr->cu.cntr_proc_duration,
               is_real_time,
               me_ptr->cu.flags.is_cntr_started);
+
+      if (new_prio1 != new_prio)
+      {
+         OLC_MSG(me_ptr->topo.gu.log_id,
+                            DBG_HIGH_PRIO,
+                            "Warning: thread priority: configured %d prio overrides internal logic %d", me_ptr->cu.configured_thread_prio, new_prio1);
+      }
 
       SET_IF_NOT_NULL(priority_ptr, new_prio);
 

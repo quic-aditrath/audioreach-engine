@@ -119,7 +119,7 @@ extern "C" {
   @dependencies
   None. @newpage
     */
-   ar_result_t posal_thread_launch2( posal_thread_t *pTid,
+   ar_result_t posal_thread_launch2(posal_thread_t *pTid,
                                    char *pzThreadName,
                                    size_t nStackSize,
 								   size_t nrootStackSize,
@@ -127,6 +127,38 @@ extern "C" {
                                    ar_result_t (*pfStartRoutine)(void *),
                                    void* arg,
                                    POSAL_HEAP_ID heap_id);
+
+   /*
+   Creates and launches a island thread with nrootStackSize stack size used for guest mode.
+    pTid           : Thread ID.
+    threadname     : Thread name.
+    stack_ptr      : Location of a preallocated stack (NULL causes a new allocation).
+                     stack_ptr must point to the lowest address in the stack.
+    stack_size     : Size of the thread stack.
+    root_stack_size: Size of the island thread stack in guestmode.
+    nPriority      : Thread priority, where 0 is the lowest and 255 is the highest.
+    pfStartRoutine : Entry function of the thread.
+    arg            : This parameter is passed to the entry
+                     function and can be a case to any pointer type.
+    heap_id        : Thread stack will be allocated in the heap
+                     specified by this parameter.
+    scheduling policy: depending on the platform. SCHED_FIFO, SCHED_RR, and
+                       SCHED_OTHER. Posix: https://man7.org/linux/man-pages/man3/pthread_attr_setschedpolicy.3.html
+                       0xFFFFFFFF is ignored.
+    affinity        : affinity mask. value of 0 is ignored.
+    return
+    An indication of success or failure.
+    */
+   ar_result_t posal_thread_launch3(posal_thread_t     *posal_obj_ptr,
+                                    char               *threadname,
+                                    size_t              stack_size,
+                                    size_t              root_stack_size,
+                                    posal_thread_prio_t nPriority,
+                                    ar_result_t         (*pfStartRoutine)(void *),
+                                    void               *arg,
+                                    POSAL_HEAP_ID       heap_id,
+                                    uint32_t            sched_policy,
+                                    uint32_t            affinity);
 
    /**
   Waits for a specified thread to exit, and collects the exit status.
@@ -158,6 +190,8 @@ extern "C" {
  */
 int32_t posal_thread_get_tid(posal_thread_t thread_obj);
 
+int64_t posal_thread_get_tid_v2(posal_thread_t thread_obj);
+
 
 /**
   Queries the thread id of the caller.
@@ -170,6 +204,7 @@ int32_t posal_thread_get_tid(posal_thread_t thread_obj);
   @newpage
     */
 int32_t posal_thread_get_curr_tid(void);
+int64_t posal_thread_get_curr_tid_v2(void);
 
 /**
   Get the thread name.

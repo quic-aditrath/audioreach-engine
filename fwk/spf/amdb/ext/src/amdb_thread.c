@@ -407,6 +407,7 @@ ar_result_t amdb_thread_init(POSAL_HEAP_ID heap_id)
        posal_channel_add_signal(amdb_info_ptr->cmd_channel, amdb_info_ptr->kill_signal, POSAL_CHANNEL_MASK_DONT_CARE));
 
    posal_thread_prio_t amdb_thread_prio = 0;
+   uint32_t sched_policy = 0, affinity_mask = 0;
    prio_query_t        query_tbl;
 
    // frame duration is dont care since its static thread prio
@@ -414,17 +415,20 @@ ar_result_t amdb_thread_init(POSAL_HEAP_ID heap_id)
    query_tbl.is_interrupt_trig = FALSE;
    query_tbl.static_req_id     = SPF_THREAD_STAT_AMDB_ID;
 
-   TRY(result, posal_thread_calc_prio(&query_tbl, &amdb_thread_prio));
+   TRY(result, posal_thread_determine_attributes(&query_tbl, &amdb_thread_prio, &sched_policy, &affinity_mask));
 
    /** Launch the thread */
    TRY(result,
-       posal_thread_launch(&amdb_info_ptr->amdb_cmd_handle.thread_id,
+       posal_thread_launch3(&amdb_info_ptr->amdb_cmd_handle.thread_id,
                            AMDB_THREAD_NAME,
                            AMDB_THREAD_STACK_SIZE,
+                           0,
                            amdb_thread_prio,
                            amdb_work_loop,
                            (void *)amdb_info_ptr,
-                           amdb_info_ptr->heap_id));
+                           amdb_info_ptr->heap_id,
+                           sched_policy,
+                           affinity_mask));
 
    amdb_info_ptr->thread_launched = TRUE;
 
@@ -441,7 +445,7 @@ ar_result_t amdb_thread_init(POSAL_HEAP_ID heap_id)
 
    TRY(result, __gpr_cmd_register(AMDB_MODULE_INSTANCE_ID, amdb_gpr_call_back_f, &amdb_info_ptr->amdb_handle));
 
-   TRY(result,  irm_register_static_module(AMDB_MODULE_INSTANCE_ID, heap_id, posal_thread_get_tid(amdb_info_ptr->amdb_cmd_handle.thread_id)));
+   TRY(result,  irm_register_static_module(AMDB_MODULE_INSTANCE_ID, heap_id, posal_thread_get_tid_v2(amdb_info_ptr->amdb_cmd_handle.thread_id)));
 
    AR_MSG(DBG_HIGH_PRIO, "AMDB thread launched successfully");
 

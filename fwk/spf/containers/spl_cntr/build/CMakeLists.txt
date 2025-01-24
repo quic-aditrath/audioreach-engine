@@ -15,7 +15,6 @@ include_directories(
                     ${LIB_ROOT}/inc
                     ../cmn/inc
                     ../core/src
-                    ../core/inc
                     ../ext/cntr_proc_dur_fwk_ext/inc
                     ../ext/cntr_frame_dur_fwk_ext/inc
                     ../ext/sync_fwk_ext/inc

@@ -10,29 +10,27 @@
 ]]
 cmake_minimum_required(VERSION 3.10)
 
-#Include directories
-set (lib_incs_list
-    )
+include_directories (
+		../inc
+		../../../../../amdb/ext/src #for amdb queue (AMDB queue has dependency on condvar, nmutex - which are not implemented on linux)
+	)
+#Add the sub directories
+file(GLOB capi_library_thread_pool_src 
+				"../src/*.cpp" 
+				"../src/*.c"
+				)
 
 #Add the source files
 set (lib_srcs_list
-     ${LIB_ROOT}/src/spl_cntr_buf_util.c
-     ${LIB_ROOT}/src/spl_cntr_cmd_handler.c
-     ${LIB_ROOT}/src/spl_cntr_data_handler.c
-     ${LIB_ROOT}/src/spl_cntr_eos_util.c
-     ${LIB_ROOT}/src/spl_cntr_event_util.c
-     ${LIB_ROOT}/src/spl_cntr_ext_port_util.c
-     ${LIB_ROOT}/src/spl_cntr_fwk_extns.c
-     ${LIB_ROOT}/src/spl_cntr_gpd.c
-     ${LIB_ROOT}/src/spl_cntr_pm.c
-     ${LIB_ROOT}/src/spl_cntr.c
+	${capi_library_thread_pool_src}
     )
-
+	
 #Call spf_build_static_library to generate the static library
-spf_build_static_library(spl_cntr_main
+spf_build_static_library(capi_library_thread_pool
                          "${lib_incs_list}"
                          "${lib_srcs_list}"
                          "${lib_defs_list}"
                          "${lib_flgs_list}"
                          "${lib_link_libs_list}"
                         )
+

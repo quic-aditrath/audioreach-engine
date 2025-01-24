@@ -18,7 +18,17 @@ set (lib_incs_list
 
 #Add the source files
 set (lib_srcs_list
-     ${LIB_ROOT}/stub_src/irm_stub.c
+     ${LIB_ROOT}/src/irm.c
+	 ${LIB_ROOT}/src/irm_apm_if_utils.c
+	 ${LIB_ROOT}/src/irm_cmd_handler.c
+	 ${LIB_ROOT}/src/irm_cntr_if_utils.c
+	 ${LIB_ROOT}/src/irm_list_utils.c
+	 ${LIB_ROOT}/src/irm_offload_utils.c
+	 ${LIB_ROOT}/src/irm_offload_utils.h
+	 ${LIB_ROOT}/src/irm_prev_metric_info.h
+	 ${LIB_ROOT}/src/${TGT_SPECIFIC_FOLDER}/irm_prof_driver.c
+	 ${LIB_ROOT}/src/irm_static_module_utils.c
+	 ${LIB_ROOT}/src/irm_sim_utils.c
     )
 
 #Call spf_build_static_library to generate the static library

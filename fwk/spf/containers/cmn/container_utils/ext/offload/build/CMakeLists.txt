@@ -17,7 +17,7 @@ set (lib_incs_list
 
 #Add the source files
 set (lib_srcs_list
-     ${LIB_ROOT}/stub_src/cu_offload_util.c
+     ${LIB_ROOT}/src/cu_offload_util.c
     )
 
 #Call spf_build_static_library to generate the static library

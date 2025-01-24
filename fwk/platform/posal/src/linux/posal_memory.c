@@ -16,7 +16,6 @@
 #include "posal_globalstate.h"
 #include "posal_mem_prof.h"
 #include "posal_memory_i.h"
-#include "thread_prio_devcfg.h"
 
 /* ----------------------------------------------------------------------------
  * Global Declarations/Definitions

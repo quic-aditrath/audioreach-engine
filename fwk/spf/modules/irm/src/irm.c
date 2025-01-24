@@ -435,6 +435,7 @@ ar_result_t irm_init(POSAL_HEAP_ID heap_id)
 
    posal_queue_init_attr_t q_attr;
    posal_thread_prio_t     irm_thread_prio = 0;
+   uint32_t sched_policy = 0, affinity_mask = 0;
    prio_query_t            query_tbl;
 
    AR_MSG(DBG_HIGH_PRIO, "Entering irm_init() ...");
@@ -531,17 +532,20 @@ ar_result_t irm_init(POSAL_HEAP_ID heap_id)
    query_tbl.frame_duration_us = 0; // frame duration is dont care since its static thread prio
    query_tbl.is_interrupt_trig = FALSE;
    query_tbl.static_req_id     = SPF_THREAD_STAT_PRM_ID;
-   TRY(result, posal_thread_calc_prio(&query_tbl, &irm_thread_prio));
+   TRY(result, posal_thread_determine_attributes(&query_tbl, &irm_thread_prio, &sched_policy, &affinity_mask));
 
    /** Launch the thread */
    TRY(result,
-       posal_thread_launch(&irm_ptr->irm_cmd_handle.thread_id,
+       posal_thread_launch3(&irm_ptr->irm_cmd_handle.thread_id,
                            IRM_THREAD_NAME,
                            IRM_THREAD_STACK_SIZE,
+                           0,
                            irm_thread_prio,
                            irm_work_loop,
                            (void *)irm_ptr,
-                           irm_ptr->heap_id));
+                           irm_ptr->heap_id,
+                           sched_policy,
+                           affinity_mask));
 
    irm_ptr->thread_launched = TRUE;
 
@@ -558,7 +562,7 @@ ar_result_t irm_init(POSAL_HEAP_ID heap_id)
    TRY(result,
        irm_register_static_module(IRM_MODULE_INSTANCE_ID,
                                   heap_id,
-                                  posal_thread_get_tid(irm_ptr->irm_cmd_handle.thread_id)));
+                                  posal_thread_get_tid_v2(irm_ptr->irm_cmd_handle.thread_id)));
 
    TRY(result, __gpr_cmd_register(IRM_MODULE_INSTANCE_ID, irm_gpr_call_back_f, &irm_ptr->irm_handle));
 

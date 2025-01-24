@@ -127,13 +127,14 @@ void *amdb_loader_create(POSAL_HEAP_ID heap_id)
 
    ar_result_t         res              = AR_EOK;
    posal_thread_prio_t amdb_thread_prio = 0;
+   uint32_t sched_policy = 0, affinity_mask = 0;
 
    prio_query_t query_tbl;
    query_tbl.frame_duration_us = 0;
    query_tbl.is_interrupt_trig = FALSE;
    query_tbl.static_req_id     = SPF_THREAD_STAT_AMDB_ID;
 
-   res = posal_thread_calc_prio(&query_tbl, &amdb_thread_prio);
+   res = posal_thread_determine_attributes(&query_tbl, &amdb_thread_prio, &sched_policy, &affinity_mask);
    if (AR_DID_FAIL(res))
    {
       AR_MSG(DBG_HIGH_PRIO, "amdb: Failed to get thread priority");
@@ -144,13 +145,16 @@ void *amdb_loader_create(POSAL_HEAP_ID heap_id)
    char thread_name[] = "AMDB5";
    for (uint32_t i = 0; i < AMDB_MAX_THREADS; i++)
    {
-      res = posal_thread_launch(&obj_ptr->threads[i],
+      res = posal_thread_launch3(&obj_ptr->threads[i],
                                 thread_name,
                                 AMDB_THREAD_STACK_SIZE,
+                                0,
                                 amdb_thread_prio,
                                 amdb_loader_thread_entry_function,
                                 obj_ptr,
-                                heap_id);
+                                heap_id,
+                                sched_policy,
+                                affinity_mask);
       if (AR_DID_FAIL(res))
       {
          AR_MSG(DBG_HIGH_PRIO, "amdb: Failed to launch thread %lu.", i);

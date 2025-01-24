@@ -131,7 +131,7 @@ bool_t gen_cntr_check_bump_up_thread_priority(cu_base_t *cu_ptr, bool_t is_bump_
    {
       if (gen_cntr_check_if_time_critical(me_ptr) && !me_ptr->flags.is_thread_prio_bumped_up)
       {
-         bump_up_factor = 2;
+         bump_up_factor = GEN_CNTR_PROC_DUR_SCALE_FACTOR_FOR_CMD_PROC;
       }
       else
       {
@@ -160,6 +160,8 @@ ar_result_t gen_cntr_get_set_thread_priority(gen_cntr_t         *me_ptr,
    bool_t              has_stm = FALSE, is_real_time = FALSE;
    posal_thread_prio_t curr_prio = posal_thread_prio_get2(me_ptr->cu.cmd_handle.thread_id);
    posal_thread_prio_t new_prio  = curr_prio;
+   posal_thread_prio_t new_prio1; //temp
+
 
    if (!me_ptr->cu.flags.is_cntr_started)
    {
@@ -205,11 +207,21 @@ ar_result_t gen_cntr_get_set_thread_priority(gen_cntr_t         *me_ptr,
             }
          }
       }
-      new_prio = MAX(new_prio, me_ptr->cu.configured_thread_prio);
    }
 
    // Fallback to highest prio between calculated prio and original prio(includes module voted prio) before bump up
-   new_prio = MAX(new_prio, original_prio);
+   new_prio  = MAX(new_prio, original_prio);
+   new_prio1 = new_prio;
+
+   /**
+    * If container prio is configured, then it is used independent of whether container is started, or
+    * running commands during data processing or if it's FTRT or if its frame size is not known or
+    * if a module changes container priority.
+    */
+   if (APM_CONT_PRIO_IGNORE != me_ptr->cu.configured_thread_prio)
+   {
+      new_prio = me_ptr->cu.configured_thread_prio;
+   }
 
    if (curr_prio != new_prio)
    {
@@ -226,6 +238,13 @@ ar_result_t gen_cntr_get_set_thread_priority(gen_cntr_t         *me_ptr,
                    has_stm,
                    me_ptr->cu.flags.is_cntr_started,
                    bump_up_factor);
+
+      if (new_prio1 != new_prio)
+      {
+         GEN_CNTR_MSG(me_ptr->topo.gu.log_id,
+                            DBG_HIGH_PRIO,
+                            "Warning: thread priority: configured %d prio overrides internal logic %d", me_ptr->cu.configured_thread_prio, new_prio1);
+      }
 
       if (should_set)
       {

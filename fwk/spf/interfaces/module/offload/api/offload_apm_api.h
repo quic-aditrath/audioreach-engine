@@ -105,6 +105,7 @@ struct apm_param_id_master_pd_info_t
         @values { "APM_PROC_DOMAIN_ID_INVALID"=0x0,
          "MDSP"=#APM_PROC_DOMAIN_ID_MDSP,
          "ADSP"=#APM_PROC_DOMAIN_ID_ADSP,
+         "APPS"=#APM_PROC_DOMAIN_ID_APPS,
          "SDSP"=#APM_PROC_DOMAIN_ID_SDSP,
          "CDSP"=#APM_PROC_DOMAIN_ID_CDSP,
          "GDSP_0"=#APM_PROC_DOMAIN_ID_GDSP_0,

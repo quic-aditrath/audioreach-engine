@@ -247,7 +247,9 @@ typedef struct cu_base_t
    uint32_t               actual_stack_size;       /**< Actual size of the thread stack */
    uint32_t               configured_stack_size;
    uint32_t               root_thread_stack_size;
-   uint32_t               configured_thread_prio;  /**< Thread priority configured by the client */
+   int32_t                configured_thread_prio;  /**< Thread priority configured by the client */
+   uint32_t               configured_sched_policy; /**< scheduling policy. Mainly for Linux */
+   uint32_t               configured_core_affinity;/**< CPU Core affinity policy. Mainly for Linux */
    posal_channel_t        channel_ptr;
    posal_channel_t        gp_channel_ptr;           /**< General purpose channel */
    posal_signal_t         gp_signal_ptr;            /**< General purpose signal */

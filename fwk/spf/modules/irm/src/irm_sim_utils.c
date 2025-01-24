@@ -10,13 +10,15 @@ SPDX-License-Identifier: BSD-3-Clause
 // clang-format off
 // clang-format on
 
-#include "posal.h"
+#include "irm_i.h"
+
+
+#if defined(SIM)
 #include "amssheap.h"
 #include "irm_sysmon_util.h"
 #include "spf_svc_calib.h"
 #include "qurt_cycles.h"
 
-#if defined(SIM)
 #include "vcpm_tst_fwk_api.h"
 #include "qurt_event.h"
 
@@ -215,6 +217,7 @@ ar_result_t irm_tst_fwk_override_event_send(irm_t *irm_ptr)
 }
 #else
 
+#ifdef __qdsp6__
 void irm_get_q6_hw_info(irm_metric_id_q6_hw_info_t *q6_hw_info_ptr)
 {
    return;
@@ -226,6 +229,8 @@ void irm_calculate_non_idle_cycles(irm_metric_id_q6_hw_info_t *q6_hw_info_ptr,
 {
    return;
 }
+
+#endif //__qdsp6__
 
 ar_result_t irm_tst_fwk_override_event_send(irm_t *irm_ptr)
 {

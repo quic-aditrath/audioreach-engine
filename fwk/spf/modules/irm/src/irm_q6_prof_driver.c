@@ -233,7 +233,7 @@ void irm_print_sysmon_values(sysmon_audio_query_t *current_query_ptr)
 // Queries the os for the packet count for blocks where the block is a thread (static modules, containers)
 static void irm_fill_thread_packet_metric(irm_report_metric_payload_t *report_metric_payload_ptr,
                                           irm_node_obj_t *             metric_obj_ptr,
-                                          uint32_t                     thread_id,
+                                          int64_t                      thread_id,
                                           uint32_t                     instance_id)
 {
    irm_metric_id_packet_count_t *  payload_ptr = (irm_metric_id_packet_count_t *)(report_metric_payload_ptr + 1);
@@ -264,7 +264,7 @@ static void irm_fill_thread_packet_metric(irm_report_metric_payload_t *report_me
 
 static void irm_fill_thread_cycles_metric(irm_report_metric_payload_t *report_metric_payload_ptr,
                                           irm_node_obj_t *             metric_obj_ptr,
-                                          uint32_t                     thread_id,
+                                          int64_t                      thread_id,
                                           uint32_t                     instance_id)
 {
    irm_metric_id_processor_cycles_t *payload_ptr = (irm_metric_id_processor_cycles_t *)(report_metric_payload_ptr + 1);
@@ -298,7 +298,7 @@ static void irm_fill_thread_cycles_metric(irm_report_metric_payload_t *report_me
 
 static ar_result_t irm_fill_thread_stack_metric(irm_report_metric_payload_t *report_metric_payload_ptr,
                                                 irm_node_obj_t *             metric_obj_ptr,
-                                                uint32_t                     thread_id,
+                                                int64_t                      thread_id,
                                                 uint32_t                     instance_id)
 {
    ar_result_t                 result      = AR_EOK;
@@ -621,7 +621,7 @@ static ar_result_t irm_fill_container_metrics(irm_t *         irm_ptr,
       report_metric_payload_ptr->is_valid = 0;
       return result;
    }
-   int32_t thread_id = posal_thread_get_tid(instance_obj_ptr->handle_ptr->cmd_handle_ptr->thread_id);
+   int64_t thread_id = posal_thread_get_tid_v2(instance_obj_ptr->handle_ptr->cmd_handle_ptr->thread_id);
 
    switch (metric_obj_ptr->id)
    {
@@ -690,7 +690,7 @@ static ar_result_t irm_fill_static_module_metrics(irm_t *         irm_ptr,
       return result;
    }
 
-   int32_t thread_id = instance_obj_ptr->static_module_info_ptr->tid;
+   int64_t thread_id = instance_obj_ptr->static_module_info_ptr->tid;
 
    switch (metric_obj_ptr->id)
    {

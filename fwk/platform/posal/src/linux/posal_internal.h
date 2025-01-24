@@ -56,7 +56,7 @@ static inline uint32_t posal_queuepool_get_handle_from_heap_id(POSAL_HEAP_ID hea
 /** Internal thread object structure**/
 typedef struct
 {
-  unsigned int tid;
+  int64_t tid;
   pthread_t thread_handle;
   void *arg;
   ar_result_t (*pfStartRoutine)(void *);

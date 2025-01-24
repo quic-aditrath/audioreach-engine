@@ -17,11 +17,16 @@
 #include "module_cmn_api.h"
 #include "apm_container_api.h"
 
-
+/** @ingroup ar_spf_mod_data_log_macros
+    Maximum inport ports of the Data Logging module. */
 #define DATA_LOGGING_MAX_INPUT_PORTS                  0x1
 
+/** @ingroup ar_spf_mod_data_log_macros
+    Maximum output ports of the Data Logging module. */
 #define DATA_LOGGING_MAX_OUTPUT_PORTS                 0x1
 
+/** @ingroup ar_spf_mod_data_log_macros
+    Required stack size for the Data Logging module. */
 #define DATA_LOGGING_STACK_SIZE_REQUIREMENT           2048
 
 /**
@@ -32,7 +37,8 @@
    Param ID
 ==============================================================================*/
 
-/* ID of the parameter used to set configuration for Data logging module. */
+/** @ingroup ar_spf_mod_data_log_macros
+    ID of the parameter used to set configuration for Data logging module. */
 #define PARAM_ID_DATA_LOGGING_CONFIG             0x08001031
 
 /*==============================================================================
@@ -44,29 +50,32 @@
    @h2xmlp_toolPolicy   {Calibration; RTC} */
 
 #include "spf_begin_pack.h"
+
+/** @ingroup ar_spf_mod_data_log_macros
+    Configures the data logging module. */
 struct data_logging_config_t
 {
    uint32_t log_code;
-   /**< logging code for this module instance
+   /**< Logging code for this module instance.
 
         @valuesbul
 		- 0 -- Disabled (Default)
-   		- 0x152E 
+		- 0x152E 
 		- 0x152F 
 		- 0x1531 
 		- 0x1534 
 		- 0x1532 
 		- 0x1530 
 		- 0x1533 
-        - 0x1535 
-        - 0x1536  		
-		- 0x1586  
-        - 0x19AF 
-	    - 0x19B0 
-        - 0x19B1   
-        - 0x158A 
-		- 0x158B  
-		*/
+		- 0x1535 
+		- 0x1536 
+		- 0x1586 
+		- 0x19AF 
+		- 0x19B0 
+		- 0x19B1 
+		- 0x158A 
+		- 0x158B  */
+
    /**< @h2xmle_description {logging code}
         @h2xmle_default     {0}
          @h2xmle_rangeList    {"Default"=0;
@@ -89,9 +98,11 @@ struct data_logging_config_t
         @h2xmle_policy      {Basic} */
 
    uint32_t log_tap_point_id;
-   /**< logging tap point of this module instance
+   /**< Logging tap point of this module instance
 
-        @values 0 to 0x10FC5 */
+        @values
+        0 to 0x10FC5 */
+
    /**< @h2xmle_description {logging tap point}
         @h2xmle_default     {0}
         @h2xmle_range       { 0..69573}
@@ -101,7 +112,9 @@ struct data_logging_config_t
    /**< Mode to indicate whether to log immediately (1) or wait until
     *   log buffer is completely filled (0)
 
-        @values 0, 1 */
+        @values
+        0, 1 */
+
    /**< @h2xmle_description {Buffering mode}
         @h2xmle_default     {0}
         @h2xmle_rangeList   { "Buffered"=0,
@@ -113,7 +126,8 @@ struct data_logging_config_t
 /* Structure type def for above payload. */
 typedef struct data_logging_config_t data_logging_config_t;
 
-/* ID of the parameter used to configure Island logging for Data logging module. */
+/** @ingroup ar_spf_mod_data_log_macros
+    ID of the parameter used to configure Island logging for Data logging module. */
 #define PARAM_ID_DATA_LOGGING_ISLAND_CFG         0x08001313
 
 /** @h2xmlp_parameter   {"PARAM_ID_DATA_LOGGING_ISLAND_CFG", PARAM_ID_DATA_LOGGING_ISLAND_CFG}
@@ -121,9 +135,14 @@ typedef struct data_logging_config_t data_logging_config_t;
    @h2xmlp_toolPolicy   {Calibration} */
 
 #include "spf_begin_pack.h"
+
+/** @ingroup ar_spf_mod_data_log_macros
+    Force logging for a logging module in an Island Container. Enabling this causes island exit. */
 struct data_logging_island_t
 {
    uint32_t forced_logging;
+   /**< Specifies whether the data logging module needs to log in island by exiting island. */
+
    /**< @h2xmle_description  {Specifies whether the data logging module needs to log in island by exiting island.}
         @h2xmle_rangeList    {"disallowed"=0;
                               "allowed"=1}
@@ -137,20 +156,32 @@ struct data_logging_island_t
 typedef struct data_logging_island_t data_logging_island_t;
 
 
-/* ID of the parameter used to configure selective channel data logging*/
+/** @ingroup ar_spf_mod_data_log_macros
+    ID of the parameter used to configure selective channel data logging*/
 #define PARAM_ID_DATA_LOGGING_SELECT_CHANNELS         0x080014E8
 
 /** @h2xmlp_parameter   {"PARAM_ID_DATA_LOGGING_SELECT_CHANNELS", PARAM_ID_DATA_LOGGING_SELECT_CHANNELS}
-   @h2xmlp_description  {Select channels to log.\n}
-   @h2xmlp_toolPolicy   {"NO_SUPPORT"} */
+    @h2xmlp_description  {Select channels to log.\n}
+    @h2xmlp_toolPolicy   {NO_SUPPORT} */
 
+/** @ingroup ar_spf_mod_data_log_macros
+    Select the channel index mask for the Data Logging module. */
 #define DATA_LOGGING_SELECT_CHANNEL_INDEX_MASK 0x0
+
+/** @ingroup ar_spf_mod_data_log_macros
+    Select channel type mask for the Data Logging module. */
 #define DATA_LOGGING_SELECT_CHANNEL_TYPE_MASK 0x1
 
 #include "spf_begin_pack.h"
+
+/** @ingroup ar_spf_mod_data_log_macros
+    Select channels to log. */
+
 struct data_logging_select_channels_t
 {
    uint32_t mode;
+   /**< Mode to decide if selective channel logging is based on channel-index or channel-type. */
+
    /**< @h2xmle_description  {mode to decide if selective channel logging is based on channel-index or channel-type.}
         @h2xmle_default      {#DATA_LOGGING_SELECT_CHANNEL_INDEX_MASK}
         @h2xmle_rangeList    {"channel type mask" = #DATA_LOGGING_SELECT_CHANNEL_TYPE_MASK,
@@ -158,6 +189,9 @@ struct data_logging_select_channels_t
         @h2xmle_policy       {Basic} */
 
    uint32_t channel_index_mask;
+   /**< Bit mask to select the channels to log based on channel index.
+        This is valid only if mode is selected as channel-index-mask. */
+
    /**< @h2xmle_description  {Bit mask to select the channels to log based on channel index.
                               This is valid only if mode is selected as channel-index-mask.}
         @h2xmle_default      {0xFFFFFFFF}
@@ -359,8 +393,11 @@ struct data_logging_select_channels_t
         */
 
    uint32_t channel_type_mask_lsw;
+   /**< Bit mask to select the channels to log based on channel type.
+        This is valid only if mode is selected as channel-type-mask. */
+
    /**< @h2xmle_description  {Bit mask to select the channels to log based on channel type.
-			      This is valid only if mode is selected as channel-type-mask.}
+			                  This is valid only if mode is selected as channel-type-mask.}
         @h2xmle_default      {0xFFFFFFFE}
         @h2xmle_range        {0x0..0xFFFFFFFE}
         @h2xmle_policy       {Basic}
@@ -559,8 +596,11 @@ struct data_logging_select_channels_t
         */
 
    uint32_t channel_type_mask_msw;
+   /**< Bit mask to select the channels to log based on channel type.
+        This is valid only if mode is selected as channel-type-mask. */
+
    /**< @h2xmle_description  {Bit mask to select the channels to log based on channel type.
-			      This is valid only if mode is selected as channel-type-mask.}
+			                  This is valid only if mode is selected as channel-type-mask.}
         @h2xmle_default      {0xFFFF0007}
         @h2xmle_range        {0x0..0xFFFFFFFF}
         @h2xmle_policy       {Basic}
@@ -693,9 +733,23 @@ typedef struct data_logging_select_channels_t data_logging_select_channels_t;
 /** @h2xmlp_subStruct */
 #include "spf_begin_pack.h"
 #include "spf_begin_pragma.h"
+
+/** @ingroup ar_spf_mod_data_log_macros
+    Select data logging channel type mask. */
 struct data_logging_channel_type_mask_t
 {
    uint32_t channel_type_group_mask;
+   /**< Indicates the mask for channel type group array.
+        Each bit in channel_type_group_mask corresponds to a channel group.
+        Read as:
+        - Bit 0 corresponds to channel group 1, which includes channel map for channels 1-31.
+        - Bit 1 corresponds to channel group 2, which includes channel map for channels 32-63.
+        - Bit 2 corresponds to channel group 3, which includes channel map for channels 64-95.
+        - Bit 3 corresponds to channel group 4, which includes channel map for channels 96-127.
+        - Bit 4 corresponds to channel group 5, which includes channel map for channel 128-159.
+
+        A set bit (1) in channel_type_group_mask indicates that the channels in that channel group are configured. */
+
    /**< @h2xmle_description  {Indicates the mask for channel type group array.
                              Each bit in channel_type_group_mask corresponds to a channel group.
                              Read as
@@ -707,10 +761,19 @@ struct data_logging_channel_type_mask_t
 
                              A set bit (1) in channel_type_group_mask indicates that the channels in that channel group are configured. \n
                              }
-    @h2xmle_range             {0..31}
-    @h2xmle_default          {0x00000003} */
+       @h2xmle_range             {0..31}
+       @h2xmle_default          {0x00000003} */
 
    uint32_t channel_type_mask_list[0];
+   /**< An array used to configure the channels for different channel groups. The array size depends on the number of
+        bits set in channel_type_group_mask.
+
+        For group 1, each bit of channel_type_mask_list corresponds to channel map from 1 (PCM_CHANNEL_L) to 31 (PCM_CHANNEL_LW).
+        Bit 0 of group 1 channel_type_mask_list is reserved and must always be set to zero.
+        For any other group, each bit of channel_mask corresponds to channel map from [32(group_no -1) to 32(group_no)-1].
+
+        Bit position of the channel-map for channel_type_mask_list of defined group is obtained by left shifting (1 (left shift) Channel_map%32). */
+
    /**< @h2xmle_description  {An array used to configure the channels for different channel groups. The array size depends on the number of
                              bits set in channel_type_group_mask.\n 
 
@@ -735,9 +798,22 @@ typedef struct data_logging_channel_type_mask_t data_logging_channel_type_mask_t
 /** @h2xmlp_subStruct */
 #include "spf_begin_pack.h"
 #include "spf_begin_pragma.h"
+
+/** @ingroup ar_spf_mod_data_log_macros
+    Data logging channel index mask. */
 struct data_logging_channel_index_mask_t
 {
    uint32_t channel_index_group_mask;
+   /**< Indicates the mask for channel index group array.
+        Each bit in channel_index_group_mask corresponds to a channel group.
+        Read as:
+        - Bit 0 corresponds to channel group 1, which includes position index for channels 1-32.
+        - Bit 1 corresponds to channel group 2, which includes position index for channels 33-64.
+        - Bit 2 corresponds to channel group 3, which includes position index for channels 65-96.
+        - Bit 3 corresponds to channel group 4, which includes position index for channels 97-128.
+
+        A set bit (1) in channel_index_group_mask indicates that the channels in that channel group are configured. */
+
    /**< @h2xmle_description  {Indicates the mask for channel index group array. \n
                              Each bit in channel_index_group_mask corresponds to a channel group. \n
                              Read as \n
@@ -748,10 +824,17 @@ struct data_logging_channel_index_mask_t
 
                              A set bit (1) in channel_index_group_mask indicates that the channels in that channel group are configured. \n
                              }
-    @h2xmle_range             {0..15}
-    @h2xmle_default          {0x00000001} */
+        @h2xmle_range             {0..15}
+        @h2xmle_default          {0x00000001} */
 
    uint32_t channel_index_mask_list[0];
+   /**< An array used to configure the channels for different channel groups. The array size depends on the number of
+        bits set in channel_index_group_mask.
+
+        For any group, each bit of channel_index_mask corresponds to channel index from [32(group_no -1)+1 to 32(group_no)].
+
+        Bit position of the channel-index for channel_index_mask of defined group is obtained by (1 (left shift) (Channel_index-1)%32). */
+
    /**< @h2xmle_description  {An array used to configure the channels for different channel groups. The array size depends on the number of
                              bits set in channel_index_group_mask.\n 
 
@@ -771,19 +854,26 @@ struct data_logging_channel_index_mask_t
 /* Structure type def for above payload. */
 typedef struct data_logging_channel_index_mask_t data_logging_channel_index_mask_t;
 
-/* ID of the parameter used to configure selective channel data logging*/
+/** @ingroup ar_spf_mod_data_log_macros
+    ID of the parameter used to configure selective channel data logging. */
 #define PARAM_ID_DATA_LOGGING_SELECT_CHANNELS_V2         0x08001A66
 
 /** @h2xmlp_parameter   {"PARAM_ID_DATA_LOGGING_SELECT_CHANNELS_V2", PARAM_ID_DATA_LOGGING_SELECT_CHANNELS_V2}
     @h2xmlp_copySrc     {0x080014E8}
-   @h2xmlp_description  {Select channels to log.\n}
-   @h2xmlp_toolPolicy   {Calibration; RTC} */
+    @h2xmlp_description  {Select channels to log.\n}
+    @h2xmlp_toolPolicy   {Calibration; RTC} */
 
 #include "spf_begin_pack.h"
 #include "spf_begin_pragma.h"
+
+/** @ingroup ar_spf_mod_data_log_macros
+    Select channels to log. */
+
 struct data_logging_select_channels_v2_t
 {
    uint32_t mode;
+   /**< Mode to decide if selective channel logging is based on channel-index or channel-type */
+
    /**< @h2xmle_description  {mode to decide if selective channel logging is based on channel-index or channel-type.}
         @h2xmle_default      {#DATA_LOGGING_SELECT_CHANNEL_INDEX_MASK}
         @h2xmle_copySrc      {mode}
@@ -792,11 +882,17 @@ struct data_logging_select_channels_v2_t
         @h2xmle_policy       {Basic} */
 #ifdef __H2XML__
    data_logging_channel_index_mask_t channel_index_config;
+   /**< Mask to select the channels to log based on channel index.
+        This is valid only if mode is selected as channel-index-mask. */
+
    /**< @h2xmle_description  {Mask to select the channels to log based on channel index.
                               This is valid only if mode is selected as channel-index-mask.}
         @h2xmle_policy       {Basic} */
    
    data_logging_channel_type_mask_t channel_type_config;
+   /**< Mask to select the channels to log based on channel type.
+        This is valid only if mode is selected as channel-type-mask. */
+
    /**< @h2xmle_description  {Mask to select the channels to log based on channel type.
                               This is valid only if mode is selected as channel-type-mask. }
         @h2xmle_policy       {Basic} */
@@ -809,26 +905,25 @@ struct data_logging_select_channels_v2_t
 typedef struct data_logging_select_channels_v2_t data_logging_select_channels_v2_t;
 
 
-/*
- * ID of the Logging module
- *
- * Supported Input Media Format:
- *  - Data Format          : any
- *  - fmt_id               : Don't care
- *  - Sample Rates         : 1-384 kHz
- *  - Number of channels   : 1 to 128 (for certain products this module supports only 32 channels)
- *  - Bit Width            : 16 (bits per sample 16 and Q15),
- *                         : 24 (bits per sample 24 and Q23, bits per sample 32 and Q23 or Q27 or Q31),
- *                         : 32 (bits per sample 32 and Q31)
- *  - Interleaving         : interleaved, deinterleaved unpacked, deinterleaved packed.
- *  - Endianess            : little, big
- *
+/** @ingroup ar_spf_mod_data_log_macros
+    ID of the Logging module.
+ 
+    @subhead4{Supported input media format ID}
+    - Data Format          : any @lstsp1
+    - fmt_id               : Don't care @lstsp1
+    - Sample Rates         : 1-384 kHz @lstsp1
+    - Number of channels   : 1 to 128 (for certain products this module supports only 32 channels) @lstsp1
+    - Bit Width            : 16 (bits per sample 16 and Q15),
+                             24 (bits per sample 24 and Q23, bits per sample 32 and Q23 or Q27 or Q31),
+                             32 (bits per sample 32 and Q31) @lstsp1
+    - Interleaving         : interleaved, deinterleaved unpacked, deinterleaved packed @lstsp1
+    - Endianess            : little, big
  */
 #define MODULE_ID_DATA_LOGGING                   0x0700101A
 
 /** @h2xml_title1          {Module Data Logging}
     @h2xml_title_agile_rev {Module Data Logging}
-     @h2xml_title_date     {March 29, 2019}
+    @h2xml_title_date      {March 29, 2019}
   */
 
 /**

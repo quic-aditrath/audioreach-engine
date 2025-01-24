@@ -273,6 +273,7 @@ struct apm_cont_prop_id_proc_domain_t
         @valuesbul
         - #APM_PROC_DOMAIN_ID_MDSP
         - #APM_PROC_DOMAIN_ID_ADSP
+        - #APM_PROC_DOMAIN_ID_APPS
         - #APM_PROC_DOMAIN_ID_SDSP
         - #APM_PROC_DOMAIN_ID_CDSP
         - #APM_PROC_DOMAIN_ID_GDSP_0
@@ -283,6 +284,7 @@ struct apm_cont_prop_id_proc_domain_t
    /*#< @h2xmle_rangeList   {"DONT_CARE"=0xFFFFFFFF,
                              "mDSP"=APM_PROC_DOMAIN_ID_MDSP,
                              "aDSP"=APM_PROC_DOMAIN_ID_ADSP,
+                             "APPS"=APM_PROC_DOMAIN_ID_APPS,
                              "sDSP"=APM_PROC_DOMAIN_ID_SDSP,
                              "cDSP"=APM_PROC_DOMAIN_ID_CDSP,
                              "gDSP0"=APM_PROC_DOMAIN_ID_GDSP_0,
@@ -372,6 +374,116 @@ struct apm_cont_prop_id_heap_id_t
 #include "spf_end_pack.h"
 ;
 typedef struct apm_cont_prop_id_heap_id_t apm_cont_prop_id_heap_id_t;
+
+/*--------------------------------------------------------------------------------------------------------------------*/
+/** @ingroup spf_apm_container_props
+    Container property identifier for the thread priority
+
+    @msgpayload
+    apm_cont_prop_id_heap_id_t
+*/
+#define APM_CONTAINER_PROP_ID_THREAD_PRIORITY                  0x08001A9E
+
+/*# @h2xmlp_property    {"Thread Priority", APM_CONTAINER_PROP_ID_THREAD_PRIORITY}
+    @h2xmlp_description {Container property ID for the thread priority.} */
+
+/** Value of container thread priority that is ignored.*/
+#define APM_CONT_PRIO_IGNORE    AR_NON_GUID(0x80000000)
+
+/** @ingroup spf_apm_container_props
+    Payload for #APM_CONTAINER_PROP_ID_THREAD_PRIORITY.
+ */
+#include "spf_begin_pack.h"
+struct apm_cont_prop_id_thread_priority_t
+{
+   int32_t priority;
+   /**< Sets the priority of the thread(s) that container uses. This is a platform dependent value.
+
+    */
+
+   /*#< @h2xmle_range       {0x80000000..0x7FFFFFFF}
+        @h2xmle_default     {0x80000000}
+        @h2xmle_description {Sets the priority of the thread(s) that container uses for data processing.
+              This is a platform dependent value. } */
+}
+#include "spf_end_pack.h"
+;
+typedef struct apm_cont_prop_id_thread_priority_t apm_cont_prop_id_thread_priority_t;
+
+
+/*--------------------------------------------------------------------------------------------------------------------*/
+/** @ingroup spf_apm_container_props
+    Container property identifier for the thread scheduling policy
+
+    @msgpayload
+    apm_cont_prop_id_heap_id_t
+*/
+#define APM_CONTAINER_PROP_ID_THREAD_SCHED_POLICY                  0x08001A9F
+
+/*# @h2xmlp_property    {"Thread Scheduling Policy", APM_CONTAINER_PROP_ID_THREAD_SCHED_POLICY}
+    @h2xmlp_description {Container property ID for the thread scheduling policy.} */
+
+/** Value of container thread scheduling policy that is ignored.*/
+#define APM_CONT_SCHED_POLICY_IGNORE    AR_NON_GUID(0xFFFFFFFF)
+
+/** @ingroup spf_apm_container_props
+    Payload for #APM_CONTAINER_PROP_ID_THREAD_SCHED_POLICY.
+ */
+#include "spf_begin_pack.h"
+struct apm_cont_prop_id_thread_sched_policy_t
+{
+   uint32_t sched_policy;
+   /**< Sets the scheduling policy of the thread(s) that container uses. This is a platform dependent value.
+       Support available only in certain platform (E.g. Linux)
+    */
+
+   /*#< @h2xmle_range       {0..0xFFFFFFFF}
+        @h2xmle_default     {0xFFFFFFFF}
+        @h2xmle_description {Sets the scheduling policy of the thread(s) that container uses for data processing.
+        This is a platform dependent value. Support available only in certain platform (E.g. Linux).
+        In Linux Red hat, the values are SCHED_OTHER 0, SCHED_FIFO 1, SCHED_RR 2.} */
+}
+#include "spf_end_pack.h"
+;
+typedef struct apm_cont_prop_id_thread_sched_policy_t apm_cont_prop_id_thread_sched_policy_t;
+
+
+/*--------------------------------------------------------------------------------------------------------------------*/
+/** @ingroup spf_apm_container_props
+    Container property identifier for the thread scheduling policy
+
+    @msgpayload
+    apm_cont_prop_id_heap_id_t
+*/
+#define APM_CONTAINER_PROP_ID_THREAD_CORE_AFFINITY                  0x08001AA0
+
+/*# @h2xmlp_property    {"Thread Core Affinity Mask", APM_CONTAINER_PROP_ID_THREAD_CORE_AFFINITY}
+    @h2xmlp_description {Container property ID for the thread core affinity mask} */
+
+/** Value of container core scheduling policy that is ignored.*/
+#define APM_CONT_CORE_AFFINITY_IGNORE    0
+
+/** @ingroup spf_apm_container_props
+    Payload for #APM_CONTAINER_PROP_ID_THREAD_CORE_AFFINITY.
+ */
+#include "spf_begin_pack.h"
+struct apm_cont_prop_id_thread_core_affinity_t
+{
+   uint32_t core_affinity;
+   /**< Sets the core affinity mask of the thread(s) that container uses. This is a platform dependent value.
+    * Support available only in certain platform (E.g. Linux)
+    */
+
+   /*#< @h2xmle_range       {0..0xFFFFFFFF}
+        @h2xmle_default     {APM_CONT_CORE_AFFINITY_IGNORE}
+        @h2xmle_description {Sets the core affinity mask of the thread(s) that container uses for data processing.
+           This is a platform dependent value. Support available only on certain platform (E.g. Linux).
+           Value of zero is ignored and platform default is used.
+         } */
+}
+#include "spf_end_pack.h"
+;
+typedef struct apm_cont_prop_id_thread_core_affinity_t apm_cont_prop_id_thread_core_affinity_t;
 
 /** @ingroup spf_apm_container_props
     Container property identifier for the peer heap ID.

@@ -47,7 +47,11 @@ static inline ar_result_t posal_inline_mutex_init(posal_inline_mutex_t *pposal_m
     pthread_mutexattr_t attr;
     mutex = ((pthread_mutex_t *) malloc(sizeof(pthread_mutex_t)));
     pthread_mutexattr_init(&attr);
+#if defined(ARSPF_PLATFORM_QNX)
+    pthread_mutexattr_setrecursive(&attr, PTHREAD_RECURSIVE_ENABLE);
+#else
     pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
+#endif
     pthread_mutex_init(mutex, &attr);
     pthread_mutexattr_destroy(&attr);
 	*pposal_mutex = mutex;

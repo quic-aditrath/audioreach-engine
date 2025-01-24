@@ -207,8 +207,8 @@ ar_result_t gen_topo_metadata_adj_offset(gen_topo_t *          topo_ptr,
 #ifdef METADATA_DEBUGGING
          TOPO_MSG_ISLAND(topo_ptr->gu.log_id,
                         DBG_LOW_PRIO,
-                        "MD_DBG: update offset of md_ptr 0x%x md_id 0x%08lX. offset_before %lu. offset %lu by bytes_consumed "
-                        "%lu true_add_false_sub %d, metadata_flag0x%08lX",
+                        "MD_DBG: update offset of md_ptr 0x%x md_id 0x%08lX. offset_before %u. offset %u by bytes_consumed "
+                        "%u true_add_false_sub %d, metadata_flag0x%08lX",
                         md_ptr,
                         md_ptr->metadata_id,
                         offset_before,

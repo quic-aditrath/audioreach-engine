@@ -69,6 +69,10 @@ extern "C" {
 #define APM_PROC_DOMAIN_ID_ADSP 0x2
 
 /** @ingroup spf_apm_graph_props
+    Processor domain identifier for the SPF-on-ARM process running on APPS. */
+#define APM_PROC_DOMAIN_ID_APPS                   0x3
+
+/** @ingroup spf_apm_graph_props
     Processor domain identifier for the sensors DSP. */
 #define APM_PROC_DOMAIN_ID_SDSP 0x4
 
@@ -127,6 +131,9 @@ enum processors
 
    PROC_DOMAIN_MDSP = APM_PROC_DOMAIN_ID_MDSP,
    /*#< @h2xmle_name {mDSP} */
+
+   PROC_DOMAIN_APPS = APM_PROC_DOMAIN_ID_APPS,
+   /*#< @h2xmle_name {APPS} */
 
    PROC_DOMAIN_SDSP = APM_PROC_DOMAIN_ID_SDSP,
    /*#< @h2xmle_name {sDSP} */
@@ -197,6 +204,9 @@ enum processors
 
    PROC_DOMAIN_MDSP = APM_PROC_DOMAIN_ID_MDSP,
    /**< Modem DSP. */
+
+   PROC_DOMAIN_APPS = APM_PROC_DOMAIN_ID_APPS,
+   /*#< APPS -  SPF on APPS */
 
    PROC_DOMAIN_SDSP = APM_PROC_DOMAIN_ID_SDSP,
    /**< Sensors DSP. */

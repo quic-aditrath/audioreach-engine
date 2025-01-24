@@ -2193,13 +2193,7 @@ ar_result_t spl_topo_process(spl_topo_t *topo_ptr, uint8_t path_index)
             // Zero out scratch input structures.
             for (uint32_t port_idx = 0; port_idx < proc_context_ptr->num_in_ports; port_idx++)
             {
-#ifdef SAFE_MODE
-               memset(proc_context_ptr->in_port_scratch_ptr[port_idx].prev_actual_data_len,
-                      0,
-                      sizeof(proc_context_ptr->in_port_scratch_ptr[port_idx].prev_actual_data_len));
-#else
                proc_context_ptr->in_port_scratch_ptr[port_idx].prev_actual_data_len[0] = 0;
-#endif
             }
 
             // Setup input ports.
@@ -2234,13 +2228,7 @@ ar_result_t spl_topo_process(spl_topo_t *topo_ptr, uint8_t path_index)
             // Zero out scratch output structures.
             for (uint32_t port_idx = 0; port_idx < proc_context_ptr->num_out_ports; port_idx++)
             {
-#ifdef SAFE_MODE
-               memset(proc_context_ptr->out_port_scratch_ptr[port_idx].prev_actual_data_len,
-                      0,
-                      sizeof(proc_context_ptr->out_port_scratch_ptr[port_idx].prev_actual_data_len));
-#else
                proc_context_ptr->out_port_scratch_ptr[port_idx].prev_actual_data_len[0] = 0;
-#endif
             }
 
             // Setup output ports.
