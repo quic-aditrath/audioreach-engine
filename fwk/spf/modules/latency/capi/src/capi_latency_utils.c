@@ -15,7 +15,6 @@
 // static funtions declaration
 static capi_err_t capi_latency_raise_kpps_event(capi_latency_t *me_ptr);
 static capi_err_t capi_latency_raise_bandwidth_event(capi_latency_t *me_ptr);
-static capi_err_t capi_latency_raise_delay_event(capi_latency_t *me_ptr);
 static capi_err_t capi_latency_raise_process_event(capi_latency_t *me_ptr);
 
 static bool_t latency_is_supported_v2_media_type(capi_latency_t *me_ptr, const capi_media_fmt_v2_t *format_ptr);
@@ -27,7 +26,7 @@ static bool_t capi_delay_media_type_v2_changed(const capi_media_fmt_v2_t *m1, co
 static void capi_delay_delayline_set(capi_delay_delayline_t *delayline_ptr,
                                      uint32_t                delayline_length_in_samples,
                                      uint32_t                bits_per_sample,
-                                     void *                  buf_ptr);
+                                     void                   *buf_ptr);
 
 static void capi_delay_delayline_reset(capi_delay_delayline_t *delayline_ptr);
 
@@ -49,7 +48,10 @@ static bool_t latency_is_supported_v2_media_type(capi_latency_t *me_ptr, const c
 
    if ((format_ptr->format.num_channels == 0) || (CAPI_MAX_CHANNELS_V2 < format_ptr->format.num_channels))
    {
-      AR_MSG(DBG_ERROR_PRIO, "CAPI to DELAY: Invalid num_channels %lu. Max channels: %lu", format_ptr->format.num_channels, CAPI_MAX_CHANNELS_V2);
+      AR_MSG(DBG_ERROR_PRIO,
+             "CAPI to DELAY: Invalid num_channels %lu. Max channels: %lu",
+             format_ptr->format.num_channels,
+             CAPI_MAX_CHANNELS_V2);
       return FALSE;
    }
 
@@ -76,13 +78,13 @@ static bool_t latency_is_supported_v2_media_type(capi_latency_t *me_ptr, const c
          AR_MSG(DBG_ERROR_PRIO,
                 "Only upto %u channel maps supported. Received channel map %lu.",
                 PCM_MAX_CHANNEL_MAP_V2,
-				format_ptr->channel_type[chan]);
+                format_ptr->channel_type[chan]);
          return CAPI_EUNSUPPORTED;
       }
-      if(format_ptr->channel_type[chan] > PCM_MAX_CHANNEL_MAP)
-      {  //If a higher channel map in the media format occurs even once in the execution history,
-    	 //the flag will be set to true from that point onward.
-   	     me_ptr->higher_channel_map_present = TRUE;
+      if (format_ptr->channel_type[chan] > PCM_MAX_CHANNEL_MAP)
+      { // If a higher channel map in the media format occurs even once in the execution history,
+        // the flag will be set to true from that point onward.
+         me_ptr->higher_channel_map_present = TRUE;
       }
    }
    return TRUE;
@@ -92,12 +94,12 @@ void capi_latency_init_config(capi_latency_t *me_ptr)
 {
    memset(&me_ptr->lib_config, 0, sizeof(capi_latency_module_config_t));
 
-   me_ptr->heap_mem.heap_id        = POSAL_HEAP_DEFAULT;
-   me_ptr->lib_config.enable       = TRUE;
-   me_ptr->lib_config.mem_ptr      = NULL;
-   me_ptr->lib_config.mchan_config = NULL;
+   me_ptr->heap_mem.heap_id                             = POSAL_HEAP_DEFAULT;
+   me_ptr->lib_config.enable                            = TRUE;
+   me_ptr->lib_config.mem_ptr                           = NULL;
+   me_ptr->lib_config.mchan_config                      = NULL;
    me_ptr->cache_delay_v2.cache_delay_per_config_v2_ptr = NULL;
-   me_ptr->cfg_mode                = LATENCY_MODE_GLOBAL;
+   me_ptr->cfg_mode                                     = LATENCY_MODE_GLOBAL;
    return;
 }
 
@@ -174,14 +176,19 @@ void capi_latency_init_events(capi_latency_t *const me_ptr)
  * FUNCTION : capi_latency_raise_delay_event
  * DESCRIPTION: Function to send the delay using the callback function
  * =========================================================================*/
-static capi_err_t capi_latency_raise_delay_event(capi_latency_t *me_ptr)
+capi_err_t capi_latency_raise_delay_event(capi_latency_t *me_ptr)
 {
-   capi_err_t capi_result = CAPI_EOK;
-   uint32_t   delay_in_us = 0;
+   capi_err_t            capi_result   = CAPI_EOK;
+   int32_t               delay_in_us   = 0;
+   static const uint32_t NUM_US_IN_SEC = 1000000;
 
    if (me_ptr->is_media_fmt_received == TRUE)
    {
       delay_in_us = capi_latency_get_max_delay(me_ptr);
+
+      delay_in_us -= ((me_ptr->negative_delay_samples * NUM_US_IN_SEC) / me_ptr->media_fmt.format.sampling_rate);
+
+      delay_in_us = MAX(delay_in_us, 0);
    }
    if (delay_in_us != me_ptr->events_config.delay_in_us)
    {
@@ -256,7 +263,7 @@ static capi_err_t capi_latency_raise_bandwidth_event(capi_latency_t *me_ptr)
 
    if (bw_new != me_ptr->events_config.data_bw)
    {
-      capi_result =  capi_cmn_update_bandwidth_event(&me_ptr->cb_info, 0, bw_new);
+      capi_result = capi_cmn_update_bandwidth_event(&me_ptr->cb_info, 0, bw_new);
       if (CAPI_FAILED(capi_result))
       {
          AR_MSG(DBG_ERROR_PRIO, "CAPI latency: Failed to send bandwidth update event with %lu", capi_result);
@@ -284,7 +291,7 @@ capi_err_t capi_latency_raise_process_event(capi_latency_t *me_ptr)
       return capi_result;
    }
 
-   bool_t                     enable = TRUE;
+   bool_t enable = TRUE;
    if (me_ptr->is_media_fmt_received == TRUE)
    {
       enable = me_ptr->lib_config.enable ? (capi_delay_is_enabled(me_ptr) ? TRUE : FALSE) : FALSE;
@@ -329,6 +336,23 @@ capi_err_t capi_latency_raise_event(capi_latency_t *me_ptr, bool_t media_fmt_upd
    return capi_result;
 }
 
+void capi_latency_algo_reset(capi_latency_t *me_ptr)
+{
+   if (me_ptr->is_media_fmt_received == TRUE && FIRST_FRAME != me_ptr->state)
+   {
+      for (uint32_t i = 0; i < me_ptr->media_fmt.format.num_channels; i++)
+      {
+         capi_delay_delayline_reset(&me_ptr->lib_config.mchan_config[i].delay_line);
+      }
+      me_ptr->state = FIRST_FRAME;
+      if (me_ptr->negative_delay_samples > 0)
+      {
+         me_ptr->negative_delay_samples = 0;
+         capi_latency_raise_delay_event(me_ptr);
+      }
+   }
+}
+
 capi_err_t capi_latency_process_set_properties(capi_latency_t *me_ptr, capi_proplist_t *proplist_ptr)
 {
    capi_err_t   capi_result = CAPI_EOK;
@@ -363,13 +387,7 @@ capi_err_t capi_latency_process_set_properties(capi_latency_t *me_ptr, capi_prop
 
          case CAPI_ALGORITHMIC_RESET:
          {
-            if (me_ptr->is_media_fmt_received == TRUE)
-            {
-               for (uint32_t i = 0; i < me_ptr->media_fmt.format.num_channels; i++)
-               {
-                  capi_delay_delayline_reset(&me_ptr->lib_config.mchan_config[i].delay_line);
-               }
-            }
+            capi_latency_algo_reset(me_ptr);
             CAPI_SET_ERROR(capi_result, CAPI_EOK);
             break;
          }
@@ -429,7 +447,7 @@ capi_err_t capi_latency_process_set_properties(capi_latency_t *me_ptr, capi_prop
                          0,
                          me_ptr->media_fmt.format.num_channels * sizeof(capi_latency_per_chan_t));
 
-                  if((VERSION_V1 == me_ptr->cfg_version) && (FALSE == me_ptr->higher_channel_map_present))
+                  if ((VERSION_V1 == me_ptr->cfg_version) && (FALSE == me_ptr->higher_channel_map_present))
                   {
                      if (me_ptr->cache_delay.cache_delay_per_config != NULL)
                      {
@@ -521,6 +539,53 @@ capi_err_t capi_latency_process_get_properties(capi_latency_t *me_ptr, capi_prop
          case CAPI_MAX_METADATA_SIZE:
          case CAPI_NUM_NEEDED_FRAMEWORK_EXTENSIONS:
          {
+            break;
+         }
+         case CAPI_INTERFACE_EXTENSIONS:
+         {
+            if (payload_ptr->max_data_len >= sizeof(capi_interface_extns_list_t))
+            {
+               capi_interface_extns_list_t *intf_ext_list = (capi_interface_extns_list_t *)payload_ptr->data_ptr;
+               if (payload_ptr->max_data_len < (sizeof(capi_interface_extns_list_t) +
+                                                (intf_ext_list->num_extensions * sizeof(capi_interface_extn_desc_t))))
+               {
+                  AR_MSG(DBG_ERROR_PRIO,
+                         "capi_latency: CAPI_INTERFACE_EXTENSIONS invalid param size %lu",
+                         payload_ptr->max_data_len);
+                  CAPI_SET_ERROR(capi_result, CAPI_ENEEDMORE);
+               }
+               else
+               {
+                  capi_interface_extn_desc_t *curr_intf_extn_desc_ptr =
+                     (capi_interface_extn_desc_t *)(payload_ptr->data_ptr + sizeof(capi_interface_extns_list_t));
+
+                  for (uint32_t i = 0; i < intf_ext_list->num_extensions; i++)
+                  {
+                     switch (curr_intf_extn_desc_ptr->id)
+                     {
+                        case INTF_EXTN_STM_TS:
+                        {
+                           curr_intf_extn_desc_ptr->is_supported = TRUE;
+                           break;
+                        }
+                        default:
+                        {
+                           curr_intf_extn_desc_ptr->is_supported = FALSE;
+                           break;
+                        }
+                     }
+                     curr_intf_extn_desc_ptr++;
+                  }
+               }
+            }
+            else
+            {
+               AR_MSG(DBG_ERROR_PRIO,
+                      "CAPI latency: Get property id 0x%lx Bad param size %lu",
+                      (uint32_t)prop_array[i].id,
+                      payload_ptr->max_data_len);
+               CAPI_SET_ERROR(capi_result, CAPI_ENEEDMORE);
+            }
             break;
          }
          case CAPI_OUTPUT_MEDIA_FORMAT_SIZE:
@@ -615,13 +680,13 @@ capi_err_t capi_latency_process_get_properties(capi_latency_t *me_ptr, capi_prop
 void capi_delay_delayline_set(capi_delay_delayline_t *delayline_ptr,
                               uint32_t                delayline_length_in_samples,
                               uint32_t                bits_per_sample,
-                              void *                  buf_ptr)
+                              void                   *buf_ptr)
 {
    switch (bits_per_sample)
    {
       case BITS_PER_SAMPLE_16:
       {
-         delayline_ptr->is16bit       = TRUE;
+         delayline_ptr->is16bit        = TRUE;
          delayline_ptr->dl16.delay_buf = (int16 *)(buf_ptr);
          (void)latency_delayline_set(&delayline_ptr->dl16, delayline_length_in_samples);
          break;
@@ -718,7 +783,8 @@ void capi_delay_calc_delay_in_samples(capi_latency_t *me_ptr)
    {
       if (me_ptr->media_fmt.format.sampling_rate != CAPI_DATA_FORMAT_INVALID_VAL)
       {
-         temp_us = (uint64_t) me_ptr->lib_config.mchan_config[count].delay_in_us * me_ptr->media_fmt.format.sampling_rate;
+         temp_us =
+            (uint64_t)me_ptr->lib_config.mchan_config[count].delay_in_us * me_ptr->media_fmt.format.sampling_rate;
          me_ptr->lib_config.mchan_config[count].delay_in_samples = temp_us / NUM_US_IN_S;
       }
       else
@@ -731,7 +797,7 @@ void capi_delay_calc_delay_in_samples(capi_latency_t *me_ptr)
 capi_err_t capi_delay_create_buffer(capi_latency_t *me_ptr, uint32_t *old_delay_in_us)
 {
    const capi_media_fmt_v2_t *m                    = &me_ptr->media_fmt;
-   uint32_t *                 buf_size_per_channel = NULL;
+   uint32_t                  *buf_size_per_channel = NULL;
    buf_size_per_channel = (uint32_t *)posal_memory_malloc(m->format.num_channels * sizeof(uint32_t),
                                                           (POSAL_HEAP_ID)me_ptr->heap_mem.heap_id);
    if (NULL == buf_size_per_channel)
@@ -824,8 +890,8 @@ capi_err_t capi_delay_create_buffer(capi_latency_t *me_ptr, uint32_t *old_delay_
    }
 }
 
-void capi_delay_delayline_read(void *                  dest,
-                               void *                  src,
+void capi_delay_delayline_read(void                   *dest,
+                               void                   *src,
                                capi_delay_delayline_t *delayline_ptr,
                                uint32_t                delay,
                                uint32_t                samples)

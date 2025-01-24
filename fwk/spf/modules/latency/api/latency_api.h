@@ -31,8 +31,8 @@
    loading purpose only */
 #define MODULE_ID_LATENCY               0x0700101C
 
-/** 
-    @h2xmlm_module       {"MODULE_ID_LATENCY", 
+/**
+    @h2xmlm_module       {"MODULE_ID_LATENCY",
                           MODULE_ID_LATENCY}
     @h2xmlm_displayName  {"Latency or Delay"}
     @h2xmlm_modSearchKeys{delay, Audio, Voice}
@@ -46,8 +46,8 @@
     limited by the period of a single sample. It is recommended that device path be
     muted when the delay is changed (to avoid glitches).\n
 
-    This module supports 
-  - #PARAM_ID_LATENCY_CFG\n 
+    This module supports
+  - #PARAM_ID_LATENCY_CFG\n
   - #PARAM_ID_MODULE_ENABLE \n
 
 *   Supported Input Media Format: \n
@@ -132,7 +132,7 @@ struct param_id_latency_cfg_t
 
    uint32_t global_delay_us;
    /**< @h2xmle_description  {Global Delay in microseconds.\n
-   -#Valid only if cfg_mode is LATENCY_MODE_GLOBAL \n 
+   -#Valid only if cfg_mode is LATENCY_MODE_GLOBAL \n
    -#The amount of delay must be greater than 0.\n  If the value is zero, this module is disabled.\n
    -#The actual resolution of the delay is limited by the period of a single audio sample.\n}
    @h2xmle_range   {0..500000}
@@ -254,7 +254,41 @@ struct param_id_latency_cfg_v2_t
 #include "spf_end_pack.h"
 ;
 typedef struct param_id_latency_cfg_v2_t param_id_latency_cfg_v2_t;
+
+/* ID to set the mode for MODULE_ID_LATENCY. */
+#define PARAM_ID_LATENCY_MODE 0x08001AAF
+
+#define LATENCY_DEFAULT_MODE 0
+
+#define LATENCY_RT_JITTER_CORRECTION_MODE 1
+
+/* Structure for mode parameter. */
+
 /**
+ @h2xmlp_parameter   {"PARAM_ID_LATENCY_MODE", PARAM_ID_LATENCY_MODE}
+ @h2xmlp_description {Set operating mode to the Latency Module.
+ DEFAULT_MODE is the mode where stream goes through the configured delay line.
+ RT_JITTER_CORRECTION_MODE is the mode where RT-RT jitter is identified by comparing the input RT timestamp and current
+ HW-EP deliver timestamp, accordingly configured delay is adjusted to compensate for the delayed input arrival. }
+ @h2xmlp_toolPolicy  {Calibration}  */
+
+#include "spf_begin_pack.h"
+#include "spf_begin_pragma.h"
+/* Payload of the PARAM_ID_LATENCY_MODE parameter used by MODULE_ID_LATENCY.
+ */
+struct param_id_latency_mode_t
+{
+   uint32_t mode;
+   /**<
+    @h2xmle_description  {Select Default or RT Jitter Correction mode.}
+    @h2xmle_rangeList    {"DEFAULT_MODE" = 0,"RT_JITTER_CORRECTION_MODE" = 1}
+    @h2xmle_default      {0}*/
+}
+#include "spf_end_pragma.h"
+#include "spf_end_pack.h"
+;
+typedef struct param_id_latency_mode_t param_id_latency_mode_t;
+
 /**
   @h2xml_Select         {param_id_module_enable_t}
   @h2xmlm_InsertParameter
@@ -265,8 +299,9 @@ typedef struct param_id_latency_cfg_v2_t param_id_latency_cfg_v2_t;
   @h2xml_Select         {delay_param_per_ch_cfg_v2_t}
   @h2xmlm_InsertParameter
 
+ @h2xml_Select         {param_id_latency_mode_t}
+ @h2xmlm_InsertParameter
 */
-
 
 /** @}                   <-- End of the Module -->*/
 #endif

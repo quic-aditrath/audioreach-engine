@@ -8,7 +8,7 @@
  *
  * C source file to implement the Common Audio Post Processor Interface
  * for Tx/Rx Tuning latency block
-*/
+ */
 
 #include "capi_latency_utils.h"
 
@@ -16,15 +16,15 @@ static capi_err_t capi_latency_process(capi_t *_pif, capi_stream_data_t *input[]
 
 static capi_err_t capi_latency_end(capi_t *_pif);
 
-static capi_err_t capi_latency_set_param(capi_t *                _pif,
+static capi_err_t capi_latency_set_param(capi_t                 *_pif,
                                          uint32_t                param_id,
                                          const capi_port_info_t *port_info_ptr,
-                                         capi_buf_t *            params_ptr);
+                                         capi_buf_t             *params_ptr);
 
-static capi_err_t capi_latency_get_param(capi_t *                _pif,
+static capi_err_t capi_latency_get_param(capi_t                 *_pif,
                                          uint32_t                param_id,
                                          const capi_port_info_t *port_info_ptr,
-                                         capi_buf_t *            params_ptr);
+                                         capi_buf_t             *params_ptr);
 
 static capi_err_t capi_latency_set_properties(capi_t *_pif, capi_proplist_t *props_ptr);
 
@@ -86,6 +86,7 @@ capi_err_t capi_latency_init(capi_t *_pif, capi_proplist_t *init_set_properties)
    me_ptr->cache_delay.cache_delay_per_config            = NULL;
    me_ptr->cache_delay_v2.cache_delay_per_config_v2_ptr  = NULL;
    me_ptr->cache_delay_v2.cache_delay_per_config_v2_size = 0;
+   me_ptr->state                                         = FIRST_FRAME;
    capi_cmn_init_media_fmt_v2(&me_ptr->media_fmt);
    capi_latency_init_events(me_ptr);
    capi_latency_init_config(me_ptr);
@@ -140,12 +141,77 @@ static capi_err_t capi_latency_process(capi_t *_pif, capi_stream_data_t *input[]
       POSAL_ASSERT(0);
    }
 
+   if (!me_ptr->is_rt_jitter_correction_enabled || !me_ptr->ts_payload.ts_ptr)
+   {
+      // state tracking not needed for normal latency module.
+      me_ptr->state = STEADY_STATE;
+   }
+   else if (input[0]->flags.end_of_frame || input[0]->flags.erasure)
+   {
+      me_ptr->state = EOF_STATE;
+   }
+   else if (EOF_STATE == me_ptr->state)
+   {
+      // algo reset after discontinuity, state will also move to the FIRST_FRAME
+      capi_latency_algo_reset(me_ptr);
+   }
+
+   if ((EOF_STATE != me_ptr->state && STEADY_STATE != me_ptr->state) && me_ptr->is_rt_jitter_correction_enabled &&
+       me_ptr->ts_payload.ts_ptr && input[0]->flags.is_timestamp_valid && me_ptr->ts_payload.ts_ptr->is_valid)
+   {
+      // real time input data already incurred this delay so this can be compensated from the delayline by setting it as
+      // a negative delay.
+      int64_t rt_rt_jitter_delay = me_ptr->ts_payload.ts_ptr->timestamp - input[0]->timestamp;
+
+      AR_MSG(DBG_HIGH_PRIO, "CAPI latency: incoming RT TS %ld us", (uint32_t)input[0]->timestamp);
+      AR_MSG(DBG_HIGH_PRIO, "CAPI latency: outgoing RT TS %ld us", (uint32_t)me_ptr->ts_payload.ts_ptr->timestamp);
+
+      AR_MSG(DBG_HIGH_PRIO,
+             "CAPI latency: rt rt jitter delay %ld us, state %lu",
+             (int32_t)rt_rt_jitter_delay,
+             me_ptr->state);
+
+      if (rt_rt_jitter_delay > 0)
+      {
+         uint32_t negative_delay_samples =
+            capi_cmn_us_to_samples(rt_rt_jitter_delay, me_ptr->media_fmt.format.sampling_rate);
+
+         uint32_t delay_variation = negative_delay_samples > me_ptr->negative_delay_samples
+                                       ? negative_delay_samples - me_ptr->negative_delay_samples
+                                       : me_ptr->negative_delay_samples - negative_delay_samples;
+
+         //After signal miss handling or US/DS STOP-START, interrupt timing will change and also
+         //RT Jitter Delay will change therefore realignment is needed.
+         //RT Jitter delay in subsequent frames may also change from the FIRST-FRAME because of stuck ICB.
+         //During realignment if delay varies in the subsequent frames then state again moves to the FIRST-FRAME.
+         //Only when delay remains constant for the 10 subsequent frames, we go into the STEADY_STATE
+         if (delay_variation > 1)
+         {
+            capi_latency_algo_reset(me_ptr);
+            me_ptr->negative_delay_samples = negative_delay_samples;
+
+            AR_MSG(DBG_HIGH_PRIO,
+                   "CAPI latency: rt rt jitter delay set in %lu samples",
+                   me_ptr->negative_delay_samples);
+
+            capi_latency_raise_delay_event(me_ptr);
+         }
+      }
+      // will continue tracking RT-Jitter for couple of frames.
+      // usually there will be multiple discontinuities back to back during upstream signal miss.
+      me_ptr->state++;
+   }
+
    for (uint32_t i = 0; i < me_ptr->media_fmt.format.num_channels; i++)
    {
+      uint32_t delay_samples = me_ptr->lib_config.mchan_config[i].delay_in_samples > me_ptr->negative_delay_samples
+                                  ? me_ptr->lib_config.mchan_config[i].delay_in_samples - me_ptr->negative_delay_samples
+                                  : 0;
+
       capi_delay_delayline_read(output[0]->buf_ptr[i].data_ptr,
                                 input[0]->buf_ptr[i].data_ptr,
                                 &me_ptr->lib_config.mchan_config[i].delay_line,
-                                me_ptr->lib_config.mchan_config[i].delay_in_samples,
+                                delay_samples,
                                 samples_to_produce);
 
       capi_delay_delayline_update(&me_ptr->lib_config.mchan_config[i].delay_line,
@@ -169,7 +235,11 @@ static capi_err_t capi_latency_process(capi_t *_pif, capi_stream_data_t *input[]
    // out_size);
 
    output[0]->flags = input[0]->flags;
-   if (input[0]->flags.is_timestamp_valid)
+   if (me_ptr->is_rt_jitter_correction_enabled)
+   { // no need for output timestamp
+      output[0]->flags.is_timestamp_valid = FALSE;
+   }
+   else if (input[0]->flags.is_timestamp_valid)
    {
       output[0]->timestamp = input[0]->timestamp - me_ptr->events_config.delay_in_us;
    }
@@ -201,9 +271,9 @@ static capi_err_t capi_latency_end(capi_t *_pif)
       me_ptr->cache_delay.cache_delay_per_config = NULL;
       me_ptr->cache_delay.num_config             = 0;
    }
-   if(NULL != me_ptr->cache_delay_v2.cache_delay_per_config_v2_ptr)
+   if (NULL != me_ptr->cache_delay_v2.cache_delay_per_config_v2_ptr)
    {
-	  posal_memory_free(me_ptr->cache_delay_v2.cache_delay_per_config_v2_ptr);
+      posal_memory_free(me_ptr->cache_delay_v2.cache_delay_per_config_v2_ptr);
       me_ptr->cache_delay_v2.cache_delay_per_config_v2_ptr  = NULL;
       me_ptr->cache_delay_v2.cache_delay_per_config_v2_size = 0;
    }
@@ -221,10 +291,10 @@ static capi_err_t capi_latency_end(capi_t *_pif)
  * multiple parameters. In the event of a failure, the appropriate error
  * code is returned.
  * -------------------------------------------------------------------------*/
-static capi_err_t capi_latency_set_param(capi_t *                _pif,
+static capi_err_t capi_latency_set_param(capi_t                 *_pif,
                                          uint32_t                param_id,
                                          const capi_port_info_t *port_info_ptr,
-                                         capi_buf_t *            params_ptr)
+                                         capi_buf_t             *params_ptr)
 {
    capi_err_t capi_result = CAPI_EOK;
    if (NULL == _pif || NULL == params_ptr)
@@ -236,15 +306,19 @@ static capi_err_t capi_latency_set_param(capi_t *                _pif,
    switch (param_id)
    {
       case PARAM_ID_MODULE_ENABLE:
-	     break;
+      case INTF_EXTN_PARAM_ID_STM_TS:
+      case PARAM_ID_LATENCY_MODE:
+         break;
       case PARAM_ID_LATENCY_CFG:
       {
-    	 if((VERSION_V2 == me_ptr->cfg_version) || (TRUE == me_ptr->higher_channel_map_present))
+         if ((VERSION_V2 == me_ptr->cfg_version) || (TRUE == me_ptr->higher_channel_map_present))
          {
-            AR_MSG(DBG_ERROR_PRIO, "CAPI latency : SetParam 0x%x failed as V2 config is already configured for the module. "
-                   "Cannot perform both V1 and V2 operations simultaneously for the module OR higher than 63 channel map present in IMF (0/1): %lu",
-				   (int)param_id,
-				   me_ptr->higher_channel_map_present);
+            AR_MSG(DBG_ERROR_PRIO,
+                   "CAPI latency : SetParam 0x%x failed as V2 config is already configured for the module. "
+                   "Cannot perform both V1 and V2 operations simultaneously for the module OR higher than 63 channel "
+                   "map present in IMF (0/1): %lu",
+                   (int)param_id,
+                   me_ptr->higher_channel_map_present);
             return CAPI_EBADPARAM;
          }
          break;
@@ -252,10 +326,12 @@ static capi_err_t capi_latency_set_param(capi_t *                _pif,
       break;
       case PARAM_ID_LATENCY_CFG_V2:
       {
-         if(VERSION_V1 == me_ptr->cfg_version)
+         if (VERSION_V1 == me_ptr->cfg_version)
          {
-            AR_MSG(DBG_ERROR_PRIO, "CAPI latency : SetParam 0x%x failed as V1 config is already configured for the module. "
-                   "Cannot perform both V1 and V2 operations simultaneously for the module",(int)param_id);
+            AR_MSG(DBG_ERROR_PRIO,
+                   "CAPI latency : SetParam 0x%x failed as V1 config is already configured for the module. "
+                   "Cannot perform both V1 and V2 operations simultaneously for the module",
+                   (int)param_id);
             return CAPI_EBADPARAM;
          }
          break;
@@ -422,7 +498,7 @@ static capi_err_t capi_latency_set_param(capi_t *                _pif,
          }
 
          capi_delay_delayline_t *old_delay_lines = NULL;
-         void *                  old_mem_ptr     = NULL;
+         void                   *old_mem_ptr     = NULL;
 
          uint32_t *old_delay_in_us =
             (uint32_t *)posal_memory_malloc(me_ptr->media_fmt.format.num_channels * sizeof(uint32_t),
@@ -505,6 +581,45 @@ static capi_err_t capi_latency_set_param(capi_t *                _pif,
          }
          break;
       }
+      case PARAM_ID_LATENCY_MODE:
+      {
+         if (params_ptr->actual_data_len < sizeof(param_id_latency_mode_t))
+         {
+
+            AR_MSG(DBG_ERROR_PRIO, "CAPI Latency mode, Bad param size %lu", params_ptr->actual_data_len);
+            return CAPI_ENEEDMORE;
+         }
+         param_id_latency_mode_t *payload_ptr = (param_id_latency_mode_t *)params_ptr->data_ptr;
+         bool_t                   is_rt_jitter_correction_enabled =
+            (payload_ptr->mode == LATENCY_RT_JITTER_CORRECTION_MODE) ? TRUE : FALSE;
+
+         if (is_rt_jitter_correction_enabled != me_ptr->is_rt_jitter_correction_enabled)
+         {
+            me_ptr->is_rt_jitter_correction_enabled = is_rt_jitter_correction_enabled;
+
+            AR_MSG(DBG_HIGH_PRIO, "CAPI latency: is rt jitter correction mode enabled? %d", is_rt_jitter_correction_enabled);
+            // Algo reset to handle change in mode
+            capi_latency_algo_reset(me_ptr);
+         }
+
+         break;
+      }
+      case INTF_EXTN_PARAM_ID_STM_TS:
+      {
+         if (params_ptr->actual_data_len < sizeof(intf_extn_param_id_stm_ts_t))
+         {
+
+            AR_MSG(DBG_ERROR_PRIO, "CAPI Latency STM TS, Bad param size %lu", params_ptr->actual_data_len);
+            return CAPI_ENEEDMORE;
+         }
+         intf_extn_param_id_stm_ts_t *payload_ptr = (intf_extn_param_id_stm_ts_t *)params_ptr->data_ptr;
+         me_ptr->ts_payload                       = *payload_ptr;
+
+         // Algo reset to handle signal miss in the container.
+         capi_latency_algo_reset(me_ptr);
+         break;
+      }
+
       default:
       {
          AR_MSG(DBG_ERROR_PRIO, "CAPI latency Set, unsupported param ID 0x%x", (int)param_id);
@@ -525,10 +640,10 @@ static capi_err_t capi_latency_set_param(capi_t *                _pif,
  * multiple parameters. In the event of a failure, the appropriate error
  * code is returned.
  * -------------------------------------------------------------------------*/
-static capi_err_t capi_latency_get_param(capi_t *                _pif,
+static capi_err_t capi_latency_get_param(capi_t                 *_pif,
                                          uint32_t                param_id,
                                          const capi_port_info_t *port_info_ptr,
-                                         capi_buf_t *            params_ptr)
+                                         capi_buf_t             *params_ptr)
 {
    capi_err_t capi_result = CAPI_EOK;
    if (NULL == _pif || NULL == params_ptr)
@@ -542,15 +657,18 @@ static capi_err_t capi_latency_get_param(capi_t *                _pif,
    switch (param_id)
    {
       case PARAM_ID_MODULE_ENABLE:
-	     break;
+      case PARAM_ID_LATENCY_MODE:
+         break;
       case PARAM_ID_LATENCY_CFG:
       {
-    	 if((VERSION_V2 == me_ptr->cfg_version) || (TRUE == me_ptr->higher_channel_map_present))
+         if ((VERSION_V2 == me_ptr->cfg_version) || (TRUE == me_ptr->higher_channel_map_present))
          {
-            AR_MSG(DBG_ERROR_PRIO, "CAPI latency : GetParam 0x%x failed as V2 config is already configured for the module. "
-                   "Cannot perform both V1 and V2 operations simultaneously for the module OR higher than 63 channel map present in IMF (0/1): %lu",
-				   (int)param_id,
-				   me_ptr->higher_channel_map_present);
+            AR_MSG(DBG_ERROR_PRIO,
+                   "CAPI latency : GetParam 0x%x failed as V2 config is already configured for the module. "
+                   "Cannot perform both V1 and V2 operations simultaneously for the module OR higher than 63 channel "
+                   "map present in IMF (0/1): %lu",
+                   (int)param_id,
+                   me_ptr->higher_channel_map_present);
             return CAPI_EUNSUPPORTED;
          }
          break;
@@ -558,10 +676,12 @@ static capi_err_t capi_latency_get_param(capi_t *                _pif,
       break;
       case PARAM_ID_LATENCY_CFG_V2:
       {
-         if(VERSION_V1 == me_ptr->cfg_version)
+         if (VERSION_V1 == me_ptr->cfg_version)
          {
-            AR_MSG(DBG_ERROR_PRIO, "CAPI latency : GetParam 0x%x failed as V1 config is already configured for the module. "
-                   "Cannot perform both V1 and V2 operations simultaneously for the module",(int)param_id);
+            AR_MSG(DBG_ERROR_PRIO,
+                   "CAPI latency : GetParam 0x%x failed as V1 config is already configured for the module. "
+                   "Cannot perform both V1 and V2 operations simultaneously for the module",
+                   (int)param_id);
             return CAPI_EUNSUPPORTED;
          }
          break;
@@ -586,6 +706,22 @@ static capi_err_t capi_latency_get_param(capi_t *                _pif,
          else
          {
             AR_MSG(DBG_ERROR_PRIO, "CAPI PCM Delay Get Enable Param, Bad payload size %lu", params_ptr->max_data_len);
+            CAPI_SET_ERROR(capi_result, CAPI_ENEEDMORE);
+         }
+         break;
+      }
+      case PARAM_ID_LATENCY_MODE:
+      {
+         if (params_ptr->max_data_len >= sizeof(param_id_latency_mode_t))
+         {
+            param_id_latency_mode_t *rt_jitter_correction_mode_ptr = (param_id_latency_mode_t *)(params_ptr->data_ptr);
+            rt_jitter_correction_mode_ptr->mode =
+               me_ptr->is_rt_jitter_correction_enabled ? LATENCY_RT_JITTER_CORRECTION_MODE : LATENCY_DEFAULT_MODE;
+            params_ptr->actual_data_len = sizeof(param_id_latency_mode_t);
+         }
+         else
+         {
+            AR_MSG(DBG_ERROR_PRIO, "CAPI PCM Delay Get mode Param, Bad payload size %lu", params_ptr->max_data_len);
             CAPI_SET_ERROR(capi_result, CAPI_ENEEDMORE);
          }
          break;
