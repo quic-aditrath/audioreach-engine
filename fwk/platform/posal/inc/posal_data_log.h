@@ -18,16 +18,16 @@
 extern "C" {
 #endif //__cplusplus
 
-#define SPF_LOG_PREFIX  "SPF_log_parser: "
+#define SPF_LOG_PREFIX "SPF_log_parser: "
 /*==========================================================================
   Define constants
 ========================================================================== */
 /** Log data formats. */
 typedef enum posal_data_log_format_t
 {
-   LOG_DATA_FMT_PCM = 0,  /**< PCM data format. */
+   LOG_DATA_FMT_PCM = 0,   /**< PCM data format. */
    LOG_DATA_FMT_BITSTREAM, /**< Bitstream data format. */
-   LOG_DATA_FMT_RAW
+   LOG_DATA_FMT_RAW        /**< Raw data format. */
 } posal_data_log_format_t;
 
 typedef enum posal_data_log_mode_t
@@ -55,6 +55,12 @@ typedef struct posal_data_log_pcm_info_t
    uint8_t interleaved;
    /**< Specifies whether the data is interleaved. */
 
+   uint8_t q_factor;
+   /**< q factor information for log packet. */
+
+   uint8_t data_format;
+   /**< data_format information for log packet. */
+
    uint16_t *channel_mapping;
    /**< Array of channel mappings. */
 } posal_data_log_pcm_info_t;
@@ -63,7 +69,7 @@ typedef struct posal_data_log_pcm_info_t
 typedef struct posal_data_log_fmt_info_t
 {
    posal_data_log_pcm_info_t pcm_data_fmt; /**< Format of the PCM data. */
-   uint32_t        media_fmt_id; /**< Format of the bitstream data. */
+   uint32_t                  media_fmt_id; /**< Format of the bitstream data. */
 } posal_data_log_fmt_info_t;
 
 /** Log header and data payload information for the logging utility user. */
@@ -150,8 +156,8 @@ void *posal_data_log_alloc(uint32_t buf_Size, uint32_t log_code, posal_data_log_
   @return
   0 -- Success
   @par
-  Nonzero -- Failure 
-  
+  Nonzero -- Failure
+
   @dependencies
   None
  */
@@ -170,8 +176,8 @@ ar_result_t posal_data_log_commit(void *log_pkt_payload_ptr, posal_data_log_info
   @return
   0 -- Success
   @par
-  Nonzero -- Failure 
-  
+  Nonzero -- Failure
+
   @dependencies
   None
 */
@@ -184,7 +190,7 @@ ar_result_t posal_data_log_alloc_commit(posal_data_log_info_t *log_info_ptr);
 
   @return
   None.
-  
+
   @dependencies
   None
  */

@@ -175,8 +175,8 @@ capi_err_t check_alloc_log_buf(capi_data_logging_t *me_ptr)
          {
             uint32_t start_ch_index = ch_index_grp_no * CAPI_CMN_CHANNELS_PER_MASK;
             uint32_t end_ch_index   = (ch_index_grp_no + 1) * CAPI_CMN_CHANNELS_PER_MASK;
-            end_ch_index   = MIN(end_ch_index, num_channels);
-            for (uint32_t i = start_ch_index; i < end_ch_index ; i++)
+            end_ch_index            = MIN(end_ch_index, num_channels);
+            for (uint32_t i = start_ch_index; i < end_ch_index; i++)
             {
                uint32_t ch_mask = (1 << CAPI_CMN_MOD_WITH_32(i));
                if (ch_mask & enabled_ch_mask_ptr[ch_index_grp_no])
@@ -268,7 +268,7 @@ void data_logging_pack_data(capi_data_logging_t *me_ptr, int8_t *log_buf_ptr)
    if ((check_interleaving(&me_ptr->media_format, CAPI_DEINTERLEAVED_PACKED) ||
         check_interleaving(&me_ptr->media_format, CAPI_DEINTERLEAVED_UNPACKED) ||
         check_interleaving(&me_ptr->media_format, CAPI_DEINTERLEAVED_UNPACKED_V2)) &&
-        (num_ch > 1))
+       (num_ch > 1))
    {
       if (me_ptr->nlpi_me_ptr->per_channel_log_buf_offset < me_ptr->nlpi_me_ptr->per_ch_buf_part_size)
       {
@@ -358,6 +358,8 @@ void data_logging(capi_data_logging_t *me_ptr, int8_t *log_buf_ptr, bool_t is_fu
       {
          log_info_var.data_info.media_fmt_id = me_ptr->nlpi_me_ptr->bitstream_format;
          posal_data_log_pcm_info_t *pcm_data = &(log_info_var.data_info.pcm_data_fmt);
+         pcm_data->q_factor                  = me_ptr->media_format.format.q_factor;
+         pcm_data->data_format               = me_ptr->media_format.header.format_header.data_format;
          pcm_data->num_channels              = me_ptr->nlpi_me_ptr->number_of_channels_to_log;
          pcm_data->interleaved               = me_ptr->media_format.format.data_interleaving;
          pcm_data->channel_mapping           = (uint16_t *)(me_ptr->nlpi_me_ptr->log_channel_type);
@@ -377,6 +379,8 @@ void data_logging(capi_data_logging_t *me_ptr, int8_t *log_buf_ptr, bool_t is_fu
       {
          log_info_var.data_info.media_fmt_id = me_ptr->nlpi_me_ptr->bitstream_format;
          posal_data_log_pcm_info_t *pcm_data = &(log_info_var.data_info.pcm_data_fmt);
+         pcm_data->q_factor                  = me_ptr->media_format.format.q_factor;
+         pcm_data->data_format               = me_ptr->media_format.header.format_header.data_format;
          pcm_data->num_channels              = me_ptr->nlpi_me_ptr->number_of_channels_to_log;
          pcm_data->sampling_rate             = me_ptr->media_format.format.sampling_rate;
          pcm_data->bits_per_sample           = me_ptr->media_format.format.bits_per_sample;
@@ -1252,6 +1256,7 @@ capi_err_t capi_data_logging_set_properties(capi_t *capi_ptr, capi_proplist_t *p
                      return capi_result;
                   }
                   me_ptr->nlpi_me_ptr->number_of_channels_to_log = get_number_of_channels_to_log(me_ptr);
+
                   if (!me_ptr->nlpi_me_ptr->is_media_fmt_extn_received)
                   {
                      me_ptr->nlpi_me_ptr->extn_params.bit_width =
@@ -1497,6 +1502,7 @@ capi_err_t capi_data_logging_set_param(capi_t *                capi_ptr,
 
          break;
       }
+
       case PARAM_ID_DATA_LOGGING_CONFIG:
       {
          if (params_ptr->actual_data_len < sizeof(data_logging_config_t))
@@ -1744,6 +1750,7 @@ capi_err_t capi_data_logging_get_param(capi_t *                capi_ptr,
                                                params_ptr->max_data_len,
                                                &me_ptr->nlpi_me_ptr->selective_ch_logging_cfg,
                                                sizeof(me_ptr->nlpi_me_ptr->selective_ch_logging_cfg));
+
          break;
       }
 
@@ -1940,8 +1947,8 @@ static capi_err_t capi_data_logging_log_data(capi_data_logging_t *me_ptr,
       return CAPI_EOK;
    }
 
-   if ( check_interleaving(&me_ptr->media_format, CAPI_DEINTERLEAVED_UNPACKED_V2) ||
-        check_interleaving(&me_ptr->media_format, CAPI_DEINTERLEAVED_UNPACKED))
+   if (check_interleaving(&me_ptr->media_format, CAPI_DEINTERLEAVED_UNPACKED_V2) ||
+       check_interleaving(&me_ptr->media_format, CAPI_DEINTERLEAVED_UNPACKED))
    {
       do
       {
@@ -2092,6 +2099,7 @@ static capi_err_t capi_data_logging_log_data(capi_data_logging_t *me_ptr,
                // skip the channel which is not enabled for logging.
                continue;
             }
+
             if (16 == me_ptr->media_format.format.bits_per_sample)
             {
                int16_t *src_buf_ptr = (int16_t *)(in_buf_ptr + (2 * i));
@@ -2203,7 +2211,7 @@ static capi_err_t capi_data_logging_log_data(capi_data_logging_t *me_ptr,
          for (uint32_t i = 0; i < me_ptr->media_format.format.num_channels; i++)
          {
             uint32_t curr_ch_mask    = (1 << CAPI_CMN_MOD_WITH_32(i));
-			uint32_t ch_index_grp_no = CAPI_CMN_DIVIDE_WITH_32(i);
+            uint32_t ch_index_grp_no = CAPI_CMN_DIVIDE_WITH_32(i);
             if (0 == (enabled_ch_mask_ptr[ch_index_grp_no] & curr_ch_mask))
             {
                // skip the channel which is not enabled for logging.
@@ -2271,6 +2279,7 @@ capi_err_t capi_data_logging_process_nlpi(capi_data_logging_t *me_ptr,
                                           capi_stream_data_t * output[])
 {
    capi_err_t result = CAPI_EOK;
+
 #ifdef LOG_SAFE_MODE
    if ((NULL == capi_ptr) || (NULL == input) || (NULL == input[0]) || (NULL == input[0]->buf_ptr))
    {
