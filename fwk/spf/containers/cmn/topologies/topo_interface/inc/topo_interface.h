@@ -146,6 +146,12 @@ typedef struct topo_cu_vtable_t
    ar_result_t (*get_port_threshold)(void * port_ptr);
 
    ar_result_t (*check_update_started_sorted_module_list)(void *vtopo_ptr, bool_t b_force_update);
+
+   ar_result_t (*set_global_sh_mem_msg)(void     *vtopo_ptr,
+                                        uint32_t  miid,
+                                        uint32_t  shmem_id,
+                                        void     *virt_addr_ptr,
+                                        uint32_t  payload_size);
 } topo_cu_vtable_t;
 
 typedef struct topo_cu_island_vtable_t

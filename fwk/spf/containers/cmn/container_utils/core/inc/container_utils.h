@@ -25,6 +25,7 @@
 #include "gpr_packet.h"
 #include "gpr_api_inline.h"
 #include "ar_guids.h"
+#include "ar_spf_cmd_api.h"
 #include "spf_svc_calib.h"
 #include "graph_utils.h"
 #include "topo_interface.h"
@@ -40,6 +41,7 @@
 #include "cu_prof.h"
 #include "cu_exit_island.h"
 #include "cu_duty_cycle.h"
+#include "cu_global_shmem_msg.h"
 #include "posal_internal_inline.h"
 #ifdef CONTAINER_ASYNC_CMD_HANDLING
 #include "cu_async_cmd_handle.h"

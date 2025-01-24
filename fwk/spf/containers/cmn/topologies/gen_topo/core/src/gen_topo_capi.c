@@ -364,6 +364,11 @@ ar_result_t gen_topo_capi_get_required_fmwk_extensions(void *           topo_ctx
          bool_t extn_supported = TRUE;
          switch (needed_fmwk_xtn_ids_arr[i].id)
          {
+            case FWK_EXTN_GLOBAL_SHMEM_MSG:
+            {
+               module_ptr->flags.need_global_shmem_extn = TRUE;
+               break;
+            }
             case FWK_EXTN_SYNC:
             {
                module_ptr->flags.need_sync_extn = TRUE;

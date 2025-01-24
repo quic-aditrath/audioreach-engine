@@ -58,6 +58,7 @@
 #include "capi_fwk_extns_thresh_cfg.h"
 #include "capi_fwk_extns_island.h"
 #include "capi_fwk_extns_async_signal_trigger.h"
+#include "capi_fwk_extns_global_shmem_msg.h"
 
 #include "capi_mm_error_code_converter.h"
 

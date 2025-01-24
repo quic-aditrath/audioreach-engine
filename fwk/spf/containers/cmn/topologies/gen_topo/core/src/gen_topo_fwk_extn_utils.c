@@ -42,6 +42,11 @@ ar_result_t gen_topo_fmwk_extn_handle_at_init(gen_topo_t *topo_ptr, gen_topo_mod
                                         sizeof(handler));
    }
 
+   if (module_ptr->flags.need_global_shmem_extn)
+   {
+      gen_topo_init_global_sh_mem_extn(topo_ptr, module_ptr);
+   }
+
    // other framework extensions are handled in create_module callback to fwk
    // supressing unsupported error because SYNC modules trigger policy is supported under fwk-extenstion code.
    return (result & (~ignore_result));

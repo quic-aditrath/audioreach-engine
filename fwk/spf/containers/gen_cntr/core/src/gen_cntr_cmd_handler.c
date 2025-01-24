@@ -540,6 +540,11 @@ ar_result_t gen_cntr_gpr_cmd(cu_base_t *base_ptr)
 
    switch (packet_ptr->opcode)
    {
+      case AR_SPF_MSG_GLOBAL_SH_MEM:
+      {
+         cu_handle_global_shmem_msg(base_ptr, packet_ptr);
+         break;
+      }
       case APM_CMD_SET_CFG:
       case APM_CMD_GET_CFG:
       {

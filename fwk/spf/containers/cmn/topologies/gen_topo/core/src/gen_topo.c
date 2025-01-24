@@ -50,6 +50,7 @@ static const topo_cu_vtable_t gen_topo_cu_vtable =
    .get_port_threshold                  = gen_topo_get_port_threshold,
    .rtm_dump_data_port_media_fmt        = gen_topo_rtm_dump_data_port_mf_for_all_ports,
    .check_update_started_sorted_module_list   = gen_topo_check_update_started_sorted_module_list,
+   .set_global_sh_mem_msg                     = gen_topo_set_global_sh_mem_msg,
 };
 // clang-format on
 

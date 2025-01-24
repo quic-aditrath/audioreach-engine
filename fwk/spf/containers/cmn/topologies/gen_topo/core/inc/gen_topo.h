@@ -44,6 +44,7 @@
 
 #include "capi_cmn.h"
 
+#include "gen_topo_global_shmem_msg.h"
 #include "gen_topo_path_delay.h"
 #include "gen_topo_pcm_fwk_ext.h"
 #include "gen_topo_data_port_ops_intf_ext.h"
@@ -741,6 +742,7 @@ typedef union gen_topo_module_flags_t
       uint64_t need_island_extn         : 1;    /**< FWK_EXTN_ISLAND */
       uint64_t need_sync_extn           : 1;    /**< FWK_EXTN_SYNC */
       uint64_t need_async_st_extn       : 1;    /**< FWK_EXTN_ASYNC_SIGNAL_TRIGGER */
+      uint64_t need_global_shmem_extn   : 1;    /**< FWK_EXTN_GLOBAL_SHMEM_MSG */
 
       /** Flags which record the interface extensions supported by the module
        * Other extensions such as INTF_EXTN_IMCL, INTF_EXTN_PATH_DELAY are not stored */

@@ -1,11 +1,11 @@
 /**
  * \file spl_topo_capi.c
- *  
+ *
  * \brief
- *  
+ *
  *     Implementation of the capi v2 helpers.
- *  
- * 
+ *
+ *
  * \copyright
  *  Copyright (c) Qualcomm Innovation Center, Inc. All Rights Reserved.
  *  SPDX-License-Identifier: BSD-3-Clause
@@ -26,17 +26,17 @@ Function Definitions
  * store any necessary data, as well as to error out if anything is not handled
  * by the container.
  */
-ar_result_t spl_topo_capi_get_required_fmwk_extensions(void *           topo_ctx_ptr,
-                                                       void *           module_ctx_ptr,
-                                                       void *           amdb_handle,
+ar_result_t spl_topo_capi_get_required_fmwk_extensions(void            *topo_ctx_ptr,
+                                                       void            *module_ctx_ptr,
+                                                       void            *amdb_handle,
                                                        capi_proplist_t *init_proplist_ptr)
 {
    ar_result_t result = AR_EOK;
    INIT_EXCEPTION_HANDLING
    capi_err_t                     err_code                = CAPI_EOK;
    capi_framework_extension_id_t *needed_fmwk_xtn_ids_arr = NULL;
-   spl_topo_t *                   topo_ptr                = (spl_topo_t *)topo_ctx_ptr;
-   spl_topo_module_t *            module_ptr              = (spl_topo_module_t *)module_ctx_ptr;
+   spl_topo_t                    *topo_ptr                = (spl_topo_t *)topo_ctx_ptr;
+   spl_topo_module_t             *module_ptr              = (spl_topo_module_t *)module_ctx_ptr;
 
    uint32_t module_instance_id = module_ptr->t_base.gu.module_instance_id;
    uint32_t log_id             = topo_ptr->t_base.gu.log_id;
@@ -60,7 +60,7 @@ ar_result_t spl_topo_capi_get_required_fmwk_extensions(void *           topo_ctx
    props_list.props_num = i;
 
    err_code = amdb_capi_get_static_properties_f((void *)amdb_handle, init_proplist_ptr, &props_list);
-// ignore any error since params are options.
+   // ignore any error since params are options.
 
 #if SPL_TOPO_DEBUG_LEVEL >= SPL_TOPO_DEBUG_LEVEL_4
    TOPO_MSG(topo_ptr->t_base.gu.log_id,
@@ -100,6 +100,11 @@ ar_result_t spl_topo_capi_get_required_fmwk_extensions(void *           topo_ctx
          bool_t extn_supported = TRUE;
          switch (needed_fmwk_xtn_ids_arr[i].id)
          {
+            case FWK_EXTN_GLOBAL_SHMEM_MSG:
+            {
+               module_ptr->t_base.flags.need_global_shmem_extn = TRUE;
+               break;
+            }
             case FWK_EXTN_SOFT_TIMER:
             {
                module_ptr->t_base.flags.need_soft_timer_extn = TRUE;
