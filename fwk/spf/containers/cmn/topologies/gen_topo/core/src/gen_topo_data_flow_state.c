@@ -158,3 +158,36 @@ void gen_topo_handle_fwk_ext_at_dfs_util_(gen_topo_t *topo_ptr, gu_cmn_port_t *c
       gen_topo_fwk_extn_sync_will_start(topo_ptr, module_ptr);
    }
 }
+
+/**
+ * currently not called when modules raise MF. to avoid those changes, using only 2 states: flowing, at-gap.
+ * MF or data buf sets to flowing state, whichever is first
+ */
+ar_result_t gen_topo_handle_data_flow_preflow(gen_topo_t *            topo_ptr,
+                                              gen_topo_common_port_t *cmn_port_ptr,
+                                              gu_cmn_port_t *         gu_cmn_port_ptr)
+{
+   ar_result_t            result  = AR_EOK;
+   topo_data_flow_state_t ref_val = TOPO_DATA_FLOW_STATE_FLOWING; // TOPO_DATA_FLOW_STATE_PREFLOW
+   if (ref_val == cmn_port_ptr->data_flow_state)
+   {
+      return result;
+   }
+
+   cmn_port_ptr->data_flow_state = ref_val;
+
+   if(topo_ptr->gen_topo_vtable_ptr->update_module_info)
+   {
+       topo_ptr->gen_topo_vtable_ptr->update_module_info(gu_cmn_port_ptr->module_ptr);
+   }
+
+#ifdef DATA_FLOW_STATE_DEBUG
+   gen_topo_module_t *module_ptr = (gen_topo_module_t *)gu_cmn_port_ptr->module_ptr;
+   TOPO_MSG_ISLAND(topo_ptr->gu.log_id,
+                  DBG_LOW_PRIO,
+                  SPF_LOG_PREFIX "data_flow_state: Module 0x%lX, port 0x%lx, state data-flowing",
+                  module_ptr->gu.module_instance_id,
+                  gu_cmn_port_ptr->id);
+#endif
+   return result;
+}

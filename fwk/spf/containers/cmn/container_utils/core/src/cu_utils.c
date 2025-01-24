@@ -19,6 +19,11 @@ INCLUDE FILES FOR MODULE
    Global Defines
 ==============================================================================*/
 
+ar_result_t cu_raise_frame_done_event(cu_base_t *base_ptr, uint32_t log_id)
+{
+   return cu_raise_container_events_to_clients(base_ptr, CNTR_EVENT_ID_CONTAINER_FRAME_DELIVERY_DONE, (int8_t *)NULL, 0);
+}
+
 ar_result_t cu_handle_event_to_dsp_service_topo_cb(cu_base_t *        cu_ptr,
                                                    gu_module_t *      module_ptr,
                                                    capi_event_info_t *event_info_ptr)
@@ -228,11 +233,11 @@ bool_t cu_check_all_subgraphs_duty_cycling_allowed(cu_base_t *cu_ptr)
    {
       if (sg_list_ptr->sg_ptr->duty_cycling_mode_enabled)
       {
-    	  cu_ptr->pm_info.flags.cntr_duty_cycling_allowed_subgraphs = TRUE;
+          cu_ptr->pm_info.flags.cntr_duty_cycling_allowed_subgraphs = TRUE;
       }
       else
       {
-    	  cu_ptr->pm_info.flags.cntr_duty_cycling_allowed_subgraphs = FALSE;
+          cu_ptr->pm_info.flags.cntr_duty_cycling_allowed_subgraphs = FALSE;
          break;
       }
    }
@@ -240,7 +245,7 @@ bool_t cu_check_all_subgraphs_duty_cycling_allowed(cu_base_t *cu_ptr)
    CU_MSG_ISLAND(cu_ptr->gu_ptr->log_id,
                 DBG_HIGH_PRIO,
                 "cntr_duty_cycling_enabled_subgraphs to %d (0-False, 1-True)",
-				cu_ptr->pm_info.flags.cntr_duty_cycling_allowed_subgraphs);
+                cu_ptr->pm_info.flags.cntr_duty_cycling_allowed_subgraphs);
 
    return cu_ptr->pm_info.flags.cntr_duty_cycling_allowed_subgraphs;
 }

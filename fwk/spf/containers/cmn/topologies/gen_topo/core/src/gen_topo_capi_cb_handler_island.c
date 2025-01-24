@@ -90,6 +90,7 @@ static capi_err_t gen_topo_capi_handle_event_within_island(void *             co
 
    switch (id)
    {
+#ifdef USES_QSH_AUDIO_IN_ISLAND
       case CAPI_EVENT_DATA_TO_DSP_CLIENT_V2:
       {
          if (event_info_ptr->payload.actual_data_len < sizeof(capi_event_data_to_dsp_client_v2_t))
@@ -115,6 +116,7 @@ static capi_err_t gen_topo_capi_handle_event_within_island(void *             co
             topo_ptr->topo_to_cntr_vtable_ptr->raise_data_to_dsp_client_v2(module_ptr, event_info_ptr));
          break;
       }
+#endif
       case CAPI_EVENT_GET_DATA_FROM_DSP_SERVICE:
       {
          if (payload->actual_data_len < sizeof(capi_event_get_data_from_dsp_service_t))
@@ -160,7 +162,7 @@ static capi_err_t gen_topo_capi_handle_event_within_island(void *             co
       {
          if (payload->actual_data_len < sizeof(capi_event_data_to_dsp_service_t))
          {
-        	 TOPO_MSG_ISLAND(topo_ptr->gu.log_id,
+             TOPO_MSG_ISLAND(topo_ptr->gu.log_id,
                      DBG_ERROR_PRIO,
                      "Module 0x%lX: Error in callback function. The actual size %lu is less than the required size "
                      "%lu for id %lu.",
@@ -191,11 +193,11 @@ static capi_err_t gen_topo_capi_handle_event_within_island(void *             co
             default:
             {
 #ifdef VERBOSE_DEBUGGING
-            	TOPO_MSG_ISLAND(topo_ptr->gu.log_id,
-      		      				  DBG_HIGH_PRIO,"Event ID 0x%X cannot be handled in island",dsp_event_ptr->param_id);
+                TOPO_MSG_ISLAND(topo_ptr->gu.log_id,
+                                  DBG_HIGH_PRIO,"Event ID 0x%X cannot be handled in island",dsp_event_ptr->param_id);
 #endif
-      	         *handled_event_within_island = FALSE;
-      	         result                       = AR_EUNSUPPORTED;
+                 *handled_event_within_island = FALSE;
+                 result                       = AR_EUNSUPPORTED;
             }
          }
          break;

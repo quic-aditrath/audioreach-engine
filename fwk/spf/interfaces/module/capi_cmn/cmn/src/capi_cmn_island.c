@@ -14,48 +14,6 @@
   Functions
  ======================================================================*/
 
-/**
- * Function to send the event to svc.
- */
-capi_err_t capi_cmn_raise_data_to_dsp_svc_event(capi_event_callback_info_t *cb_info_ptr,
-                                                uint32_t                    event_id,
-                                                capi_buf_t *                event_buf)
-{
-   capi_err_t result = CAPI_EOK;
-   if ((NULL == cb_info_ptr->event_cb) || (NULL == event_buf))
-   {
-      AR_MSG(DBG_ERROR_PRIO, "capi_cmn : Event callback is not set or event buf is NULL");
-      return CAPI_EBADPARAM;
-   }
-
-   capi_event_info_t event_info;
-   event_info.port_info.is_valid = FALSE;
-
-   // Package the fwk event within the data_to_dsp capi event.
-   capi_event_data_to_dsp_service_t evt = { 0 };
-
-   evt.param_id                = event_id;
-   evt.token                   = 0;
-   evt.payload.actual_data_len = event_buf->actual_data_len;
-   evt.payload.data_ptr        = event_buf->data_ptr;
-   evt.payload.max_data_len    = event_buf->max_data_len;
-
-   event_info.payload.actual_data_len = sizeof(capi_event_data_to_dsp_service_t);
-   event_info.payload.data_ptr        = (int8_t *)&evt;
-   event_info.payload.max_data_len    = sizeof(capi_event_data_to_dsp_service_t);
-   result = cb_info_ptr->event_cb(cb_info_ptr->event_context, CAPI_EVENT_DATA_TO_DSP_SERVICE, &event_info);
-
-   if (CAPI_FAILED(result))
-   {
-      AR_MSG(DBG_ERROR_PRIO, "capi_cmn: Failed to send event 0x%lX to container with 0x%lx", event_id, result);
-   }
-   else
-   {
-      AR_MSG(DBG_LOW_PRIO, "capi_cmn: event 0x%lX sent to container", event_id);
-   }
-   return result;
-}
-
 capi_err_t capi_cmn_raise_island_vote_event(capi_event_callback_info_t *cb_info_ptr, bool_t island_vote)
 {
    if (NULL == cb_info_ptr->event_cb)

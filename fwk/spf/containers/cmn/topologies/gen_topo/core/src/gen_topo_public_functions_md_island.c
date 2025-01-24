@@ -1,7 +1,6 @@
 /**
- * \file gen_topo_public_functions_island.c
+ * \file gen_topo_public_functions_md_island.c
  * \brief
- *     This file implements the data flow state
  *
  *
  *

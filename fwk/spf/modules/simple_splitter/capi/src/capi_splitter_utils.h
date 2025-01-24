@@ -2,9 +2,9 @@
  * \file capi_splitter_utils.h
  * \brief
  *        Header file to implement utilities for Simple Splitter Module (SPLITTER)
- *  
- *  
- * 
+ *
+ *
+ *
  * \copyright
  *  Copyright (c) Qualcomm Innovation Center, Inc. All Rights Reserved.
  *  SPDX-License-Identifier: BSD-3-Clause
@@ -73,9 +73,9 @@ typedef struct capi_splitter_cached_out_port_cfg_t
 
 typedef struct capi_splitter_tgp_t
 {
-	fwk_extn_param_id_trigger_policy_cb_fn_t  tg_policy_cb;
-	fwk_extn_port_trigger_affinity_t          *out_port_triggerable_affinity_arr;
-	fwk_extn_port_nontrigger_policy_t         *out_port_nontriggerable_policy_arr;
+    fwk_extn_param_id_trigger_policy_cb_fn_t  tg_policy_cb;
+    fwk_extn_port_trigger_affinity_t          *out_port_triggerable_affinity_arr;
+    fwk_extn_port_nontrigger_policy_t         *out_port_nontriggerable_policy_arr;
 } capi_splitter_tgp_t;
 
 typedef struct capi_splitter_flags_t
@@ -165,6 +165,8 @@ capi_err_t capi_splitter_get_properties(capi_t *_pif, capi_proplist_t *props_ptr
 capi_vtbl_t *capi_splitter_get_vtbl();
 
 capi_err_t capi_splitter_check_and_raise_dynamic_inplace(capi_splitter_t *me_ptr);
+
+capi_err_t handle_metadata(capi_splitter_t *me_ptr, capi_stream_data_t *input[], capi_stream_data_t *output[]);
 
 #ifdef __cplusplus
 }
