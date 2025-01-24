@@ -701,8 +701,9 @@ ar_result_t cu_parse_container_cfg(cu_base_t *me_ptr, apm_container_cfg_t *conta
 
             CU_MSG(me_ptr->gu_ptr->log_id,
                    DBG_LOW_PRIO,
-                   "Configured container frame size: mode = %lu [0: ignore, 1: time, 2: samples],  %lu us, %lu "
+                   "0x%x: Configured container frame size: mode = %lu [0: ignore, 1: time, 2: samples],  %lu us, %lu "
                    "samples.",
+                   me_ptr->gu_ptr->container_instance_id,
                    fs_ptr->mode,
                    me_ptr->conf_frame_len.frame_len_us,
                    me_ptr->conf_frame_len.frame_len_samples);
