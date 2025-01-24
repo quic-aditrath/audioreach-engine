@@ -51,6 +51,10 @@ extern "C" {
     Container type identifier for a wear container. */
 #define APM_CONTAINER_TYPE_ID_WC 0x0B001003
 
+/** @ingroup spf_apm_graph_props
+    Container type identifier for a Pass Thru container. */
+#define APM_CONTAINER_TYPE_ID_PTC 0x0B00100D
+
 /////////////////DOMAIN IDs//////////////////////////
 
 /*  THESE HAVE TO BE SAME AS GPR IDs

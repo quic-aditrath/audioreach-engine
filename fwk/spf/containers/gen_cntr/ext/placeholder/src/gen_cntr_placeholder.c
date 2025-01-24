@@ -172,7 +172,7 @@ static ar_result_t gen_cntr_handle_real_module_cfg(cu_base_t *base_ptr, void *ct
                 "CMD:SET_GET_CFG: in gen_cntr_handle_real_module_cfg for real_module_id:0x%lx",
                 real_module_id);
 
-   graph_init.capi_cb = gen_topo_capi_callback;
+   graph_init.capi_cb = topo_ptr->capi_cb;
    TRY(result, gen_topo_query_and_create_capi(topo_ptr, &graph_init, module_ptr));
 
    // store the real id after determining that CAPI is created. hence forth,

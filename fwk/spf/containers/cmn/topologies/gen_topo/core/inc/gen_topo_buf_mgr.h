@@ -404,8 +404,8 @@ static inline ar_result_t gen_topo_return_buf_mgr_buf_for_both(gen_topo_t *     
    return AR_EOK;
 }
 
-static inline ar_result_t gen_topo_return_buf_mgr_buf(gen_topo_t *            topo_ptr,
-                                                      gen_topo_input_port_t * curr_in_port_ptr,
+static inline ar_result_t gen_topo_return_buf_mgr_buf(gen_topo_t             *topo_ptr,
+                                                      gen_topo_input_port_t  *curr_in_port_ptr,
                                                       gen_topo_output_port_t *prev_out_port_ptr)
 {
    if (prev_out_port_ptr)
@@ -424,7 +424,6 @@ void       topo_buf_check_for_corruption_(uint32_t                log_id,
                                           uint32_t                miid,
                                           uint32_t                port_id,
                                           gen_topo_common_port_t *cmn_port_ptr);
-
 
 #ifdef __cplusplus
 }

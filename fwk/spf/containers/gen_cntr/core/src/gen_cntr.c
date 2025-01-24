@@ -10,6 +10,7 @@
 
 #include "gen_cntr_i.h"
 #include "spf_svc_utils.h"
+#include "pt_cntr.h"
 
 // maximum number of commands expected ever in command queue.
 static const uint32_t MAX_CMD_Q_ELEMENTS = 128;
@@ -23,6 +24,9 @@ extern const cu_msg_handler_t      gen_cntr_cmd_handler_table[];
 extern const uint32_t              g_sizeof_gen_cntr_cmd_handler_table;
 extern const cu_cntr_vtable_t      gen_cntr_cntr_funcs;
 extern const topo_to_cntr_vtable_t topo_to_gen_cntr_vtable;
+
+extern const cu_cntr_vtable_t      pt_cntr_cntr_funcs;
+extern const topo_to_cntr_vtable_t topo_to_pt_cntr_vtable;
 
 static ar_result_t gen_cntr_create_channel_and_queues(gen_cntr_t *me_ptr, POSAL_HEAP_ID peer_cntr_heap_id)
 {
@@ -38,6 +42,15 @@ static ar_result_t gen_cntr_create_channel_and_queues(gen_cntr_t *me_ptr, POSAL_
       return result;
    }
 
+   void    *cmdq_mem_ptr       = GEN_CNTR_PUT_CMDQ_OFFSET(me_ptr);
+   uint32_t ctrl_port_q_offset = GEN_CNTR_CTRL_PORT_Q_OFFSET;
+
+   if (check_if_pass_thru_container(me_ptr))
+   {
+      cmdq_mem_ptr       = PT_CNTR_PUT_CMDQ_OFFSET(me_ptr);
+      ctrl_port_q_offset = PT_CNTR_CTRL_PORT_Q_OFFSET;
+   }
+
    cu_init_queue(&me_ptr->cu,
                  cmdQ_name,
                  MAX_CMD_Q_ELEMENTS,
@@ -45,7 +58,7 @@ static ar_result_t gen_cntr_create_channel_and_queues(gen_cntr_t *me_ptr, POSAL_
                  cu_handle_cmd_queue,
                  me_ptr->cu.channel_ptr,
                  &me_ptr->cu.cmd_handle.cmd_q_ptr,
-                 GEN_CNTR_PUT_CMDQ_OFFSET(me_ptr),
+                 cmdq_mem_ptr,
                  me_ptr->cu.heap_id);
 
    // Assign command handle pointer to point to the correct memory.
@@ -72,7 +85,7 @@ static ar_result_t gen_cntr_create_channel_and_queues(gen_cntr_t *me_ptr, POSAL_
    me_ptr->cu.available_ctrl_chan_mask = 0xFFFFFFFF;
 
    /*Intra container IMCL ctrl queue*/
-   cu_create_cmn_int_ctrl_port_queue(&me_ptr->cu, GEN_CNTR_CTRL_PORT_Q_OFFSET);
+   cu_create_cmn_int_ctrl_port_queue(&me_ptr->cu, ctrl_port_q_offset);
 
    return result;
 }
@@ -125,6 +138,7 @@ ar_result_t gen_cntr_create(cntr_cmn_init_params_t *init_params_ptr, spf_handle_
    POSAL_HEAP_ID        my_heap_id, peer_heap_id;
    uint32_t             log_id = 0;
 
+
    if (AR_EOK != (result = cu_set_cntr_type_bits_in_log_id(cntr_type, &log_id)))
    {
       AR_MSG(DBG_ERROR_PRIO, "GEN_CNTR: Failed to set bits for container log id");
@@ -142,19 +156,34 @@ ar_result_t gen_cntr_create(cntr_cmn_init_params_t *init_params_ptr, spf_handle_
    my_heap_id   = MODIFY_HEAP_ID_FOR_MEM_TRACKING(log_id, my_heap_id);
    peer_heap_id = MODIFY_HEAP_ID_FOR_MEM_TRACKING(log_id, peer_heap_id);
 
+   uint32_t cntr_handle_size = GEN_CNTR_SIZE_W_2Q;
+
+   if (APM_CONTAINER_TYPE_ID_PTC == cntr_type)
+   {
+      if (is_pass_thru_container_supported())
+      {
+         cntr_handle_size = PT_CNTR_SIZE_W_2Q;
+      }
+      else // if pass thru container type is not supported return failure
+      {
+         AR_MSG(DBG_ERROR_PRIO, "Pass thru create failed! container type 0x%lx not supported", cntr_type);
+         return AR_EFAILED;
+      }
+   }
+
    // allocate instance struct
    // Cant use MALLOC_MEMSET here, since it throws error and catch dereferences me_ptr
-   me_ptr = (gen_cntr_t *)posal_memory_malloc(GEN_CNTR_SIZE_W_2Q, my_heap_id);
+   me_ptr = (gen_cntr_t *)posal_memory_malloc(cntr_handle_size, my_heap_id);
 
    if (NULL == me_ptr)
    {
       AR_MSG(DBG_ERROR_PRIO,
              "GEN_CNTR: Malloc failed from heap ID %u. Required Size %lu",
-             GEN_CNTR_SIZE_W_2Q,
+             cntr_handle_size,
              (uint32_t)my_heap_id);
       return AR_ENOMEMORY;
    }
-   memset(me_ptr, 0, GEN_CNTR_SIZE_W_2Q);
+   memset(me_ptr, 0, cntr_handle_size);
 
    /*Initialize gu_ptr, such that if gen_cntr_destroy is called due to some failure, we don't crash for this being null
     */
@@ -180,11 +209,21 @@ ar_result_t gen_cntr_create(cntr_cmn_init_params_t *init_params_ptr, spf_handle_
 
    /* Init the topo and setup cu pointers to topo and gu fields. */
    memset(&topo_init, 0, sizeof(topo_init));
-   topo_init.topo_to_cntr_vtble_ptr = &topo_to_gen_cntr_vtable;
+
+   if (check_if_pass_thru_container(me_ptr))
+   {
+      topo_init.topo_to_cntr_vtble_ptr = &topo_to_pt_cntr_vtable;
+      me_ptr->cu.cntr_vtbl_ptr         = &pt_cntr_cntr_funcs;
+   }
+   else
+   {
+      topo_init.topo_to_cntr_vtble_ptr = &topo_to_gen_cntr_vtable;
+      me_ptr->cu.cntr_vtbl_ptr         = &gen_cntr_cntr_funcs;
+   }
+
    TRY(result, gen_topo_init_topo(&me_ptr->topo, &topo_init, me_ptr->cu.heap_id));
-   me_ptr->cu.cntr_vtbl_ptr        = &gen_cntr_cntr_funcs;
-   me_ptr->cu.topo_vtbl_ptr        = topo_init.topo_cu_vtbl_ptr;
-   me_ptr->cu.topo_island_vtbl_ptr = topo_init.topo_cu_island_vtbl_ptr;
+   me_ptr->cu.topo_vtbl_ptr           = topo_init.topo_cu_vtbl_ptr;
+   me_ptr->cu.topo_island_vtbl_ptr    = topo_init.topo_cu_island_vtbl_ptr;
    me_ptr->cu.ext_in_port_cu_offset   = offsetof(gen_cntr_ext_in_port_t, cu);
    me_ptr->cu.ext_out_port_cu_offset  = offsetof(gen_cntr_ext_out_port_t, cu);
    me_ptr->cu.ext_ctrl_port_cu_offset = offsetof(gen_cntr_ext_ctrl_port_t, cu);
@@ -289,6 +328,11 @@ ar_result_t gen_cntr_destroy(cu_base_t *base_ptr, void *temp)
    // internal control ports have their own outgoing buffer queues. They need to be drained and destroyed when the
    // sg is closed
    cu_deinit_internal_ctrl_ports(&me_ptr->cu, TRUE /*b_destroy_all_ports*/);
+
+   if (check_if_pass_thru_container(me_ptr))
+   {
+      result |= pt_cntr_destroy_modules_resources((pt_cntr_t *)me_ptr, TRUE /*b_destroy_all_modules*/);
+   }
 
    gen_topo_destroy_modules(&me_ptr->topo, TRUE /*b_destroy_all_modules*/);
 

@@ -276,14 +276,15 @@ static ar_result_t simp_topo_process_module(spl_topo_t *topo_ptr, spl_topo_modul
 #endif
 
    simp_topo_set_process_begin(topo_ptr);
-
-   PROF_BEFORE_PROCESS(module_ptr->t_base.prof_info_ptr)
-
-   capi_err_t proc_result = module_ptr->t_base.capi_ptr->vtbl_ptr
-                               ->process(module_ptr->t_base.capi_ptr,
-                                         (capi_stream_data_t **)topo_ptr->t_base.proc_context.in_port_sdata_pptr,
-                                         (capi_stream_data_t **)topo_ptr->t_base.proc_context.out_port_sdata_pptr);
-   PROF_AFTER_PROCESS(module_ptr->t_base.prof_info_ptr, topo_ptr->t_base.gu.prof_mutex)
+   capi_err_t proc_result;
+   // clang-format off
+   IRM_PROFILE_MOD_PROCESS_SECTION(module_ptr->t_base.prof_info_ptr, topo_ptr->t_base.gu.prof_mutex,
+   proc_result = module_ptr->t_base.capi_ptr->vtbl_ptr
+                     ->process(module_ptr->t_base.capi_ptr,
+                              (capi_stream_data_t **)topo_ptr->t_base.proc_context.in_port_sdata_pptr,
+                              (capi_stream_data_t **)topo_ptr->t_base.proc_context.out_port_sdata_pptr);
+   );
+   // clang-format on
    // Ignore need more.
 
    proc_result &= (~CAPI_ENEEDMORE);

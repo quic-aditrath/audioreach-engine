@@ -29,11 +29,43 @@ INCLUDE FILES FOR MODULE
 #include "test_util.h"
 #endif
 
+// Important: Disabling code to bump up thread priority whenever position buffer gets updated.
+// Initially priority change was introduced for the thread to be able to update position buffer
+// as soon as possible and avoid any performance issues due to thread premptions. But in actuality
+// its unlikely to cause any issue even if there is a premption.
+// This logic is causing overhead in push pull modules in the steady state and contrubuting to
+// higher MPPS in case of low frame sizes, hence avoiding this call.
+#define DISABLE_PM_THREAD_PRIO
 
+static void pull_mode_update_pos_buffer(sh_mem_pull_push_mode_position_buffer_t *pos_buf_ptr,
+                                        posal_thread_prio_t                      ist_priority,
+                                        uint32_t                                 read_index,
+                                        uint64_t                                 timestamp)
+{
+   // Update the position buffer
+   uint32_t prev_frame_counter = pos_buf_ptr->frame_counter;
 
-static capi_err_t pull_push_mode_check_send_watermark_event(capi_pm_t *pm_ptr,
-                                                               uint32_t      startLevel,
-                                                               uint32_t      endLevel);
+#ifndef DISABLE_PM_THREAD_PRIO
+   /** below is a critical section which is executed at high prio so that if the client is also trying to read
+    *  we will try to complete is ASAP & they don't have to wait for longer
+    */
+   posal_thread_prio_t priority = posal_thread_prio_get();
+
+   // set IST thread priority
+   posal_thread_set_prio(ist_priority);
+#endif
+
+   pos_buf_ptr->frame_counter    = 0;
+   pos_buf_ptr->index            = read_index;
+   pos_buf_ptr->timestamp_us_lsw = (uint32_t)timestamp;
+   pos_buf_ptr->timestamp_us_msw = (uint32_t)(timestamp >> 32);
+   pos_buf_ptr->frame_counter    = prev_frame_counter + 1;
+
+#ifndef DISABLE_PM_THREAD_PRIO
+   // revert to original thread priority
+   posal_thread_set_prio(priority);
+#endif
+}
 
 capi_err_t pull_push_mode_watermark_levels_init(pull_push_mode_t *pm_ptr,
                                                    uint32_t          num_water_mark_levels,
@@ -317,38 +349,109 @@ void pull_push_mode_deinit(pull_push_mode_t *pm_ptr)
 /**
  * copies 1 ms or 5 ms worth of data into first module internal buffer.
  */
-capi_err_t pull_mode_read_input(capi_pm_t *capi_ptr, capi_buf_t *module_buf_ptr)
+capi_err_t pull_mode_read_input(capi_t *_pif, capi_stream_data_t *input[], capi_stream_data_t *output[])
 {
-   capi_err_t                               result      = CAPI_EOK;
-   pull_push_mode_t *                       me_ptr      = &(capi_ptr->pull_push_mode_info);
-   sh_mem_pull_push_mode_position_buffer_t *pos_buf_ptr = me_ptr->shared_pos_buf_ptr;
+   capi_err_t                               result         = CAPI_EOK;
+   capi_pm_t                               *capi_ptr       = (capi_pm_t *)_pif;
+   capi_buf_t                              *module_buf_ptr = (capi_buf_t *)(*output)->buf_ptr;
+   pull_push_mode_t                        *me_ptr         = &(capi_ptr->pull_push_mode_info);
+   sh_mem_pull_push_mode_position_buffer_t *pos_buf_ptr    = me_ptr->shared_pos_buf_ptr;
+   int8_t *read_ptr;
 
-   if (NULL == me_ptr->shared_circ_buf_start_ptr)
+   // module is disabled if the module driver was not initilized properly.
+   // or if the shared buffer configuration is not set
+   if (capi_ptr->pull_push_mode_info.is_disabled)
    {
-      AR_MSG(DBG_ERROR_PRIO, "pull_mode_read_input: circ buf is not set-up");
+      AR_MSG(DBG_ERROR_PRIO,
+             "Module disabled circ buf addr:0x%lx pos buf addr:0x%lx",
+             me_ptr->shared_circ_buf_start_ptr,
+             pos_buf_ptr);
       return CAPI_EFAILED;
    }
 
-   if (NULL == pos_buf_ptr)
+   // Share module buffer with the fwk only if the fwk doesnt provide the buffer.
+   if (me_ptr->is_mod_buf_access_enabled && (NULL == module_buf_ptr[0].data_ptr))
    {
-      AR_MSG(DBG_HIGH_PRIO, "pull_mode_read_input: NULL position buffer !");
+      /*updating position now indicating the frame is processsed */
+      uint32_t curr_read_index = me_ptr->next_read_index;
+
+      // in module buffer access mode, position buffer for the earlier read frame is updated in the next process
+      // since the module buffer is expected to be held for an entire full.
+      // todo: check if ok to raise event at this point. potentially hold the buffer for 1ms.
+      if(me_ptr->curr_shared_buf_ptr)
+      {
+         pull_push_mode_check_send_watermark_event(capi_ptr, pos_buf_ptr->index, curr_read_index);
+         if (curr_read_index == me_ptr->shared_circ_buf_size)
+         {
+            curr_read_index = 0;
+         }
+
+         pull_mode_update_pos_buffer(pos_buf_ptr, me_ptr->ist_priority, curr_read_index, posal_timer_get_time());
+      }
+
+      // safe mode checks for the if the buf size is aligned to the actual data len of the input buffer
+      // circ buf size should be integral multiple of the input frame size else it wont work.
+      // TODO:  we can do early validation and disable the extension if we know the frame size ahead as well.
+      uint32_t bytes_available_to_output = me_ptr->shared_circ_buf_size - curr_read_index;
+      if (module_buf_ptr[0].max_data_len > bytes_available_to_output)
+      {
+         AR_MSG(DBG_ERROR_PRIO,
+                "pull_mode_read_input: Invalid buf size %lu, cannot find a contiguous frame circular buf size"
+                "%lu and read offset %lu",
+                module_buf_ptr[0].max_data_len,
+                me_ptr->shared_circ_buf_size,
+                curr_read_index);
+
+         // not assigning any buffer to the output
+         me_ptr->curr_shared_buf_ptr = NULL;
+         return CAPI_EFAILED;
+      }
+
+      read_ptr = (int8_t *)(me_ptr->shared_circ_buf_start_ptr + curr_read_index);
+
+#ifndef DISABLE_CACHE_OPERATIONS
+      if (CAPI_FAILED(result = posal_cache_invalidate_v2(&read_ptr, bytes_available_to_output)))
+      {
+         AR_MSG(DBG_ERROR_PRIO, "pull_mode_read_input: Failure cache invalidate.");
+         return result;
+      }
+#endif
+
+      module_buf_ptr[0].data_ptr        = read_ptr;
+      module_buf_ptr[0].actual_data_len = module_buf_ptr[0].max_data_len;
+
+      // cache the source data buffer ptr shared with the fwk
+      me_ptr->curr_shared_buf_ptr = (void *)read_ptr;
+      me_ptr->next_read_index     = curr_read_index + module_buf_ptr[0].actual_data_len;
+
+      /** important: Should update position buffer only when the fwk returns the buffer back
+         to the module, else client will assume that frame processing is complete and may overwrite
+         the data.*/
+      return result;
+   }
+
+   /**
+    ** Enters here only if the fwk extension is disabled
+    **/
+
+   if (NULL == module_buf_ptr[0].data_ptr)
+   {
       return CAPI_EFAILED;
    }
 
-   int8_t *      read_ptr;
-   uint32_t      rem_lin_size; // remaining linear size.
-   uint32_t      read_index = pos_buf_ptr->index, temp_rd_ind;
+   uint32_t   read_index = pos_buf_ptr->index, temp_rd_ind;
+   uint32_t   rem_lin_size; // remaining linear size.
    capi_buf_t input_scratch_buf;
-   uint32_t bytes_to_copy_now = 0;
-   uint32_t num_bytes_copied = 0;
+   uint32_t   bytes_to_copy_now      = 0;
+   uint32_t   num_bytes_copied       = 0;
    module_buf_ptr[0].actual_data_len = 0;
-   uint32_t num_channels = me_ptr->media_fmt.num_channels;
+   uint32_t num_channels             = me_ptr->media_fmt.num_channels;
 
-   uint32_t word_size                   = me_ptr->media_fmt.bits_per_sample;
+   uint32_t word_size               = me_ptr->media_fmt.bits_per_sample;
    uint32_t empty_inp_bytes_per_buf = module_buf_ptr[0].max_data_len;
-   uint32_t total_copy_size = (CAPI_INTERLEAVED == me_ptr->media_fmt.data_interleaving)
-                                 ? empty_inp_bytes_per_buf
-                                 : empty_inp_bytes_per_buf * num_channels;
+   uint32_t total_copy_size         = (CAPI_INTERLEAVED == me_ptr->media_fmt.data_interleaving)
+                                         ? empty_inp_bytes_per_buf
+                                         : empty_inp_bytes_per_buf * num_channels;
 
    while (1)
    {
@@ -357,19 +460,23 @@ capi_err_t pull_mode_read_input(capi_pm_t *capi_ptr, capi_buf_t *module_buf_ptr)
       rem_lin_size      = me_ptr->shared_circ_buf_size - read_index;
       bytes_to_copy_now = MIN((total_copy_size - num_bytes_copied), rem_lin_size);
 
+#ifndef DISABLE_CACHE_OPERATIONS
       if (CAPI_FAILED(result = posal_cache_invalidate_v2(&read_ptr, bytes_to_copy_now)))
       {
          AR_MSG(DBG_ERROR_PRIO, "pull_mode_read_input: Failure cache invalidate.");
          return result;
       }
+#endif
 
       if (CAPI_INTERLEAVED == me_ptr->media_fmt.data_interleaving)
       {
+         // copy if framework provides an output buffer else populate the buffer pointer if extension is enabled
+         memscpy((int8_t *)(module_buf_ptr[0].data_ptr + module_buf_ptr[0].actual_data_len),
+                 module_buf_ptr[0].max_data_len - module_buf_ptr[0].actual_data_len,
+                 (int8_t *)read_ptr,
+                 bytes_to_copy_now);
          module_buf_ptr[0].actual_data_len +=
-            memscpy((int8_t *)(module_buf_ptr[0].data_ptr + module_buf_ptr[0].actual_data_len),
-                    module_buf_ptr[0].max_data_len - module_buf_ptr[0].actual_data_len,
-                    (int8_t *)read_ptr,
-                    bytes_to_copy_now);
+            MIN(module_buf_ptr[0].max_data_len - module_buf_ptr[0].actual_data_len, bytes_to_copy_now);
       }
       else
       {
@@ -383,10 +490,8 @@ capi_err_t pull_mode_read_input(capi_pm_t *capi_ptr, capi_buf_t *module_buf_ptr)
             me_ptr->scratch_buf[i].max_data_len = module_buf_ptr[i].max_data_len - module_buf_ptr[i].actual_data_len;
          }
 
-         if (CAPI_FAILED(result = spf_intlv_to_deintlv(&input_scratch_buf,
-                                                       me_ptr->scratch_buf,
-                                                       num_channels,
-                                                       word_size)))
+         if (CAPI_FAILED(result =
+                            spf_intlv_to_deintlv(&input_scratch_buf, me_ptr->scratch_buf, num_channels, word_size)))
          {
             AR_MSG(DBG_ERROR_PRIO, "pull_mode_read_input: Int - De-Int conversion failed");
             return result;
@@ -413,148 +518,207 @@ capi_err_t pull_mode_read_input(capi_pm_t *capi_ptr, capi_buf_t *module_buf_ptr)
          break;
       }
    }
-   // Update the position buffer
-   uint64_t time               = posal_timer_get_time();
-   uint32_t prev_frame_counter = pos_buf_ptr->frame_counter;
-   /** below is a critical section which is executed at high prio so that if the client is also trying to read
-    *  we will try to complete is ASAP & they don't have to wait for longer
-    */
-   posal_thread_prio_t     priority = posal_thread_prio_get();
 
-   posal_thread_set_prio(capi_ptr->pull_push_mode_info.ist_priority);
-   pos_buf_ptr->frame_counter    = 0;
-   pos_buf_ptr->index            = read_index;
-   pos_buf_ptr->timestamp_us_lsw = (uint32_t)time;
-   pos_buf_ptr->timestamp_us_msw = (uint32_t)(time >> 32);
-   pos_buf_ptr->frame_counter    = prev_frame_counter + 1;
-   posal_thread_set_prio(priority);
+   /** update position buffer with new index*/
+   pull_mode_update_pos_buffer(pos_buf_ptr, me_ptr->ist_priority, read_index, posal_timer_get_time());
+
    return result;
 }
 
-capi_err_t push_mode_write_output(capi_pm_t *capi_ptr, capi_buf_t *module_buf_ptr, uint64_t timestamp, bool_t received_eos_marker)
+capi_err_t push_mode_write_output(capi_t *_pif, capi_stream_data_t *input[], capi_stream_data_t *output[])
 {
-   capi_err_t     result = CAPI_EOK;
-   uint32_t          rem_lin_size;
-   int8_t *          write_ptr = NULL, *read_ptr = NULL;
-   uint32_t          bytes_to_copy, bytes_copied = 0, bytes_copied_per_channel = 0, bytes_copied_per_channel_now = 0;
-   pull_push_mode_t *me_ptr                             = &(capi_ptr->pull_push_mode_info);
-   sh_mem_pull_push_mode_position_buffer_t *pos_buf_ptr = me_ptr->shared_pos_buf_ptr;
-   capi_buf_t                            output_scratch_buf;
+   capi_err_t                               result = CAPI_EOK;
+   uint32_t                                 rem_lin_size;
+   int8_t                                  *write_ptr      = NULL;
+   capi_pm_t                               *capi_ptr       = (capi_pm_t *)_pif;
+   capi_buf_t                              *module_buf_ptr = (capi_buf_t *)(*input)->buf_ptr;
+   pull_push_mode_t                        *me_ptr         = &(capi_ptr->pull_push_mode_info);
+   sh_mem_pull_push_mode_position_buffer_t *pos_buf_ptr    = me_ptr->shared_pos_buf_ptr;
+   capi_buf_t                               output_scratch_buf;
 
-   if (NULL == me_ptr->shared_circ_buf_start_ptr)
+   // module is disabled if the module driver was not initilized properly.
+   // or if the shared buffer configuration is not set
+   // todo: raise disable event and disable module.
+   if (capi_ptr->pull_push_mode_info.is_disabled)
    {
-      AR_MSG(DBG_ERROR_PRIO, "push_mode_write_output: circ buf is not set-up");
+      AR_MSG(DBG_ERROR_PRIO,
+             "Module disabled circ buf addr:0x%lx pos buf addr:0x%lx",
+             me_ptr->shared_circ_buf_start_ptr,
+             pos_buf_ptr);
       return CAPI_EFAILED;
    }
 
-   if (NULL == pos_buf_ptr)
+   uint64_t timestamp   = (*input)->flags.is_timestamp_valid ? (*input)->timestamp : posal_timer_get_time();
+   uint32_t write_index = pos_buf_ptr->index, temp_wr_ind;
+
+   // input data not is not available, nothing to do
+   if (0 == module_buf_ptr[0].actual_data_len)
    {
-      AR_MSG(DBG_HIGH_PRIO, "push_mode_write_output: NULL position buffer !");
-      return CAPI_EFAILED;
+      if (me_ptr->curr_shared_buf_ptr)
+      {
+         me_ptr->curr_shared_buf_ptr = NULL;
+         module_buf_ptr[0].data_ptr  = NULL;
+      }
    }
-
-   uint32_t write_index     = pos_buf_ptr->index, temp_wr_ind;
-   uint32_t word_size       = me_ptr->media_fmt.bits_per_sample;
-   uint32_t input_copy_size = 0;
-
-   while (module_buf_ptr[0].actual_data_len > 0)
+   else if (me_ptr->curr_shared_buf_ptr)
    {
-      write_ptr = (int8_t *)(me_ptr->shared_circ_buf_start_ptr + write_index);
+      // Enters here if the module buffer access extension is enabled.
 
-      rem_lin_size = me_ptr->shared_circ_buf_size - write_index;
+      write_ptr             = (int8_t *)(me_ptr->shared_circ_buf_start_ptr + write_index);
+      uint32_t bytes_copied = module_buf_ptr[0].actual_data_len;
 
-      if (CAPI_INTERLEAVED == me_ptr->media_fmt.data_interleaving)
+#ifdef PM_SAFE_MODE
+      // check if fwk passed a diff buffer than shared by the module.
+      if (module_buf_ptr[0].data_ptr != me_ptr->curr_shared_buf_ptr)
       {
-
-         bytes_to_copy = MIN(module_buf_ptr[0].actual_data_len, rem_lin_size);
-         read_ptr = module_buf_ptr[0].data_ptr + bytes_copied;
-
-         memscpy(write_ptr, bytes_to_copy, read_ptr, bytes_to_copy);
-         posal_cache_flush_v2(&write_ptr, bytes_to_copy);
-
-         module_buf_ptr[0].actual_data_len -= bytes_to_copy;
-         bytes_copied += bytes_to_copy;
+         AR_MSG(DBG_ERROR_PRIO,
+                "push_mode_write_output: Either fwk has returned a diff buffer 0x%lX than shared frame ptr 0X%lx",
+                module_buf_ptr[0].data_ptr,
+                me_ptr->curr_shared_buf_ptr);
+         return CAPI_EFAILED;
       }
-      else
+
+      rem_lin_size  = me_ptr->shared_circ_buf_size - write_index;
+      bytes_to_copy = MIN(module_buf_ptr[0].actual_data_len, rem_lin_size);
+      if (bytes_to_copy < module_buf_ptr[0].actual_data_len)
       {
-         input_copy_size = (module_buf_ptr[0].actual_data_len * me_ptr->media_fmt.num_channels);
-
-         bytes_to_copy = MIN(input_copy_size, rem_lin_size);
-
-         for (int32_t i = 0; i < me_ptr->media_fmt.num_channels; i++)
-         {
-            me_ptr->scratch_buf[i].data_ptr        = module_buf_ptr[i].data_ptr + bytes_copied_per_channel;
-            me_ptr->scratch_buf[i].actual_data_len = module_buf_ptr[i].actual_data_len;
-         }
-
-         output_scratch_buf.max_data_len    = rem_lin_size;
-         output_scratch_buf.actual_data_len = 0;
-         output_scratch_buf.data_ptr        = write_ptr;
-
-         if (CAPI_FAILED(result = spf_deintlv_to_intlv(me_ptr->scratch_buf,
-                                                         &output_scratch_buf,
-                                                         me_ptr->media_fmt.num_channels,
-                                                         word_size)))
-         {
-            AR_MSG(DBG_ERROR_PRIO, "push_mode_write_output: De-Int - Int conversion failed");
-            return result;
-         }
-         posal_cache_flush_v2(&write_ptr, bytes_to_copy);
-
-         bytes_copied_per_channel_now = bytes_to_copy / me_ptr->media_fmt.num_channels;
-
-         for (int32_t i = 0; i < me_ptr->media_fmt.num_channels; i++)
-         {
-            module_buf_ptr[i].actual_data_len -= bytes_copied_per_channel_now;
-         }
-
-         bytes_copied_per_channel += bytes_copied_per_channel_now;
+         AR_MSG(DBG_ERROR_PRIO,
+                "push_mode_write_output: current wr position %lu doesnt fit the input frame size %lu in circ buf "
+                "size %lu",
+                write_index,
+                bytes_to_copy,
+                me_ptr->shared_circ_buf_size);
+         return CAPI_EFAILED;
       }
+#endif
+
+      // check if the current write position doesnt align with the input buffer pointer
+      // can happend only if there is some bug in the module
+      if (write_ptr != module_buf_ptr[0].data_ptr)
+      {
+         AR_MSG(DBG_ERROR_PRIO,
+                "push_mode_write_output: input ptr 0x%lx is different than shared frame ptr 0X%lx ",
+                module_buf_ptr[0].data_ptr,
+                write_ptr);
+         return CAPI_EFAILED;
+      }
+
+      // nothing to copy, data is already expected to be prepared by the fwk
+      // reset the input buffer ptr to indicate that its freed by the module.
+      // and prevents fwk from accessing further.
+      me_ptr->curr_shared_buf_ptr = NULL;
+      module_buf_ptr[0].data_ptr  = NULL;
+
+#ifndef DISABLE_CACHE_OPERATIONS
+      posal_cache_flush_v2(&write_ptr, bytes_copied);
+#endif
+
       temp_wr_ind = write_index;
-      write_index += bytes_to_copy;
+      write_index +=bytes_copied;
       pull_push_mode_check_send_watermark_event(capi_ptr, temp_wr_ind, write_index);
       if (write_index >= me_ptr->shared_circ_buf_size)
       {
          write_index = 0;
       }
    }
-
-   // in CAPI we need to report number of bytes consumed (when we return)
-   if (CAPI_INTERLEAVED == me_ptr->media_fmt.data_interleaving)
+   else // buffer access extension is disabled.
    {
-      module_buf_ptr[0].actual_data_len = bytes_copied;
-   }
-   else
-   {
-      for (int32_t i = 0; i < me_ptr->media_fmt.num_channels; i++)
+      uint32_t bytes_to_copy, bytes_copied = 0, bytes_copied_per_channel = 0, bytes_copied_per_channel_now = 0;
+      while (module_buf_ptr[0].actual_data_len > 0)
       {
-         module_buf_ptr[i].actual_data_len = bytes_copied_per_channel;
+         write_ptr = (int8_t *)(me_ptr->shared_circ_buf_start_ptr + write_index);
+
+         rem_lin_size = me_ptr->shared_circ_buf_size - write_index;
+
+         if (CAPI_INTERLEAVED == me_ptr->media_fmt.data_interleaving)
+         {
+            bytes_to_copy = MIN(module_buf_ptr[0].actual_data_len, rem_lin_size);
+
+            memscpy(write_ptr, bytes_to_copy, (module_buf_ptr[0].data_ptr + bytes_copied), bytes_to_copy);
+
+#ifndef DISABLE_CACHE_OPERATIONS
+            posal_cache_flush_v2(&write_ptr, bytes_to_copy);
+#endif
+            module_buf_ptr[0].actual_data_len -= bytes_to_copy;
+            bytes_copied += bytes_to_copy;
+         }
+         else
+         {
+            uint32_t input_copy_size = (module_buf_ptr[0].actual_data_len * me_ptr->media_fmt.num_channels);
+            bytes_to_copy            = MIN(input_copy_size, rem_lin_size);
+
+            for (int32_t i = 0; i < me_ptr->media_fmt.num_channels; i++)
+            {
+               me_ptr->scratch_buf[i].data_ptr        = module_buf_ptr[i].data_ptr + bytes_copied_per_channel;
+               me_ptr->scratch_buf[i].actual_data_len = module_buf_ptr[i].actual_data_len;
+            }
+
+            output_scratch_buf.max_data_len    = rem_lin_size;
+            output_scratch_buf.actual_data_len = 0;
+            output_scratch_buf.data_ptr        = write_ptr;
+
+            if (CAPI_FAILED(result = spf_deintlv_to_intlv(me_ptr->scratch_buf,
+                                                          &output_scratch_buf,
+                                                          me_ptr->media_fmt.num_channels,
+                                                          me_ptr->media_fmt.bits_per_sample)))
+            {
+               AR_MSG(DBG_ERROR_PRIO, "push_mode_write_output: De-Int - Int conversion failed");
+               return result;
+            }
+
+#ifndef DISABLE_CACHE_OPERATIONS
+            posal_cache_flush_v2(&write_ptr, bytes_to_copy);
+#endif
+
+            bytes_copied_per_channel_now = bytes_to_copy / me_ptr->media_fmt.num_channels;
+
+            // update remaining bytes per ch, note that consumed bytes are updated later outside the while loop
+            for (int32_t i = 0; i < me_ptr->media_fmt.num_channels; i++)
+            {
+               module_buf_ptr[i].actual_data_len -= bytes_copied_per_channel_now;
+            }
+
+            bytes_copied_per_channel += bytes_copied_per_channel_now;
+         }
+
+         temp_wr_ind = write_index;
+         write_index += bytes_to_copy;
+         pull_push_mode_check_send_watermark_event(capi_ptr, temp_wr_ind, write_index);
+         if (write_index >= me_ptr->shared_circ_buf_size)
+         {
+            write_index = 0;
+         }
+      }
+
+      // in CAPI we need to report number of bytes consumed (when we return)
+      if (CAPI_INTERLEAVED == me_ptr->media_fmt.data_interleaving)
+      {
+         module_buf_ptr[0].actual_data_len = bytes_copied;
+      }
+      else
+      {
+         for (int32_t i = 0; i < me_ptr->media_fmt.num_channels; i++)
+         {
+            module_buf_ptr[i].actual_data_len = bytes_copied_per_channel;
+         }
       }
    }
 
-   // Update the position buffer
-   uint32_t prev_frame_counter = pos_buf_ptr->frame_counter;
-
-   /** below is a critical section which is executed at high prio so that if the client is also trying to read
-    *  we will try to complete is ASAP & they don't have to wait for longer
-    */
-   posal_thread_prio_t     priority = posal_thread_prio_get();
-
-   posal_thread_set_prio(capi_ptr->pull_push_mode_info.ist_priority);
-   pos_buf_ptr->frame_counter    = 0;
-   pos_buf_ptr->index            = write_index;
-   pos_buf_ptr->timestamp_us_lsw = (uint32_t)timestamp;
-   pos_buf_ptr->timestamp_us_msw = (uint32_t)(timestamp >> 32);
-   pos_buf_ptr->frame_counter    = prev_frame_counter + 1;
+   /** update position buffer with new index*/
+   pull_mode_update_pos_buffer(pos_buf_ptr, me_ptr->ist_priority, write_index, timestamp);
 
    // raise EOS marker event
-   if(received_eos_marker)
+   if ((*input)->flags.marker_eos)
    {
+      AR_MSG(DBG_HIGH_PRIO, "Push module received marker EOS");
       event_sh_mem_push_mode_eos_marker_t payload;
-	  payload.index            = write_index;
-	  payload.timestamp_us_lsw = (uint32_t)timestamp;
-	  payload.timestamp_us_msw = (uint32_t)(timestamp >> 32);
-      result = capi_pm_raise_event_to_clients(capi_ptr, EVENT_ID_SH_MEM_PUSH_MODE_EOS_MARKER, &payload, sizeof(event_sh_mem_push_mode_eos_marker_t));
+      payload.index            = write_index;
+      payload.timestamp_us_lsw = (uint32_t)timestamp;
+      payload.timestamp_us_msw = (uint32_t)(timestamp >> 32);
+      result                   = capi_pm_raise_event_to_clients(capi_ptr,
+                                              EVENT_ID_SH_MEM_PUSH_MODE_EOS_MARKER,
+                                              &payload,
+                                              sizeof(event_sh_mem_push_mode_eos_marker_t));
       if (CAPI_FAILED(result))
       {
          AR_MSG(DBG_ERROR_PRIO, "pm_check_send_eos_marker_event: Failed to send water mark event!");
@@ -562,31 +726,23 @@ capi_err_t push_mode_write_output(capi_pm_t *capi_ptr, capi_buf_t *module_buf_pt
       else
       {
          AR_MSG(DBG_HIGH_PRIO,
-               "pm_check_send_eos_marker_event: Sent EOS Marker event to the client wrtie_index %lu, timestamp_us_lsw %lu, timestamp_us_msw %lu",
-               write_index,
-               (uint32_t)timestamp,
-               (uint32_t)(timestamp >> 32));
+                "pm_check_send_eos_marker_event: Sent EOS Marker event to the client wrtie_index %lu, timestamp_us_lsw "
+                "%lu, timestamp_us_msw %lu",
+                write_index,
+                (uint32_t)timestamp,
+                (uint32_t)(timestamp >> 32));
       }
    }
-   posal_thread_set_prio(priority);
 
    return result;
 }
 
-static capi_err_t pull_push_mode_check_send_watermark_event(capi_pm_t *capi_ptr,
-                                                               uint32_t      startLevel,
-                                                               uint32_t      endLevel)
+capi_err_t pull_push_mode_check_send_watermark_event_util_(capi_pm_t *capi_ptr, uint32_t startLevel, uint32_t endLevel)
 {
-   capi_err_t     result = CAPI_EOK;
+   capi_err_t        result = CAPI_EOK;
    pull_push_mode_t *pm_ptr = &(capi_ptr->pull_push_mode_info);
 
-   if (pm_ptr->num_water_mark_levels == 0)
-   {
-      return CAPI_EOK;
-   }
-
    uint32_t level;
-
    for (uint32_t i = 0; i < pm_ptr->num_water_mark_levels; i++)
    {
       level = pm_ptr->water_mark_levels_ptr[i].watermark_level_bytes;
@@ -615,4 +771,66 @@ static capi_err_t pull_push_mode_check_send_watermark_event(capi_pm_t *capi_ptr,
       }
    }
    return result;
+}
+
+/** This is a callback function used by fwk to return the output buffer shared by module with the framework. */
+capi_err_t pull_module_buf_mgr_extn_return_output_buf(uint32_t    handle,
+                                                      uint32_t    port_index,
+                                                      uint32_t   *num_bufs,
+                                                      capi_buf_t *buffer_ptr)
+{
+   pull_push_mode_t *me_ptr   = (pull_push_mode_t *)handle;
+   if (buffer_ptr->data_ptr != me_ptr->curr_shared_buf_ptr)
+   {
+      AR_MSG(DBG_ERROR_PRIO,
+             "pull_module_buf_mgr_extn_return_output_buf: Trying to return a diff buffer 0x%lx expected 0x%lx",
+             buffer_ptr->data_ptr,
+             me_ptr->curr_shared_buf_ptr);
+      return CAPI_EFAILED;
+   }
+
+   buffer_ptr->data_ptr = NULL;
+
+   return CAPI_EOK;
+}
+
+/** This is a callback function used by fwk to get the input buffer from the module before calling modules process. */
+capi_err_t push_module_buf_mgr_extn_get_input_buf(uint32_t    handle,
+                                                  uint32_t    port_index,
+                                                  uint32_t   *num_bufs,
+                                                  capi_buf_t *buffer_ptr)
+{
+   pull_push_mode_t *me_ptr   = (pull_push_mode_t *)handle;
+   // is get is called only for input ports
+   sh_mem_pull_push_mode_position_buffer_t *pos_buf_ptr = me_ptr->shared_pos_buf_ptr;
+   if (me_ptr->curr_shared_buf_ptr)
+   {
+      AR_MSG(DBG_ERROR_PRIO,
+             "push_module_buf_mgr_extn_get_input_buf: Cannot query another buf without returning prev buffer "
+             "0x%lx",
+             me_ptr->curr_shared_buf_ptr);
+      return CAPI_EFAILED;
+   }
+
+   uint32_t write_index = pos_buf_ptr->index;
+   int8_t  *write_ptr   = (int8_t *)(me_ptr->shared_circ_buf_start_ptr + write_index);
+
+   uint32_t available_contig_frame_size = me_ptr->shared_circ_buf_size - write_index;
+   if (buffer_ptr->max_data_len > available_contig_frame_size)
+   {
+      AR_MSG(DBG_ERROR_PRIO,
+             "push_module_buf_mgr_extn_get_input_buf: Invalid buf size %lu, cannot find a contiguous frame circular "
+             "buf "
+             "size %lu and wr offset %lu",
+             buffer_ptr->max_data_len,
+             me_ptr->shared_circ_buf_size,
+             write_index);
+      return CAPI_EFAILED;
+   }
+
+   /** populate requested buffer ptr */
+   buffer_ptr->data_ptr        = (int8_t *)write_ptr;
+   buffer_ptr->actual_data_len = 0;
+   me_ptr->curr_shared_buf_ptr = write_ptr;
+   return CAPI_EOK;
 }

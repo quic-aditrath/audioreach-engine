@@ -62,9 +62,29 @@ ar_result_t gen_cntr_ext_out_port_apply_pending_media_fmt(void *ctx_ptr, gu_ext_
 {
    INIT_EXCEPTION_HANDLING
    ar_result_t              result                    = AR_EOK;
-   gen_cntr_t *             me_ptr                    = (gen_cntr_t *)ctx_ptr;
-   cu_base_t *              base_ptr                  = (cu_base_t *)ctx_ptr;
+   gen_cntr_t              *me_ptr                    = (gen_cntr_t *)ctx_ptr;
+   cu_base_t               *base_ptr                  = (cu_base_t *)ctx_ptr;
    gen_cntr_ext_out_port_t *gen_cntr_ext_out_port_ptr = (gen_cntr_ext_out_port_t *)ext_out_port_ptr;
+   gen_topo_output_port_t  *out_port_ptr              = (gen_topo_output_port_t *)ext_out_port_ptr->int_out_port_ptr;
+   gen_topo_module_t       *module_ptr                = (gen_topo_module_t *)out_port_ptr->gu.cmn.module_ptr;
+
+   // As an optimization, skip applying pending media format on stopped/suspended ports
+   // This is necessary because, as part of applying ext media fmt, media fmt event is cleared from internal port.
+   // In case if the port is stopped, mf event is cleared from port but container threshold change event is not set
+   // during mf propagation i.e prop_media_fmt() because it checks if module is started/prepared. And later when the SG
+   // is started there is threshold event is not set, since output mf is already cleared and container may never
+   // propagate threshold leading to zero threshold
+   if (gen_topo_is_module_sg_stopped_or_suspended(module_ptr))
+   {
+#ifdef VERBOSE_DEBUGGING
+      AR_MSG(DBG_LOW_PRIO,
+             "Module 0x%lX output 0x%lx: Module is stopped skip moving media format from internal input to external "
+             "output port",
+             out_port_ptr->gu.cmn.module_ptr->module_instance_id,
+             out_port_ptr->gu.cmn.id);
+#endif
+      return AR_EOK;
+   }
 
    // Copy media format from internal to external port. Note that we should
    // not have any pending data in the output port when we receive prepare, so

@@ -25,13 +25,6 @@
 /*------------------------------------------------------------------------
  * Static declarations
  * -----------------------------------------------------------------------*/
-static capi_err_t capi_pull_mode_process(capi_t *            _pif,
-                                               capi_stream_data_t *input[],
-                                               capi_stream_data_t *output[]);
-
-static capi_err_t capi_push_mode_process(capi_t *            _pif,
-                                               capi_stream_data_t *input[],
-                                               capi_stream_data_t *output[]);
 
 static capi_err_t capi_pm_end(capi_t *_pif);
 
@@ -40,24 +33,90 @@ static capi_err_t capi_pm_set_param(capi_t *                _pif,
                                           const capi_port_info_t *port_info_ptr,
                                           capi_buf_t *            params_ptr);
 
-static capi_err_t capi_pm_get_param(capi_t *                _pif,
-                                          uint32_t                   param_id,
-                                          const capi_port_info_t *port_info_ptr,
-                                          capi_buf_t *            params_ptr);
+static capi_err_t capi_pm_get_param(capi_t                 *_pif,
+                                    uint32_t                param_id,
+                                    const capi_port_info_t *port_info_ptr,
+                                    capi_buf_t             *params_ptr);
 
 static capi_err_t capi_pm_set_properties(capi_t *_pif, capi_proplist_t *props_ptr);
 
 static capi_err_t capi_pm_get_properties(capi_t *_pif, capi_proplist_t *props_ptr);
 
-static const capi_vtbl_t pull_mode_vtbl = { capi_pull_mode_process, capi_pm_end,
-                                               capi_pm_set_param,      capi_pm_get_param,
-                                               capi_pm_set_properties, capi_pm_get_properties };
+static const capi_vtbl_t pull_mode_vtbl = { pull_mode_read_input,   capi_pm_end,
+                                            capi_pm_set_param,      capi_pm_get_param,
+                                            capi_pm_set_properties, capi_pm_get_properties };
 
-static const capi_vtbl_t push_mode_vtbl = { capi_push_mode_process, capi_pm_end,
-                                               capi_pm_set_param,      capi_pm_get_param,
-                                               capi_pm_set_properties, capi_pm_get_properties };
+static const capi_vtbl_t push_mode_vtbl = { push_mode_write_output, capi_pm_end,
+                                            capi_pm_set_param,      capi_pm_get_param,
+                                            capi_pm_set_properties, capi_pm_get_properties };
 
 static capi_err_t capi_pm_process_get_properties(capi_pm_t *me_ptr, capi_proplist_t *proplist_ptr);
+
+static void capi_pm_check_n_enable_module_buffer_access_extension(capi_pm_t *me_ptr)
+{
+   capi_err_t result = CAPI_EOK;
+
+   // note that push/pull module only process CAPI_INTERLEAVED format, hence just checking for validaty is sufficient
+   bool_t need_to_enable_extension = (TRUE == pull_push_check_media_fmt_validity(&me_ptr->pull_push_mode_info)) &&
+                                     (CAPI_INTERLEAVED == me_ptr->pull_push_mode_info.media_fmt.data_interleaving);
+
+   // check if circular buffer size is set and mulitple of container framelength
+   if (me_ptr->pull_push_mode_info.shared_circ_buf_size && me_ptr->frame_dur_us)
+   {
+      uint32_t frame_size_in_bytes = capi_cmn_us_to_bytes(me_ptr->frame_dur_us,
+                                                          me_ptr->pull_push_mode_info.media_fmt.sample_rate,
+                                                          me_ptr->pull_push_mode_info.media_fmt.bits_per_sample,
+                                                          me_ptr->pull_push_mode_info.media_fmt.num_channels);
+
+      // check if circ buf size is integral multiple of the container frame size duration
+      if (me_ptr->pull_push_mode_info.shared_circ_buf_size % frame_size_in_bytes)
+      {
+         need_to_enable_extension = FALSE;
+      }
+      else
+      {
+         need_to_enable_extension |= TRUE;
+      }
+
+      AR_MSG(DBG_HIGH_PRIO,
+             "CAPI PM: circ buf size %lu frame size %lu is mod buf extn enabled ? %lu 0x%lx",
+             me_ptr->pull_push_mode_info.shared_circ_buf_size,
+             frame_size_in_bytes,
+             need_to_enable_extension);
+   }
+   else
+   {
+      // nothing do if buf size or cntr frame duration are not known.
+      return;
+   }
+
+   if (need_to_enable_extension == me_ptr->pull_push_mode_info.is_mod_buf_access_enabled)
+   {
+      // nothing do if already set
+      return;
+   }
+
+   if (PUSH_MODE == me_ptr->pull_push_mode_info.mode)
+   {
+      result = capi_cmn_intf_extn_event_module_input_buffer_reuse(me_ptr->pull_push_mode_info.miid,
+                                                                  &me_ptr->cb_info,
+                                                                  0,                        // port_index
+                                                                  need_to_enable_extension, // enable
+                                                                  (uint32_t)&me_ptr->pull_push_mode_info,
+                                                                  push_module_buf_mgr_extn_get_input_buf);
+   }
+   else // source
+   {
+      result = capi_cmn_intf_extn_event_module_output_buffer_reuse(me_ptr->pull_push_mode_info.miid,
+                                                                   &me_ptr->cb_info,
+                                                                   0,                        // port_index
+                                                                   need_to_enable_extension, // enable
+                                                                   (uint32_t)&me_ptr->pull_push_mode_info,
+                                                                   pull_module_buf_mgr_extn_return_output_buf);
+   }
+
+   me_ptr->pull_push_mode_info.is_mod_buf_access_enabled = CAPI_FAILED(result) ? FALSE : need_to_enable_extension;
+}
 
 static capi_err_t capi_pm_raise_output_media_fmt_event(capi_pm_t *me_ptr)
 {
@@ -83,6 +142,8 @@ static capi_err_t capi_pm_raise_output_media_fmt_event(capi_pm_t *me_ptr)
    }
 
    result = capi_cmn_output_media_fmt_event_v2(&me_ptr->cb_info, &media_fmt, FALSE, 0);
+
+   capi_pm_check_n_enable_module_buffer_access_extension(me_ptr);
 
    return result;
 }
@@ -242,67 +303,6 @@ capi_err_t capi_push_mode_init(capi_t *_pif, capi_proplist_t *init_set_propertie
    capi_result = capi_pm_process_init(me_ptr, init_set_properties);
 
    return capi_result;
-}
-
-static capi_err_t capi_pull_mode_process(capi_t *            _pif,
-                                               capi_stream_data_t *input[],
-                                               capi_stream_data_t *output[])
-{
-   capi_err_t  result = CAPI_EFAILED;
-   capi_pm_t * me_ptr = (capi_pm_t *)_pif;
-   capi_buf_t *p_module_buffer;
-
-   if (me_ptr->pull_push_mode_info.is_disabled)
-   {
-      AR_MSG(DBG_ERROR_PRIO, "Module disabled");
-      return CAPI_EFAILED;
-   }
-
-   p_module_buffer = (capi_buf_t *)(*output)->buf_ptr;
-   result          = pull_mode_read_input(me_ptr, p_module_buffer);
-
-   return result;
-}
-
-static capi_err_t capi_push_mode_process(capi_t *            _pif,
-                                               capi_stream_data_t *input[],
-                                               capi_stream_data_t *output[])
-{
-   capi_err_t  result = CAPI_EFAILED;
-   capi_pm_t * me_ptr = (capi_pm_t *)_pif;
-   capi_buf_t *p_module_buffer;
-
-   if (me_ptr->pull_push_mode_info.is_disabled)
-   {
-      AR_MSG(DBG_ERROR_PRIO, "Module disabled");
-      return CAPI_EFAILED;
-   }
-
-   uint64_t timestamp;
-   if ((*input)->flags.is_timestamp_valid)
-   {
-      timestamp = (*input)->timestamp;
-   }
-   else
-   {
-      AR_MSG(DBG_ERROR_PRIO, "Push mode received invalid capture timestamp.");
-      // just print an error since API definition expects capture timestamp.
-
-      timestamp = posal_timer_get_time();
-   }
-
-   // received marker EOS
-   bool_t received_marker_eos = FALSE;
-   if((*input)->flags.marker_eos)
-   {
-      AR_MSG(DBG_HIGH_PRIO, "Push module received marker EOS");
-      received_marker_eos = TRUE;
-   }
-
-   p_module_buffer = (capi_buf_t *)(*input)->buf_ptr;
-   result          = push_mode_write_output(me_ptr, p_module_buffer, timestamp, received_marker_eos);
-
-   return result;
 }
 
 static capi_err_t capi_pm_end(capi_t *_pif)
@@ -550,7 +550,25 @@ static capi_err_t capi_pm_set_param(capi_t *                _pif,
          }
          break;
       }
+      case FWK_EXTN_PARAM_ID_CONTAINER_FRAME_DURATION:
+      {
+         uint16_t param_size = params_ptr->actual_data_len;
+         if (param_size < sizeof(fwk_extn_param_id_container_frame_duration_t))
+         {
+            AR_MSG(DBG_ERROR_PRIO, "CAPI PM: Param id 0x%lx Bad param size %lu", (uint32_t)param_id, param_size);
+            capi_result |= CAPI_ENEEDMORE;
+            break;
+         }
 
+         fwk_extn_param_id_container_frame_duration_t *fm_dur =
+            (fwk_extn_param_id_container_frame_duration_t *)params_ptr->data_ptr;
+         me_ptr->frame_dur_us = fm_dur->duration_us;
+
+         AR_MSG(DBG_HIGH_PRIO, "CAPI PM : Received container frame duration %lu ", me_ptr->frame_dur_us);
+
+         capi_pm_check_n_enable_module_buffer_access_extension(me_ptr);
+         break;
+      }
       default:
       {
          CAPI_SET_ERROR(capi_result, CAPI_EUNSUPPORTED);
@@ -659,6 +677,24 @@ static capi_err_t capi_pm_set_properties(capi_t *_pif, capi_proplist_t *props_pt
 
       switch (prop_ptr[i].id)
       {
+         case CAPI_MODULE_INSTANCE_ID:
+         {
+            if (payload_ptr->actual_data_len >= sizeof(capi_module_instance_id_t))
+            {
+               capi_module_instance_id_t *data_ptr = (capi_module_instance_id_t *)payload_ptr->data_ptr;
+               me_ptr->pull_push_mode_info.miid    = data_ptr->module_instance_id;
+               AR_MSG(DBG_LOW_PRIO, "CAPI PM: This module_instance_id 0x%08lX", data_ptr->module_instance_id);
+            }
+            else
+            {
+               AR_MSG(DBG_ERROR_PRIO,
+                      "CAPI PM: Set, Param id 0x%lx Bad param size %lu",
+                      (uint32_t)prop_ptr[i].id,
+                      payload_ptr->actual_data_len);
+               CAPI_SET_ERROR(capi_result, CAPI_ENEEDMORE);
+            }
+            break;
+         }
          case CAPI_INPUT_MEDIA_FORMAT_V2:
          {
             AR_MSG(DBG_HIGH_PRIO, "CAPI PM: Set property received for input media fmt");
@@ -729,7 +765,6 @@ static capi_err_t capi_pm_set_properties(capi_t *_pif, capi_proplist_t *props_pt
                capi_result |= capi_cmn_update_bandwidth_event(&me_ptr->cb_info, 0, 0);
                capi_result |= capi_cmn_update_process_check_event(&me_ptr->cb_info, 1);
                capi_result |= capi_cmn_update_algo_delay_event(&me_ptr->cb_info, 0);
-               capi_pm_raise_output_media_fmt_event(me_ptr);
             }
             else
             {
@@ -738,6 +773,8 @@ static capi_err_t capi_pm_set_properties(capi_t *_pif, capi_proplist_t *props_pt
                       prop_ptr[i].id,
                       capi_result);
             }
+
+            capi_pm_check_n_enable_module_buffer_access_extension(me_ptr);
 
             break;
          }
@@ -748,7 +785,11 @@ static capi_err_t capi_pm_set_properties(capi_t *_pif, capi_proplist_t *props_pt
             if (NULL != me_ptr->pull_push_mode_info.shared_pos_buf_ptr)
             {
                AR_MSG(DBG_HIGH_PRIO, "CAPI PM: Resetting shared position structure");
-               memset(me_ptr->pull_push_mode_info.shared_pos_buf_ptr, 0, sizeof(sh_mem_pull_push_mode_position_buffer_t));
+               memset(me_ptr->pull_push_mode_info.shared_pos_buf_ptr,
+                      0,
+                      sizeof(sh_mem_pull_push_mode_position_buffer_t));
+
+               me_ptr->pull_push_mode_info.next_read_index = 0;
             }
             break;
          }
@@ -934,7 +975,7 @@ static capi_err_t capi_pm_process_get_properties(capi_pm_t *me_ptr, capi_proplis
       return CAPI_EBADPARAM;
    }
 
-   uint32_t             fwk_extn_ids_arr[1] = { FWK_EXTN_PCM };
+   uint32_t          fwk_extn_ids_arr[2] = { FWK_EXTN_PCM, FWK_EXTN_CONTAINER_FRAME_DURATION };
    capi_basic_prop_t mod_prop;
    mod_prop.init_memory_req    = align_to_8_byte(sizeof(capi_pm_t));
    mod_prop.stack_size         = CAPI_PM_STACK_SIZE;
@@ -1006,7 +1047,17 @@ static capi_err_t capi_pm_process_get_properties(capi_pm_t *me_ptr, capi_proplis
             capi_result |= capi_cmn_handle_get_port_threshold(&prop_ptr[i], threshold);
             break;
          }
-
+         case CAPI_INTERFACE_EXTENSIONS:
+         {
+            /** Can pass the list of IE list supported by this module to
+             *  be updated in the common utlitlity */
+            uint32_t supported_extension_list[] = { INTF_EXTN_IMCL, INTF_EXTN_MODULE_BUFFER_ACCESS };
+            uint32_t num_supported_extns        = sizeof(supported_extension_list) / sizeof(uint32_t);
+            capi_result                         = capi_cmn_check_and_update_intf_extn_status(num_supported_extns,
+                                                                     supported_extension_list,
+                                                                     &prop_ptr[i].payload);
+            break;
+         }
          default:
          {
             AR_MSG(DBG_HIGH_PRIO, "CAPI PM: Skipped Get Property for 0x%x. Not supported.", prop_ptr[i].id);

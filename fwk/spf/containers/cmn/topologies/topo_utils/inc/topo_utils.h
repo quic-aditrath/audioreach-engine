@@ -285,7 +285,7 @@ static inline uint32_t __topo_sdata_flag_marker_eos_bitmask()
 }
 
 /** Returns capi_stream_data_v2_t.end_of_frame field BIT mask */
-static inline uint32_t __topo_sdata_flag_marker_end_of_frame_bitmask()
+static inline uint32_t __topo_sdata_flag_end_of_frame_bitmask()
 {
 	capi_stream_flags_t temp_flag;
 	temp_flag.word = 0xFFFFFFFF;
@@ -293,16 +293,33 @@ static inline uint32_t __topo_sdata_flag_marker_end_of_frame_bitmask()
 	return (~temp_flag.word);
 }
 
+/** Returns capi_stream_data_v2_t.end_of_frame field BIT mask */
+static inline uint32_t __topo_sdata_flag_is_ts_valid_bitmask()
+{
+	capi_stream_flags_t temp_flag;
+	temp_flag.word = 0xFFFFFFFF;
+	temp_flag.is_timestamp_valid  = 0;
+	return (~temp_flag.word);
+}
+
 /*CAPI SDATA stream flag bit masks*/
-#define  SDATA_FLAG_END_OF_FRAME_BIT_MASK          (__topo_sdata_flag_marker_end_of_frame_bitmask())     // end of frame
-#define  SDATA_FLAG_MARKER_EOS_BIT_MASK            (__topo_sdata_flag_marker_eos_bitmask())              // marker eos
-#define  SDATA_FLAG_STREAM_DATA_VERSION_BIT_MASK   (__topo_sdata_flag_stream_data_ver_bitmask())         // Stream data version
+#define  SDATA_FLAG_END_OF_FRAME_BIT_MASK          (__topo_sdata_flag_end_of_frame_bitmask())     // end of frame
+#define  SDATA_FLAG_MARKER_EOS_BIT_MASK            (__topo_sdata_flag_marker_eos_bitmask())       // marker eos
+#define  SDATA_FLAG_STREAM_DATA_VERSION_BIT_MASK   (__topo_sdata_flag_stream_data_ver_bitmask())  // Stream data version
+#define  SDATA_FLAG_IS_TS_VALID_BIT_MASK           (__topo_sdata_flag_is_ts_valid_bitmask())      // timestamp validity
 
 // checks if EOS or EOF sdata flag is set.
 static inline bool_t topo_is_sdata_flag_EOS_or_EOF_set(capi_stream_data_v2_t *sdata_ptr)
 {
 	// check if any bit other than stream data version flags are set [valid bit mask: 0x247]
 	return (sdata_ptr->flags.word & (SDATA_FLAG_MARKER_EOS_BIT_MASK | SDATA_FLAG_END_OF_FRAME_BIT_MASK));
+}
+
+// returns mask of the flags other than stream data verion and ts validity
+static inline uint32_t topo_sdata_get_flag_mask_other_than_ver_and_is_ts_valid(capi_stream_data_v2_t *sdata_ptr)
+{
+	// check if any bit other than stream data version flags are set [valid bit mask: 0x81]
+	return sdata_ptr->flags.word & (~(SDATA_FLAG_STREAM_DATA_VERSION_BIT_MASK | SDATA_FLAG_IS_TS_VALID_BIT_MASK));
 }
 
 //typedef struct capi_buf_t topo_buf_t; /**< max len is nonzero only when data_ptr is set */

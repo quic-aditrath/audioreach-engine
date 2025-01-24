@@ -55,6 +55,7 @@ const cu_cntr_vtable_t gen_cntr_cntr_funcs = {
    .deinit_ext_in_port                   = gen_cntr_deinit_ext_in_port,
    .operate_on_ext_in_port               = gen_cntr_operate_on_ext_in_port,
    .post_operate_on_ext_in_port          = gen_cntr_post_operate_on_ext_in_port,
+   .post_operate_on_ext_out_port         = NULL,
    .input_media_format_received          = gen_cntr_input_media_format_received,
 
    .init_ext_out_port                    = gen_cntr_init_ext_out_port,
@@ -125,6 +126,8 @@ const topo_to_cntr_vtable_t topo_to_gen_cntr_vtable = {
    .check_for_error_print                       = gen_cntr_check_for_err_print,
 
    .notify_ts_disc_evt                          = gen_cntr_notify_timestamp_discontinuity_event_cb,
+   .module_buffer_access_event                  = NULL,
 };
+
 // clang-format on
 const uint32_t g_sizeof_gen_cntr_cmd_handler_table = (SIZE_OF_ARRAY(gen_cntr_cmd_handler_table));

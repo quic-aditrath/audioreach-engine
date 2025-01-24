@@ -123,17 +123,15 @@ capi_err_t capi_rat_process_port_num_info(capi_rat_t *me_ptr, capi_prop_t *prop_
 
    capi_port_num_info_t *data_ptr = (capi_port_num_info_t *)payload_ptr->data_ptr;
 
-   // RAT can behave as a sink/source or siso
+   // RAT can be opened without input/outputs when container needs an STM module, and RAT is placed to drive the
+   // container with the timer interrupts.
    if ((0 == data_ptr->num_input_ports) && (0 == data_ptr->num_output_ports))
    {
       RAT_MSG(me_ptr->iid,
-              DBG_ERROR_PRIO,
-              "CAPI_RAT: number of input and output ports not supported"
-              "%lu and %lu respectively. Cannot init ",
+              DBG_HIGH_PRIO,
+              "CAPI_RAT: Warning! RAT being opened without input/output ports.",
               data_ptr->num_input_ports,
               data_ptr->num_output_ports);
-      CAPI_SET_ERROR(capi_result, CAPI_EBADPARAM);
-      return capi_result;
    }
 
    if ((CAPI_SISO_RAT == me_ptr->type) && ((data_ptr->num_input_ports > 1) || (data_ptr->num_output_ports > 1)))

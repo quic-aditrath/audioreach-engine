@@ -1021,14 +1021,14 @@ static ar_result_t simp_topo_process_attached_modules(spl_topo_t *topo_ptr, spl_
 
          simp_topo_set_process_begin(topo_ptr);
 
-         PROF_BEFORE_PROCESS(out_attached_module_ptr->t_base.prof_info_ptr)
-
+         // clang-format off
+         IRM_PROFILE_MOD_PROCESS_SECTION(out_attached_module_ptr->t_base.prof_info_ptr, topo_ptr->t_base.gu.prof_mutex,
          attached_proc_result =
             out_attached_module_ptr->t_base.capi_ptr->vtbl_ptr->process(out_attached_module_ptr->t_base.capi_ptr,
                                                                         (capi_stream_data_t **)&out_port_sdata_ptr,
                                                                         (capi_stream_data_t **)&out_port_sdata_ptr);
-
-         PROF_AFTER_PROCESS(out_attached_module_ptr->t_base.prof_info_ptr, topo_ptr->t_base.gu.prof_mutex)
+         );
+         // clang-format on
 
          simp_topo_set_process_end(topo_ptr);
 

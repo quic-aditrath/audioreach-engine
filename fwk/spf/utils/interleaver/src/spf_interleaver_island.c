@@ -154,7 +154,7 @@ ar_result_t spf_deintlv_to_intlv_v2(capi_buf_t *input_buf_ptr,
 #ifndef __XTENSA__ // TODO, This is just a temp workaronud to get the compilation for slate. For some reason slate build
                    // is giving error for only this AR_MSG in core msg api
          AR_MSG(DBG_ERROR_PRIO,
-                "PCM_MF_CNV_LIB: Invalid src bytes_per_samp while deint to int conversion, %d",
+                "spf_deintlv_to_intlv_v2: Invalid src bytes_per_samp while deint to int conversion, %d",
                 bytes_per_samp);
 #endif
          return AR_EUNSUPPORTED;

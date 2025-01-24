@@ -425,19 +425,21 @@ static ar_result_t spl_topo_process_attached_modules(spl_topo_t *topo_ptr, spl_t
          }
 
          simp_topo_set_process_begin(topo_ptr);
-         PROF_BEFORE_PROCESS(out_attached_module_ptr->t_base.prof_info_ptr)
 #ifdef PROC_DELAY_DEBUG
          uint64_t time_before = posal_timer_get_time();
 #endif
 
          // We only pass the attached module's output port index stream data to the attached module. Elementary modules
          // are always SISO so they expect to have only a single sdata in the stream data array for inputs and outputs.
-
+         // clang-format off
+         IRM_PROFILE_MOD_PROCESS_SECTION(out_attached_module_ptr->t_base.prof_info_ptr, topo_ptr->t_base.gu.prof_mutex,
          attached_proc_result =
             out_attached_module_ptr->t_base.capi_ptr->vtbl_ptr
                ->process(out_attached_module_ptr->t_base.capi_ptr,
                          (capi_stream_data_t **)&(topo_ptr->t_base.proc_context.out_port_sdata_pptr[out_port_idx]),
                          (capi_stream_data_t **)&(topo_ptr->t_base.proc_context.out_port_sdata_pptr[out_port_idx]));
+         );
+         // clang-format on
 
 #ifdef PROC_DELAY_DEBUG
          if (APM_SUB_GRAPH_SID_VOICE_CALL == module_ptr->t_base.gu.sg_ptr->sid)
@@ -449,8 +451,6 @@ static ar_result_t spl_topo_process_attached_modules(spl_topo_t *topo_ptr, spl_t
                      (uint32_t)(posal_timer_get_time() - time_before));
          }
 #endif
-
-         PROF_AFTER_PROCESS(out_attached_module_ptr->t_base.prof_info_ptr, topo_ptr->t_base.gu.prof_mutex)
          simp_topo_set_process_end(topo_ptr);
 
 #if SPL_TOPO_DEBUG_LEVEL >= SPL_TOPO_DEBUG_LEVEL_2
@@ -2298,17 +2298,21 @@ ar_result_t spl_topo_process(spl_topo_t *topo_ptr, uint8_t path_index)
 
             if (curr_module_ptr->t_base.bypass_ptr)
             {
-               PROF_BEFORE_PROCESS(curr_module_ptr->t_base.prof_info_ptr)
 
 #ifdef PROC_DELAY_DEBUG
                uint64_t time_before = posal_timer_get_time();
 #endif
+               // clang-format off
+               IRM_PROFILE_MOD_PROCESS_SECTION(curr_module_ptr->t_base.prof_info_ptr, topo_ptr->t_base.gu.prof_mutex,
                result = spl_topo_bypass_input_to_output(topo_ptr,
                                                         curr_module_ptr,
                                                         (capi_stream_data_t **)
                                                            topo_ptr->t_base.proc_context.in_port_sdata_pptr,
                                                         (capi_stream_data_t **)
                                                            topo_ptr->t_base.proc_context.out_port_sdata_pptr);
+               );
+               // clang-format on
+
 #ifdef PROC_DELAY_DEBUG
                if (APM_SUB_GRAPH_SID_VOICE_CALL == curr_module_ptr->t_base.gu.sg_ptr->sid)
                {
@@ -2319,7 +2323,6 @@ ar_result_t spl_topo_process(spl_topo_t *topo_ptr, uint8_t path_index)
                            (uint32_t)(posal_timer_get_time() - time_before));
                }
 #endif
-               PROF_AFTER_PROCESS(curr_module_ptr->t_base.prof_info_ptr, topo_ptr->t_base.gu.prof_mutex)
                VERIFY(result, AR_SUCCEEDED(result));
             }
             else

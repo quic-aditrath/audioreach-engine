@@ -9,6 +9,7 @@
  */
 
 #include "gen_cntr_i.h"
+#include "pt_cntr.h"
 
 static ar_result_t gen_cntr_fwk_extn_async_st_get_cb_info(gen_cntr_t *             me_ptr,
                                                           gen_topo_module_t *      module_ptr,
@@ -67,8 +68,8 @@ static ar_result_t gen_cntr_fwk_extn_async_st_get_cb_info(gen_cntr_t *          
    return AR_EOK;
 }
 
-static ar_result_t gen_cntr_fwk_extn_async_signal_ctrl(gen_cntr_t *             me_ptr,
-                                                       gen_topo_module_t *      module_ptr,
+static ar_result_t gen_cntr_fwk_extn_async_signal_ctrl(gen_cntr_t              *me_ptr,
+                                                       gen_topo_module_t       *module_ptr,
                                                        gen_cntr_async_signal_t *async_st_hdl_ptr,
                                                        bool_t                   is_enable)
 {

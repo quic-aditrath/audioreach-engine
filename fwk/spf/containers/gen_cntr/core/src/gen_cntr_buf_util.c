@@ -10,6 +10,8 @@
 
 #include "gen_cntr_i.h"
 #include "apm.h"
+#include "pt_cntr.h"
+
 
 /*--------------------------------------------------------------*/
 /* Macro definitions                                            */
@@ -2495,7 +2497,20 @@ ar_result_t gen_cntr_handle_port_data_thresh_change(void *ctx_ptr)
 
       gen_cntr_offload_send_opfs_event_to_wr_client(me_ptr);
       gen_cntr_recreate_all_buffers(me_ptr);
-      gen_cntr_check_for_multiple_thresh_modules(me_ptr);
+
+      if (FALSE == check_if_pass_thru_container(me_ptr))
+      {
+         gen_cntr_check_for_multiple_thresh_modules(me_ptr);
+      }
+   }
+
+   if (check_if_pass_thru_container(me_ptr))
+   {
+      TRY(result, pt_cntr_validate_media_fmt_thresh((pt_cntr_t *)me_ptr));
+
+      /** Assign topo buffers to the modules in the proc list*/
+      TRY(result, pt_cntr_update_module_process_list((pt_cntr_t *)me_ptr));
+      TRY(result, pt_cntr_assign_port_buffers((pt_cntr_t *)me_ptr));
    }
 
    CATCH(result, GEN_CNTR_MSG_PREFIX, me_ptr->topo.gu.log_id)
@@ -2612,6 +2627,13 @@ static ar_result_t gen_cntr_init_ext_in_queue(void *base_ptr, gu_ext_in_port_t *
    ext_port_ptr->cu.bit_mask = bit_mask;
    me_ptr->cu.all_ext_in_mask |= bit_mask;
 
+   void *q_mem_ptr = GEN_CNTR_GET_EXT_IN_PORT_Q_ADDR(gu_ext_port_ptr);
+
+   if (check_if_pass_thru_container(me_ptr))
+   {
+      q_mem_ptr = PT_CNTR_GET_EXT_IN_PORT_Q_ADDR(gu_ext_port_ptr);
+   }
+
    result = cu_init_queue(&me_ptr->cu,
                           data_q_name,
                           max_num_elements,
@@ -2619,7 +2641,7 @@ static ar_result_t gen_cntr_init_ext_in_queue(void *base_ptr, gu_ext_in_port_t *
                           q_handler,
                           me_ptr->cu.channel_ptr,
                           &gu_ext_port_ptr->this_handle.q_ptr,
-                          GEN_CNTR_GET_EXT_IN_PORT_Q_ADDR(gu_ext_port_ptr),
+                          q_mem_ptr,
                           gu_get_downgraded_heap_id(me_ptr->topo.heap_id, gu_ext_port_ptr->upstream_handle.heap_id));
 
    return result;
@@ -2657,6 +2679,13 @@ static ar_result_t gen_cntr_init_ext_out_queue(void *base_ptr, gu_ext_out_port_t
    ext_port_ptr->cu.bit_mask = bit_mask;
    me_ptr->cu.all_ext_out_mask |= bit_mask;
 
+   void *q_mem_ptr = GEN_CNTR_GET_EXT_OUT_PORT_Q_ADDR(gu_ext_port_ptr);
+
+   if (check_if_pass_thru_container(me_ptr))
+   {
+      q_mem_ptr = PT_CNTR_GET_EXT_OUT_PORT_Q_ADDR(gu_ext_port_ptr);
+   }
+
    result = cu_init_queue(&me_ptr->cu,
                           data_q_name,
                           max_num_elements,
@@ -2664,7 +2693,7 @@ static ar_result_t gen_cntr_init_ext_out_queue(void *base_ptr, gu_ext_out_port_t
                           q_handler,
                           me_ptr->cu.channel_ptr,
                           &gu_ext_port_ptr->this_handle.q_ptr,
-                          GEN_CNTR_GET_EXT_OUT_PORT_Q_ADDR(gu_ext_port_ptr),
+                          q_mem_ptr,
                           gu_get_downgraded_heap_id(me_ptr->topo.heap_id, gu_ext_port_ptr->downstream_handle.heap_id));
 
    return result;

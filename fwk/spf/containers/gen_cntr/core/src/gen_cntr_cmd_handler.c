@@ -12,12 +12,19 @@
 #include "gen_cntr_i.h"
 #include "gen_cntr_utils.h"
 #include "apm.h"
+#include "pt_cntr.h"
 
 static ar_result_t gen_cntr_set_buf_mgr_mode(gen_cntr_t *me_ptr);
 
 static ar_result_t gen_cntr_call_process_frames(cu_base_t *cu_ptr, void *temp)
 {
    gen_cntr_t *me_ptr = (gen_cntr_t *)cu_ptr;
+
+   if (check_if_pass_thru_container(me_ptr))
+   {
+      // no need to process frames from the event context, this container is always triggered by a timer/interrupt trigger.
+      return AR_EOK;
+   }
 
    // for signal triggered if we call process_frames, STM (EP) module will be called at wrong time.
    if (!me_ptr->topo.flags.is_signal_triggered)
@@ -96,9 +103,9 @@ static ar_result_t gen_cntr_handle_events_after_cmds(gen_cntr_t *me_ptr, bool_t 
 
       // capi_event_flag_ptr->media_fmt_event:
       // If a module is raising media format for the first time then it may start generating output.
-      if (capi_event_flag_ptr->process_state || capi_event_flag_ptr->media_fmt_event || 
-          capi_event_flag_ptr->data_trigger_policy_change || fwk_event_flag_ptr->sg_state_change || 
-          fwk_event_flag_ptr->port_state_change || fwk_event_flag_ptr->need_to_handle_dcm_req_for_island_exit || 
+      if (capi_event_flag_ptr->process_state || capi_event_flag_ptr->media_fmt_event ||
+          capi_event_flag_ptr->data_trigger_policy_change || fwk_event_flag_ptr->sg_state_change ||
+          fwk_event_flag_ptr->port_state_change || fwk_event_flag_ptr->need_to_handle_dcm_req_for_island_exit ||
           fwk_event_flag_ptr->port_flushed)
       {
          process_frames = TRUE;
@@ -141,7 +148,7 @@ static ar_result_t gen_cntr_handle_events_after_cmds(gen_cntr_t *me_ptr, bool_t 
          me_ptr->cu.handle_rest_fn      = gen_cntr_call_process_frames;
          me_ptr->cu.handle_rest_ctx_ptr = NULL;
       }
-      else
+      else if (FALSE == check_if_pass_thru_container(me_ptr))
       {
          gen_cntr_call_process_frames(&me_ptr->cu, NULL);
       }
@@ -202,6 +209,9 @@ static ar_result_t gen_cntr_handle_rest_of_graph_close(cu_base_t *base_ptr, bool
    // check and assign appropriate data process function for signal triggered containers
    gen_cntr_check_and_assign_st_data_process_fn(me_ptr);
 
+   /** NOTES: [PT_CNTR] Close should not alter proc list. Since ext output/SG stop should have already removed the
+   inactive due to self/propagated stop modules from the proc list */
+
    SPF_CRITICAL_SECTION_END(&me_ptr->topo.gu);
 
    //======== following code must be able to run in parallel to the data processing =============
@@ -209,6 +219,13 @@ static ar_result_t gen_cntr_handle_rest_of_graph_close(cu_base_t *base_ptr, bool
    // internal control ports have their own outgoing buffer queues. They need to be drained and destroyed when the
    // sg is closed.
    cu_deinit_internal_ctrl_ports(&me_ptr->cu, FALSE /*b_destroy_all_ports*/);
+
+   // module resource can be destroyed outside critical section for Pass Thru container.
+   if (check_if_pass_thru_container(me_ptr))
+   {
+      // destory sdata array pointers for each module
+      result |= pt_cntr_destroy_modules_resources((pt_cntr_t *)me_ptr, FALSE);
+   }
 
    // module destroy happens only with SG destroy
    gen_topo_destroy_modules(&me_ptr->topo, FALSE /*b_destroy_all_modules*/);
@@ -298,13 +315,22 @@ static ar_result_t gen_cntr_handle_rest_of_graph_open(cu_base_t *base_ptr, void 
    /* create modules asynchronously, avoid working on connection to the existing modules */
    graph_init_data.spf_handle_ptr    = &me_ptr->cu.spf_handle;
    graph_init_data.gpr_cb_fn         = cu_gpr_callback;
-   graph_init_data.capi_cb           = gen_topo_capi_callback;
+   graph_init_data.capi_cb =
+      check_if_pass_thru_container(me_ptr) ? pt_cntr_capi_event_callback : gen_topo_capi_callback;
    TRY(result, gen_topo_create_modules(&me_ptr->topo, &graph_init_data));
 
    /* Allocate memory for voice info structure, for voice call use cases*/
    TRY(result, cu_create_voice_info(&me_ptr->cu, open_cmd_ptr));
 
    TRY(result, cu_init_external_ports(&me_ptr->cu, GEN_CNTR_EXT_CTRL_PORT_Q_OFFSET));
+
+   // NOTES: [PT_CNTR]
+   // 1. pass thru container ext ports sdata_ptr is assigned for the newly opened ports in init_ext_in/out_port() Since
+   // 2. pass thru supports only one subgraph there is no async subgraph open which can alter module proc order.
+   // 3. even in future if multiple SGs are supported, newly opened SG still should not alter the module proc order the
+   // SG boundary modules/ext ports opens should also not alter the module proc order. The modules in the started
+   // subgraph at the SG boundary will remain inactive due to port being stopped.
+   // 4. If the first SG is getting opened, no need to update the module proc order, since there is no started subgraph
 
    SPF_CRITICAL_SECTION_START(&me_ptr->topo.gu);
 
@@ -331,6 +357,11 @@ static ar_result_t gen_cntr_handle_rest_of_graph_open(cu_base_t *base_ptr, void 
    gen_cntr_check_and_assign_st_data_process_fn(me_ptr);
 
    TRY(result, gen_cntr_set_buf_mgr_mode(me_ptr));
+
+   if (check_if_pass_thru_container(me_ptr))
+   {
+      result |= pt_cntr_validate_topo_at_open((pt_cntr_t *)me_ptr);
+   }
 
    CATCH(result, GEN_CNTR_MSG_PREFIX, me_ptr->topo.gu.log_id)
    {
@@ -668,14 +699,29 @@ ar_result_t gen_cntr_graph_open(cu_base_t *base_ptr)
    }
 #endif
 
-   gu_sizes_t sz = { .ext_ctrl_port_size = GEN_CNTR_EXT_CTRL_PORT_SIZE_W_QS,
-                     .ext_in_port_size   = GEN_CNTR_EXT_IN_PORT_SIZE_W_QS,
-                     .ext_out_port_size  = GEN_CNTR_EXT_OUT_PORT_SIZE_W_QS,
-                     .in_port_size       = sizeof(gen_topo_input_port_t),
-                     .out_port_size      = sizeof(gen_topo_output_port_t),
-                     .ctrl_port_size     = GEN_CNTR_INT_CTRL_PORT_SIZE_W_QS,
-                     .sg_size            = sizeof(gen_topo_sg_t),
-                     .module_size        = sizeof(gen_cntr_module_t) };
+   gu_sizes_t sz;
+   if (check_if_pass_thru_container(me_ptr))
+   {
+      sz.ext_ctrl_port_size = GEN_CNTR_EXT_CTRL_PORT_SIZE_W_QS;
+      sz.ext_in_port_size   = PT_CNTR_EXT_IN_PORT_SIZE_W_QS;
+      sz.ext_out_port_size  = PT_CNTR_EXT_OUT_PORT_SIZE_W_QS;
+      sz.in_port_size       = sizeof(pt_cntr_input_port_t);
+      sz.out_port_size      = sizeof(pt_cntr_output_port_t);
+      sz.ctrl_port_size     = GEN_CNTR_INT_CTRL_PORT_SIZE_W_QS;
+      sz.sg_size            = sizeof(gen_topo_sg_t);
+      sz.module_size        = sizeof(pt_cntr_module_t);
+   }
+   else
+   {
+      sz.ext_ctrl_port_size = GEN_CNTR_EXT_CTRL_PORT_SIZE_W_QS;
+      sz.ext_in_port_size   = GEN_CNTR_EXT_IN_PORT_SIZE_W_QS;
+      sz.ext_out_port_size  = GEN_CNTR_EXT_OUT_PORT_SIZE_W_QS;
+      sz.in_port_size       = sizeof(gen_topo_input_port_t);
+      sz.out_port_size      = sizeof(gen_topo_output_port_t);
+      sz.ctrl_port_size     = GEN_CNTR_INT_CTRL_PORT_SIZE_W_QS;
+      sz.sg_size            = sizeof(gen_topo_sg_t);
+      sz.module_size        = sizeof(gen_cntr_module_t);
+   }
 
    // first prepare for asynchronous (parallel to the data path thread) graph open
    // once graph is created gu_finish_async_create will be called to merge the new graph with the existing one.
@@ -920,7 +966,14 @@ ar_result_t gen_cntr_graph_start(cu_base_t *base_ptr)
    }
 
    me_ptr->cu.flags.apm_cmd_context = TRUE;
+
    SPF_CRITICAL_SECTION_END(me_ptr->cu.gu_ptr);
+
+   /** NOTES: [PT_CNTR]
+    *  Module active flag and proc list not updated it seems unsafe to free the lock here check with Harsh once.
+    * Possible corner case if the ext output gets started and data thread is processing with old sorted order list.
+    */
+
    gen_cntr_handle_events_after_cmds(me_ptr, TRUE, result);
 
    GEN_CNTR_MSG(me_ptr->topo.gu.log_id,
@@ -2244,6 +2297,25 @@ ar_result_t gen_cntr_post_operate_on_subgraph(void *                     base_pt
             // Check if connected port is not in a subgraph being operated on.
             gen_cntr_post_operate_on_connected_input(me_ptr, out_port_ptr, spf_sg_list_ptr, sg_ops);
          }
+      }
+   }
+
+   if (check_if_pass_thru_container(me_ptr))
+   {
+      // if SG/external output is starting immediately update the proc list
+      // todo: add explanation why only ops/sg are checked   // if SG/external output is stopped immediately update the
+      // proc list, because it can alter the module proc list and update the module buffer assignment as well todo: need
+      // to update the proc list when the peer port state proapgation command is recieved as well.
+      if ((TOPO_SG_OP_START | TOPO_SG_OP_STOP | TOPO_SG_OP_SUSPEND) & sg_ops)
+      {
+         GEN_CNTR_MSG(me_ptr->cu.gu_ptr->log_id,
+                      DBG_LOW_PRIO,
+                      "cu_handle_sg_mgmt_cmd. sg_op %lu hanlding post operate on pass thru container sub graph 0x%lx",
+                      sg_ops,
+                      sg_ptr->gu.id);
+
+         result |= pt_cntr_update_module_process_list((pt_cntr_t *)me_ptr);
+         result |= pt_cntr_assign_port_buffers((pt_cntr_t *)me_ptr);
       }
    }
 

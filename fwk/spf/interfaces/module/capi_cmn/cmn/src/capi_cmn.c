@@ -1820,3 +1820,191 @@ capi_err_t capi_cmn_raise_data_to_dsp_svc_event(capi_event_callback_info_t *cb_i
    }
    return result;
 }
+
+capi_err_t capi_cmn_check_and_update_intf_extn_status(uint32_t    num_supported_extensions,
+                                                      uint32_t   *module_supported_extns_list,
+                                                      capi_buf_t *payload_ptr)
+{
+   capi_err_t capi_result = CAPI_EOK;
+
+   if (payload_ptr->max_data_len < sizeof(capi_interface_extns_list_t))
+   {
+      AR_MSG(DBG_ERROR_PRIO, "CAPI_INTERFACE_EXTENSIONS Bad param size %lu", payload_ptr->max_data_len);
+      CAPI_SET_ERROR(capi_result, CAPI_ENEEDMORE);
+      return capi_result;
+   }
+
+   capi_interface_extns_list_t *intf_ext_list = (capi_interface_extns_list_t *)payload_ptr->data_ptr;
+
+   if (payload_ptr->max_data_len <
+       (sizeof(capi_interface_extns_list_t) + (intf_ext_list->num_extensions * sizeof(capi_interface_extn_desc_t))))
+   {
+      AR_MSG(DBG_ERROR_PRIO, "CAPI_INTERFACE_EXTENSIONS invalid param size %lu", payload_ptr->max_data_len);
+      CAPI_SET_ERROR(capi_result, CAPI_ENEEDMORE);
+      return capi_result;
+   }
+
+   capi_interface_extn_desc_t *curr_intf_extn_desc_ptr =
+      (capi_interface_extn_desc_t *)(payload_ptr->data_ptr + sizeof(capi_interface_extns_list_t));
+
+   for (uint32_t i = 0; i < intf_ext_list->num_extensions; i++)
+   {
+      for (uint32_t j = 0; j < num_supported_extensions; j++)
+      {
+         if (module_supported_extns_list[j] == curr_intf_extn_desc_ptr->id)
+         {
+            curr_intf_extn_desc_ptr->is_supported = TRUE;
+         }
+
+         AR_MSG(DBG_HIGH_PRIO,
+                "INTF_EXTN intf_ext[0x%lX], is_supported[%d]",
+                curr_intf_extn_desc_ptr->id,
+                (int)curr_intf_extn_desc_ptr->is_supported);
+      }
+
+      curr_intf_extn_desc_ptr++;
+   }
+
+   return capi_result;
+}
+
+capi_err_t capi_cmn_intf_extn_event_module_input_buffer_reuse(uint32_t                    log_id,
+                                                              capi_event_callback_info_t *cb_info_ptr,
+                                                              uint32_t                    port_index,
+                                                              bool_t                      is_enable,
+                                                              uint32_t                    buffer_mgr_cb_handle,
+                                                              intf_extn_get_module_input_buf_func_t get_input_buf_fn)
+{
+   capi_err_t result = CAPI_EOK;
+   if ((NULL == cb_info_ptr->event_cb) || (NULL == buffer_mgr_cb_handle) || (NULL == get_input_buf_fn))
+   {
+      CAPI_CMN_MSG(log_id,
+                   DBG_ERROR_PRIO,
+                   "Event callback is not set:%lu or event payload is NULL: (cb_handle:%lu, cb_fn: %lu)",
+                   (NULL == cb_info_ptr),
+                   (NULL == buffer_mgr_cb_handle),
+                   (NULL == get_input_buf_fn));
+      return CAPI_EBADPARAM;
+   }
+
+   capi_event_info_t event_info;
+   event_info.port_info.port_index    = port_index;
+   event_info.port_info.is_valid      = TRUE;
+   event_info.port_info.is_input_port = TRUE;
+
+   // Package the fwk event within the data_to_dsp capi event.
+   capi_event_data_to_dsp_service_t evt = { 0 };
+
+   typedef struct
+   {
+      intf_extn_event_id_module_buffer_access_enable_t cfg;
+      intf_extn_input_buffer_manager_cb_info_t         cb_info;
+   } payload_def;
+
+   payload_def payload;
+   memset(&payload, 0, sizeof(payload));
+
+   payload.cfg.enable                   = is_enable;
+   payload.cb_info.buffer_mgr_cb_handle = buffer_mgr_cb_handle;
+   payload.cb_info.get_input_buf_fn     = get_input_buf_fn;
+
+   evt.param_id                = INTF_EXTN_EVENT_ID_MODULE_BUFFER_ACCESS_ENABLE;
+   evt.token                   = 0;
+   evt.payload.actual_data_len = sizeof(payload);
+   evt.payload.data_ptr        = (int8_t *)(&payload);
+   evt.payload.max_data_len    = sizeof(payload);
+
+   event_info.payload.actual_data_len = sizeof(capi_event_data_to_dsp_service_t);
+   event_info.payload.data_ptr        = (int8_t *)&evt;
+   event_info.payload.max_data_len    = sizeof(capi_event_data_to_dsp_service_t);
+   result = cb_info_ptr->event_cb(cb_info_ptr->event_context, CAPI_EVENT_DATA_TO_DSP_SERVICE, &event_info);
+   if (CAPI_FAILED(result))
+   {
+      CAPI_CMN_MSG(log_id,
+                   DBG_ERROR_PRIO,
+                   "Failed to raise event 0x%lX is_input: %lu to container with 0x%lx",
+                   INTF_EXTN_EVENT_ID_MODULE_BUFFER_ACCESS_ENABLE,
+                   TRUE,
+                   result);
+   }
+   else
+   {
+      CAPI_CMN_MSG(log_id,
+                   DBG_LOW_PRIO,
+                   "event 0x%lX is_input: %lu raised to container",
+                   INTF_EXTN_EVENT_ID_MODULE_BUFFER_ACCESS_ENABLE,
+                   TRUE);
+   }
+   return result;
+}
+
+capi_err_t capi_cmn_intf_extn_event_module_output_buffer_reuse(
+   uint32_t                                  log_id,
+   capi_event_callback_info_t               *cb_info_ptr,
+   uint32_t                                  port_index,
+   bool_t                                    is_enable,
+   uint32_t                                  buffer_mgr_cb_handle,
+   intf_extn_return_module_output_buf_func_t return_output_buf_fn)
+{
+   capi_err_t result = CAPI_EOK;
+   if ((NULL == cb_info_ptr->event_cb) || (NULL == buffer_mgr_cb_handle) || (NULL == return_output_buf_fn))
+   {
+      CAPI_CMN_MSG(log_id,
+                   DBG_ERROR_PRIO,
+                   "Event callback is not set:%lu or event payload is NULL: (cb_handle:%lu, cb_fn: %lu)",
+                   (NULL == cb_info_ptr),
+                   (NULL == buffer_mgr_cb_handle),
+                   (NULL == return_output_buf_fn));
+      return CAPI_EBADPARAM;
+   }
+
+   capi_event_info_t event_info;
+   event_info.port_info.port_index    = port_index;
+   event_info.port_info.is_valid      = TRUE;
+   event_info.port_info.is_input_port = FALSE;
+
+   // Package the fwk event within the data_to_dsp capi event.
+   capi_event_data_to_dsp_service_t evt = { 0 };
+
+   typedef struct
+   {
+      intf_extn_event_id_module_buffer_access_enable_t cfg;
+      intf_extn_output_buffer_manager_cb_info_t           cb_info;
+   } payload_def;
+
+   payload_def payload;
+   memset(&payload, 0, sizeof(payload));
+
+   payload.cfg.enable                   = is_enable;
+   payload.cb_info.buffer_mgr_cb_handle = buffer_mgr_cb_handle;
+   payload.cb_info.return_output_buf_fn = return_output_buf_fn;
+
+   evt.param_id                = INTF_EXTN_EVENT_ID_MODULE_BUFFER_ACCESS_ENABLE;
+   evt.token                   = 0;
+   evt.payload.actual_data_len = sizeof(payload);
+   evt.payload.data_ptr        = (int8_t *)(&payload);
+   evt.payload.max_data_len    = sizeof(payload);
+
+   event_info.payload.actual_data_len = sizeof(capi_event_data_to_dsp_service_t);
+   event_info.payload.data_ptr        = (int8_t *)&evt;
+   event_info.payload.max_data_len    = sizeof(capi_event_data_to_dsp_service_t);
+   result = cb_info_ptr->event_cb(cb_info_ptr->event_context, CAPI_EVENT_DATA_TO_DSP_SERVICE, &event_info);
+   if (CAPI_FAILED(result))
+   {
+      CAPI_CMN_MSG(log_id,
+                   DBG_ERROR_PRIO,
+                   "Failed to raise event 0x%lX is_input: %lu to container with 0x%lx",
+                   INTF_EXTN_EVENT_ID_MODULE_BUFFER_ACCESS_ENABLE,
+                   FALSE,
+                   result);
+   }
+   else
+   {
+      CAPI_CMN_MSG(log_id,
+                   DBG_LOW_PRIO,
+                   "event 0x%lX is_input: %lu raised to container",
+                   INTF_EXTN_EVENT_ID_MODULE_BUFFER_ACCESS_ENABLE,
+                   FALSE);
+   }
+   return result;
+}

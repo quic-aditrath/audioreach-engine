@@ -1298,6 +1298,8 @@ ar_result_t cu_handle_prepare(cu_base_t *base_ptr, spf_msg_cmd_graph_mgmt_t *cmd
    //if frame-len is not evaluated due to the absence of media format then need to send RT/voice-SId ICB info here.
    cu_handle_frame_len_change(base_ptr, &base_ptr->cntr_frame_len, base_ptr->period_us);
 
+   // media format msg has even container threshold information which is requried for downstream containers.
+   // hence propagate ctrl path media fmt to peer container only after media format and threshold propagation.
    for (gu_ext_out_port_list_t *ext_out_port_list_ptr = base_ptr->gu_ptr->ext_out_port_list_ptr;
         (NULL != ext_out_port_list_ptr);
         LIST_ADVANCE(ext_out_port_list_ptr))

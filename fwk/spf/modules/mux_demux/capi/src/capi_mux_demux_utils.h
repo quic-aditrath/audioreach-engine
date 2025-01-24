@@ -21,7 +21,13 @@
 extern "C" {
 #endif /*__cplusplus*/
 
-//#define MUX_DEMUX_TX_DEBUG_INFO
+// #define MUX_DEMUX_TX_DEBUG_INFO
+
+// Interleaved data is not really supported in Mux, this macro is enabled for profiling automotive use graphs for the fwk MPPS overheads.
+// this macro allows mux demux to accept interleaved data and output interleaved data. Module doesnt really do muxing, it just routes the 
+// data from first input to all the outputs.
+//#define MUX_DEMUX_INTERLEAVED_DATA_WORKAROUND
+
 /** Maximum value of a signed 28-bit integer*/
 static const int32_t MAX_28 = 0x7FFFFFF;
 /** Minimum value of a signed 28-bit integer*/
@@ -54,22 +60,22 @@ static const capi_media_fmt_v2_t MUX_DEMUX_MEDIA_FMT_V2 = { { {
                                                                0, // q factor
                                                                0, // sampling_rate
                                                                1, // data_is_signed
-                                                               CAPI_DEINTERLEAVED_UNPACKED,
+                                                               CAPI_DEINTERLEAVED_UNPACKED_V2,
                                                             },
-                                                            { 1,   2,   3,   4,   5,   6,   7,   8,   9,   10, 
-															  11,  12,  13,  14,  15,  16,  17,  18,  19,  20, 
-															  21,  22,  23,  24,  25,  26,  27,  28,  29,  30,  
-															  31,  32,  33,  34,  35,  36,  37,  38,  39,  40,  
-															  41,  42,  43,  44,  45,  46,  47,  48,  49,  50,  
-															  51,  52,  53,  54,  55,  56,  57,  58,  59,  60,  
-															  61,  62,  63,  64,  65,  66,  67,  68,  69,  70,  
-															  71,  72,  73,  74,  75,  76,  77,  78,  79,  80,  
-															  81,  82,  83,  84,  85,  86,  87,  88,  89,  90,  
-															  91,  92,  93,  94,  95,  96,  97,  98,  99,  100, 
-															  101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 
-															  111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 
+                                                            { 1,   2,   3,   4,   5,   6,   7,   8,   9,   10,
+															  11,  12,  13,  14,  15,  16,  17,  18,  19,  20,
+															  21,  22,  23,  24,  25,  26,  27,  28,  29,  30,
+															  31,  32,  33,  34,  35,  36,  37,  38,  39,  40,
+															  41,  42,  43,  44,  45,  46,  47,  48,  49,  50,
+															  51,  52,  53,  54,  55,  56,  57,  58,  59,  60,
+															  61,  62,  63,  64,  65,  66,  67,  68,  69,  70,
+															  71,  72,  73,  74,  75,  76,  77,  78,  79,  80,
+															  81,  82,  83,  84,  85,  86,  87,  88,  89,  90,
+															  91,  92,  93,  94,  95,  96,  97,  98,  99,  100,
+															  101, 102, 103, 104, 105, 106, 107, 108, 109, 110,
+															  111, 112, 113, 114, 115, 116, 117, 118, 119, 120,
 															  121, 122, 123, 124, 125, 126, 127, 128 } };
-															  
+
 #else
 static const capi_media_fmt_v2_t MUX_DEMUX_MEDIA_FMT_V2 = { { {
                                                                CAPI_FIXED_POINT,
@@ -82,7 +88,7 @@ static const capi_media_fmt_v2_t MUX_DEMUX_MEDIA_FMT_V2 = { { {
                                                                0, // q factor
                                                                0, // sampling_rate
                                                                1, // data_is_signed
-                                                               CAPI_DEINTERLEAVED_UNPACKED,
+                                                               CAPI_DEINTERLEAVED_UNPACKED_V2,
                                                             },
                                                             { 1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11,
                                                               12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22,
@@ -143,6 +149,11 @@ typedef struct mux_demux_output_media_fmt_t
    /* = sample_rate*10 + num_channels*10 + q factor; calculated after raising output media format event.
     * This sum is used to avoid raising media format event even when it is not changed.*/
    uint32_t media_fmt_sum;
+
+#ifdef MUX_DEMUX_INTERLEAVED_DATA_WORKAROUND
+   uint32_t data_interleaving;
+#endif
+
 } mux_demux_output_media_fmt_t;
 
 /*Connection from an input stream channel to an output stream channel.
@@ -173,6 +184,7 @@ typedef struct mux_demux_channel_connection_t
 typedef struct mux_demux_input_port_info_t
 {
    uint32_t                    port_id;
+   uint32_t                    port_index;
    intf_extn_data_port_state_t port_state;
 
    mux_demux_input_media_fmt_t fmt;
@@ -234,6 +246,13 @@ typedef struct capi_mux_demux_t
 
    /*cached configuration */
    param_id_mux_demux_config_t *cached_config_ptr;
+
+   uint32_t miid;
+
+#ifdef MUX_DEMUX_INTERLEAVED_DATA_WORKAROUND
+   capi_interleaving_t data_interleaving;
+#endif
+
 #ifdef SIM
    capi_mux_demux_tgp_t tgp;
 #endif

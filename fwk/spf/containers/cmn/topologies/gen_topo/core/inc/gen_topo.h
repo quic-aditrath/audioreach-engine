@@ -252,6 +252,8 @@ typedef struct topo_to_cntr_vtable_t
    bool_t (*check_for_error_print)(gen_topo_t *topo_ptr);
 
    ar_result_t (*notify_ts_disc_evt)(gen_topo_t *topo_ptr, bool_t ts_valid, int64_t timestamp_disc_us, uint32_t path_index);
+
+   ar_result_t (*module_buffer_access_event)(gen_topo_t *topo_ptr, gen_topo_module_t *module_ptr, capi_event_info_t *event_info_ptr);
 } topo_to_cntr_vtable_t;
 
 
@@ -650,6 +652,8 @@ typedef struct gen_topo_t
    uint64_t                      wc_time_at_first_frame;    /**< wall clock time at first frame after island exit.*/
 
    uint32_t                      port_mf_rtm_dump_seq_num;  /**< sequence number used for dumping port MF to RTM */
+
+   topo_capi_callback_f       capi_cb;          /**< CAPI callback function */
 } gen_topo_t;
 
 
@@ -817,6 +821,17 @@ typedef struct gen_topo_delay_info_t
 #define GEN_TOPO_BUF_ORIGIN_EXT_BUF_BORROWED 4
 /** buffer is borrowed from int-port, specifically, end of an inplace nblc */
 #define GEN_TOPO_BUF_ORIGIN_BUF_MGR_BORROWED 8
+/** buffer is provided by the module itself */
+#define GEN_TOPO_BUF_ORIGIN_CAPI_MODULE 16
+/** buffer is provided by the module itself */
+#define GEN_TOPO_BUF_ORIGIN_CAPI_MODULE_BORROWED 32
+
+/** bit mask is used */
+#define GEN_TOPO_MODULE_BUF_ACCESS_INVALID 0
+/** module can provide output buffer for framework */
+#define GEN_TOPO_MODULE_OUTPUT_BUF_ACCESS 1
+/** module can provide input buffer for framework */
+#define GEN_TOPO_MODULE_INPUT_BUF_ACCESS 2
 
 /** bit mask is used */
 #define GEN_TOPO_MF_NON_PCM_UNPACKED    (0x0)
@@ -831,7 +846,7 @@ typedef union gen_topo_port_flags_t
    {
       /** Permanent    */
       uint32_t       port_has_threshold : 1;       /**< threshold is enforced on this port (either because module has raised or fwk has assigned) */
-      uint32_t       buf_origin: 4;                /**< GEN_TOPO_BUF_ORIGIN_*. this is a bit mask. */
+      uint32_t       buf_origin: 6;                /**< GEN_TOPO_BUF_ORIGIN_*. this is a bit mask. */
       uint32_t       is_upstream_realtime : 1;     /**< indicates if the upstream port produces RT data. Assigned only through propagation. */
       uint32_t       is_downstream_realtime : 1;   /**< indicates if the downstream is a RT consumer. Assigned only through propagation. */
       uint32_t       is_state_prop_blocked :1;     /**< indicates if the downstream state propagation is blocked on this port. This is only for output ports. */
@@ -860,11 +875,12 @@ typedef union gen_topo_port_flags_t
 
       uint32_t       is_pcm_unpacked :  2; /**< GEN_TOPO_MF_PCM_UNPACKED_V1=0x1 indicates unpacked V1,
                                                 GEN_TOPO_MF_PCM_UNPACKED_V2=0x2 indicates unpacked V2 */
+
+      uint32_t       supports_buffer_resuse_extn: 2; /**< GEN_TOPO_MODULE_* bit mask */
    };
    uint32_t          word;
 
 } gen_topo_port_flags_t;
-
 
 typedef struct gen_topo_common_port_t
 {
@@ -963,9 +979,6 @@ typedef struct gen_topo_input_port_t
                                                            Only bufs_ptr[0] length considered in case there are multiple buffers .
                                                            For deint-raw-compr, if each buffers data is assumed to consume at the same rate so that if first buf is drained, other buf are also drained.*/
    gen_topo_hp_timestamp_t       ts_to_sync;          /**< timestamp that's yet to be synced to common.sdata*/
-#if defined(USES_FEF_CONTAINER)
-   gu_module_t        *attached_module_ptr;  /**< The elementary module attached to this port.  */
-#endif
 } gen_topo_input_port_t;
 
 typedef struct gen_topo_output_port_t

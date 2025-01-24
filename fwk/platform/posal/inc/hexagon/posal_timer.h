@@ -310,7 +310,7 @@ int32_t posal_timer_oneshot_start_duration(posal_timer_t p_timer, int64_t durati
 
 
 /**
-  Starts the periodic timer.
+Starts the periodic timer.
 
   @datatypes
   posal_timer_t
@@ -385,7 +385,10 @@ uint64_t posal_timer_get_remaining_duration(posal_timer_t p_obj);
   @dependencies
   None. @newpage
  */
-uint64_t posal_convert_tick_to_time(uint64_t tick_count);
+static inline uint64_t posal_convert_tick_to_time(uint64_t tick_count)
+{
+  return ((uint64_t)(tick_count)*10ull / 192ull);
+}
 
 /**
    Gets the HW tick.

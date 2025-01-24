@@ -463,7 +463,6 @@ static void accumulate_data(int8_t * in_data_ptr,
 capi_err_t capi_mux_demux_process(capi_t *_pif, capi_stream_data_t *input[], capi_stream_data_t *output[])
 {
    capi_err_t result = CAPI_EOK;
-
    capi_mux_demux_t *me_ptr = (capi_mux_demux_t *)_pif;
 
    result |= ((NULL == _pif) || (NULL == input) || (NULL == output)) ? CAPI_EFAILED : result;
@@ -494,6 +493,62 @@ capi_err_t capi_mux_demux_process(capi_t *_pif, capi_stream_data_t *input[], cap
       return capi_mux_demux_handle_metadata(me_ptr, input, output);
    }
 
+#ifdef MUX_DEMUX_INTERLEAVED_DATA_WORKAROUND
+   if(CAPI_INTERLEAVED == me_ptr->data_interleaving)
+   {
+      for (uint32_t out_port_arr_index = 0; out_port_arr_index < me_ptr->num_of_output_ports && samples_to_process; out_port_arr_index++)
+      {
+         uint32_t out_port_index = me_ptr->output_port_info_ptr[out_port_arr_index].port_index;
+         if (DATA_PORT_STATE_STARTED != me_ptr->output_port_info_ptr[out_port_arr_index].port_state ||
+            NULL == output[out_port_index] || (NULL == output[out_port_index]->buf_ptr[0].data_ptr))
+         {
+            continue;
+         }
+
+         // for interleaving format copy data direcly from input to the connected output
+         uint32_t connected_input_arr_index = (uint32_t)-1;
+         for (uint32_t j = 0; j < me_ptr->num_of_input_ports; j++)
+         {
+            if (me_ptr->input_port_info_ptr[j].is_output_connected[out_port_arr_index] && me_ptr->input_port_info_ptr[j].fmt.is_valid)
+            {
+               connected_input_arr_index = j;
+               break;
+            }
+         }
+
+         if(connected_input_arr_index < me_ptr->num_of_input_ports)
+         {
+            // copyign data from input to output
+            uint32_t conn_inp_port_index = me_ptr->input_port_info_ptr[connected_input_arr_index].port_index;
+            if ((NULL == input[conn_inp_port_index]) || (NULL == input[conn_inp_port_index]->buf_ptr[0].data_ptr))
+            {
+               continue;
+            }
+
+            // make a copy of stream info.
+            output[out_port_index]->buf_ptr[0].actual_data_len =
+               memscpy(output[out_port_index]->buf_ptr[0].data_ptr,
+                       output[out_port_index]->buf_ptr[0].max_data_len,
+                       input[conn_inp_port_index]->buf_ptr[0].data_ptr,
+                       input[conn_inp_port_index]->buf_ptr[0].actual_data_len);
+            capi_stream_data_v2_t* op_ptr = (capi_stream_data_v2_t *)output[out_port_index];
+            capi_stream_data_v2_t* ip_ptr = (capi_stream_data_v2_t *)input[conn_inp_port_index];
+            op_ptr->metadata_list_ptr =  ip_ptr->metadata_list_ptr;
+            ip_ptr->metadata_list_ptr = NULL;
+            // TODO: print input port id, port index, actual len, max len,  output port id, idx, actual, max length
+
+            output[out_port_index]->flags.word = input[conn_inp_port_index]->flags.word;
+
+            input[conn_inp_port_index]->flags.end_of_frame = FALSE;
+            input[conn_inp_port_index]->flags.marker_eos   = FALSE;
+            input[conn_inp_port_index]->flags.erasure      = FALSE;
+         }
+      }
+
+      return result;
+   }
+#endif
+
    // get the bytes to process, based on the in-out buffer size of started and connected ports.
    for (uint32_t in_port_index = 0; in_port_index < me_ptr->num_of_input_ports; in_port_index++)
    {
@@ -501,6 +556,19 @@ capi_err_t capi_mux_demux_process(capi_t *_pif, capi_stream_data_t *input[], cap
       {
          continue;
       }
+
+#ifdef MUX_DEMUX_TX_DEBUG_INFO
+      for (uint32_t j = 0; j < input[in_port_index]->bufs_num; j++)
+      {
+         AR_MSG_ISLAND(DBG_LOW_PRIO,
+                       "before process [0x%lx]  input[%lu][%lu] = %lu of %lu",
+                       me_ptr->miid,
+                       in_port_index,
+                       j,
+                       input[in_port_index]->buf_ptr[j].actual_data_len,
+                       input[in_port_index]->buf_ptr[j].max_data_len);
+      }
+#endif
 
       for (uint32_t out_port_arr_index = 0; out_port_arr_index < me_ptr->num_of_output_ports; out_port_arr_index++)
       {
@@ -526,18 +594,19 @@ capi_err_t capi_mux_demux_process(capi_t *_pif, capi_stream_data_t *input[], cap
                                         me_ptr->output_port_info_ptr[out_port_arr_index].fmt.bits_per_sample));
 #ifdef MUX_DEMUX_TX_DEBUG_INFO
          AR_MSG_ISLAND(DBG_LOW_PRIO,
-                "%lu -> %lu   input actual len %lu, output max len %lu",
-                in_port_index,
-                out_port_index,
-                input[in_port_index]->buf_ptr[0].actual_data_len,
-                output[out_port_index]->buf_ptr[0].max_data_len);
+                       "[0x%lx] %lu -> %lu   input actual len %lu, output max len %lu",
+                       me_ptr->miid,
+                       in_port_index,
+                       out_port_index,
+                       input[in_port_index]->buf_ptr[0].actual_data_len,
+                       output[out_port_index]->buf_ptr[0].max_data_len);
 #endif
       }
    }
    samples_to_process = min_of_two(samples_to_process, input_samples_to_process);
 
 #ifdef MUX_DEMUX_TX_DEBUG_INFO
-   AR_MSG_ISLAND(DBG_LOW_PRIO, "samples to process %lu.", samples_to_process);
+   AR_MSG_ISLAND(DBG_LOW_PRIO, "[0x%lx] samples to process %lu.", me_ptr->miid, samples_to_process);
 #endif
 
    // route input to output stream
@@ -567,7 +636,7 @@ capi_err_t capi_mux_demux_process(capi_t *_pif, capi_stream_data_t *input[], cap
          // min op is done because it is possible that this port is not connected to any input port and has not
          // participated in samples_to_process calculation.
          output[out_port_index]->buf_ptr[out_buf_index].actual_data_len =
-            min_of_two(output[out_port_index]->buf_ptr[out_buf_index].max_data_len,
+            min_of_two(output[out_port_index]->buf_ptr[0].max_data_len,
                        samples_to_bytes(samples_to_process,
                                         me_ptr->output_port_info_ptr[out_port_arr_index].fmt.bits_per_sample));
 
@@ -577,7 +646,7 @@ capi_err_t capi_mux_demux_process(capi_t *_pif, capi_stream_data_t *input[], cap
           */
          memset(output[out_port_index]->buf_ptr[out_buf_index].data_ptr,
                 0,
-                output[out_port_index]->buf_ptr[out_buf_index].actual_data_len);
+                output[out_port_index]->buf_ptr[0].actual_data_len);
 
          // num of buffers can be less than num_channels
          // num of channels are derived based on the connection index
@@ -608,7 +677,7 @@ capi_err_t capi_mux_demux_process(capi_t *_pif, capi_stream_data_t *input[], cap
                   // samples to copy should be minimum of input and output. remaining will be zeros in output buffer.
                   uint32_t num_samples =
                      min_of_two(samples_to_process,
-                                bytes_to_samples(input[input_port_index]->buf_ptr[input_buf_index].actual_data_len,
+                                bytes_to_samples(input[input_port_index]->buf_ptr[0].actual_data_len,
                                                  me_ptr->input_port_info_ptr[input_port_index].fmt.bits_per_sample));
 
                   accumulate_data(input[input_port_index]->buf_ptr[input_buf_index].data_ptr,
@@ -633,8 +702,18 @@ capi_err_t capi_mux_demux_process(capi_t *_pif, capi_stream_data_t *input[], cap
       for (uint32_t out_buf_index = 0; out_buf_index < output[out_port_index]->bufs_num; out_buf_index++)
       {
          output[out_port_index]->buf_ptr[out_buf_index].actual_data_len =
-            min_of_two(output[out_port_index]->buf_ptr[out_buf_index].actual_data_len,
+            min_of_two(output[out_port_index]->buf_ptr[0].actual_data_len,
                        maximum_bytes_copied_from_input_port_bufs);
+
+#ifdef MUX_DEMUX_TX_DEBUG_INFO
+         AR_MSG_ISLAND(DBG_LOW_PRIO,
+                       "[0x%lx]  output[%lu][%lu] = %lu of %lu",
+                       me_ptr->miid,
+                       out_port_index,
+                       out_buf_index,
+                       output[out_port_index]->buf_ptr[out_buf_index].actual_data_len,
+                       output[out_port_index]->buf_ptr[out_buf_index].max_data_len);
+#endif
       }
    }
 
@@ -654,17 +733,28 @@ capi_err_t capi_mux_demux_process(capi_t *_pif, capi_stream_data_t *input[], cap
             samples_to_bytes(samples_to_process, me_ptr->input_port_info_ptr[i].fmt.bits_per_sample);
          for (uint32_t j = 0; j < input[i]->bufs_num; j++)
          {
-            is_input_fully_consumed = (bytes_copied >= input[i]->buf_ptr[j].actual_data_len) ? TRUE : FALSE;
-            input[i]->buf_ptr[j].actual_data_len = min_of_two(bytes_copied, input[i]->buf_ptr[j].actual_data_len);
+            is_input_fully_consumed = (bytes_copied >= input[i]->buf_ptr[0].actual_data_len) ? TRUE : FALSE;
+            input[i]->buf_ptr[j].actual_data_len = min_of_two(bytes_copied, input[i]->buf_ptr[0].actual_data_len);
+
+#ifdef MUX_DEMUX_TX_DEBUG_INFO
+            AR_MSG_ISLAND(DBG_LOW_PRIO,
+                          "[0x%lx]  input[%lu][%lu] = %lu of %lu",
+                          me_ptr->miid,
+                          i,
+                          j,
+                          input[i]->buf_ptr[j].actual_data_len,
+                          input[i]->buf_ptr[j].max_data_len);
+#endif
          }
       }
       else
       {
          is_input_fully_consumed = TRUE;
          AR_MSG_ISLAND(DBG_LOW_PRIO,
-                "Dropping %lu bytes from input port index %lu. this port is not connected.",
-                input[i]->buf_ptr[0].actual_data_len,
-                i);
+                       "[0x%lx] Dropping %lu bytes from input port index %lu. this port is not connected.",
+                       me_ptr->miid,
+                       input[i]->buf_ptr[0].actual_data_len,
+                       i);
       }
 
       //propagate end of frame from input to output due to non dfg/eos.

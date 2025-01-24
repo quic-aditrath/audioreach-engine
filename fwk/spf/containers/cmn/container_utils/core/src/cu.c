@@ -45,27 +45,21 @@ const uint32_t global_cntr_list_t[] = {
    APM_CONTAINER_TYPE_ID_SC, // 0
    APM_CONTAINER_TYPE_ID_GC, // 1
    APM_CONTAINER_TYPE_ID_OLC, // 2
-#if defined(USES_FEF_CONTAINER)
-   APM_CONTAINER_TYPE_ID_FRONT_END_FWK // 3
-#endif
+   APM_CONTAINER_TYPE_ID_PTC // 3
 };
 
 const spf_cntr_create_function_t global_cntr_create_ftable[] = {
    spl_cntr_create, // APM_CONTAINER_TYPE_ID_SC
    gen_cntr_create, // APM_CONTAINER_TYPE_ID_GC
    olc_create,      // APM_CONTAINER_TYPE_ID_OLC
-#if defined(USES_FEF_CONTAINER)
-   gen_cntr_create, // APM_CONTAINER_TYPE_ID_FRONT_END_FWK
-#endif
+   gen_cntr_create, // APM_CONTAINER_TYPE_ID_PTC
 };
 
 const spf_cntr_dump_debug_info_t global_dump_debug_info_ftable[] = {
    NULL, // APM_CONTAINER_TYPE_ID_SC
    NULL, // APM_CONTAINER_TYPE_ID_GC
    NULL, // APM_CONTAINER_TYPE_ID_OLC
-#if defined(USES_FEF_CONTAINER)
-   NULL,      // APM_CONTAINER_TYPE_ID_FRONT_END_FWK
-#endif
+   NULL, // APM_CONTAINER_TYPE_ID_PTC
 };
 
 /* =======================================================================

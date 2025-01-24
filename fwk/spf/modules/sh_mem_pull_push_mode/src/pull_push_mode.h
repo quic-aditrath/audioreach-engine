@@ -72,6 +72,7 @@ typedef struct pull_push_mode_watermark_level_t
 
 typedef struct pull_push_mode_t
 {
+   uint32_t                                 miid;
    uint32_t                                 mode;
    uint32_t                                 mem_map_client;
    uint32_t                                 num_water_mark_levels;
@@ -79,15 +80,18 @@ typedef struct pull_push_mode_t
    uint32_t                                 pos_buf_mem_map_handle;
    uint32_t                                 shared_circ_buf_size;
    uint32_t                                 num_clients_registered;
-   event_client_info_t            			event_client_info[MAX_EVENT_CLIENTS];
-   uint8_t *                                shared_circ_buf_start_ptr;
+   event_client_info_t                      event_client_info[MAX_EVENT_CLIENTS];
+   uint8_t                                 *shared_circ_buf_start_ptr;
    sh_mem_pull_push_mode_position_buffer_t *shared_pos_buf_ptr;
-   pull_push_mode_watermark_level_t         *water_mark_levels_ptr;
-   pm_media_fmt_t                           media_fmt; /**< input media fmt */
+   pull_push_mode_watermark_level_t        *water_mark_levels_ptr;
+   pm_media_fmt_t                           media_fmt;     /**< input media fmt */
    pm_media_fmt_t                           cfg_media_fmt; /**< configured media fmt for push mode */
    capi_buf_t                               scratch_buf[CAPI_MAX_CHANNELS_V2];
-   bool_t                                   is_disabled;
    posal_thread_prio_t                      ist_priority;
+   bool_t                                   is_disabled;
+   bool_t                                   is_mod_buf_access_enabled;
+   void                                    *curr_shared_buf_ptr;
+   uint32_t                                 next_read_index;
 } pull_push_mode_t;
 
 typedef struct capi_pm_media_fmt_t
@@ -108,6 +112,9 @@ typedef struct capi_pm_t
    capi_event_callback_info_t cb_info;
 
    pull_push_mode_t pull_push_mode_info;
+
+   // container frame duration.
+   uint32_t frame_dur_us;
 } capi_pm_t;
 
 /*------------------------------------------------------------------------
@@ -128,25 +135,50 @@ capi_err_t pull_push_mode_init(pull_push_mode_t *pm_ptr, sh_mem_pull_push_mode_c
 
 capi_err_t pull_push_mode_check_buf_size(pull_push_mode_t *pm_ptr, pm_media_fmt_t *media_fmt_ptr);
 
-capi_err_t pull_push_mode_set_inp_media_fmt(pull_push_mode_t *pm_ptr, media_format_t *media_fmt, pm_media_fmt_t *dst_media_fmt_ptr);
+capi_err_t pull_push_mode_set_inp_media_fmt(pull_push_mode_t *pm_ptr,
+                                            media_format_t   *media_fmt,
+                                            pm_media_fmt_t   *dst_media_fmt_ptr);
 
 bool_t pull_push_check_media_fmt_validity(pull_push_mode_t *pm_ptr);
 
-capi_err_t pull_push_mode_set_fwk_ext_inp_media_fmt(pull_push_mode_t *                      pm_ptr,
-                                                       fwk_extn_pcm_param_id_media_fmt_extn_t *extn_ptr);
+capi_err_t pull_push_mode_set_fwk_ext_inp_media_fmt(pull_push_mode_t                       *pm_ptr,
+                                                    fwk_extn_pcm_param_id_media_fmt_extn_t *extn_ptr);
 
 capi_err_t capi_pm_raise_event_to_clients(capi_pm_t *me, uint32_t event_id, void *payload_ptr, uint32_t payload_len);
 
 void pull_push_mode_deinit(pull_push_mode_t *pm_ptr);
 
-capi_err_t pull_mode_read_input(capi_pm_t *capi_ptr, capi_buf_t *module_buf_ptr);
-
-capi_err_t push_mode_write_output(capi_pm_t *capi_ptr, capi_buf_t *module_buf_ptr, uint64_t timestamp, bool_t received_eos_marker);
+capi_err_t pull_mode_read_input(capi_t *_pif, capi_stream_data_t *input[], capi_stream_data_t *output[]);
+capi_err_t push_mode_write_output(capi_t *_pif, capi_stream_data_t *input[], capi_stream_data_t *output[]);
 
 capi_err_t pull_push_mode_watermark_levels_init(pull_push_mode_t *pm_ptr,
                                                 uint32_t          num_water_mark_levels,
                                                 event_cfg_sh_mem_pull_push_mode_watermark_level_t *water_mark_levels,
                                                 uint32_t                                           heap_id);
+
+capi_err_t pull_module_buf_mgr_extn_return_output_buf(uint32_t    handle,
+                                           uint32_t    port_index,
+                                           uint32_t   *num_bufs,
+                                           capi_buf_t *buffer_ptr);
+
+capi_err_t push_module_buf_mgr_extn_get_input_buf(uint32_t    handle,
+                                           uint32_t    port_index,
+                                           uint32_t   *num_bufs,
+                                           capi_buf_t *buffer_ptr);
+
+capi_err_t pull_push_mode_check_send_watermark_event_util_(capi_pm_t *capi_ptr, uint32_t startLevel, uint32_t endLevel);
+
+static inline capi_err_t pull_push_mode_check_send_watermark_event(capi_pm_t *me_ptr,
+                                                                   uint32_t   startLevel,
+                                                                   uint32_t   endLevel)
+{
+   if (me_ptr->pull_push_mode_info.num_water_mark_levels == 0)
+   {
+      return CAPI_EOK;
+   }
+
+   return pull_push_mode_check_send_watermark_event_util_(me_ptr, startLevel, endLevel);
+}
 
 #ifdef __cplusplus
 }

@@ -15,6 +15,7 @@
 #include "posal_types.h"
 #include "module_cmn_api.h"
 #include "common_enc_dec_api.h"
+#include "capi_intf_extn_module_buffer_access.h"
 
 /*=====================================================================
   Macros
@@ -50,6 +51,9 @@
 #define CAPI_CMN_MSG_PREFIX "CAPI CMN:[%lX] "
 #define CAPI_CMN_MSG(ID, xx_ss_mask, xx_fmt, ...)\
          AR_MSG(xx_ss_mask, CAPI_CMN_MSG_PREFIX xx_fmt, ID, ##__VA_ARGS__)
+
+#define CAPI_CMN_MSG_ISLAND(LOGID, PRIO, XX_FMT, ...)                                                                  \
+   AR_MSG_ISLAND(PRIO, CAPI_CMN_MSG_PREFIX XX_FMT, LOGID, ##__VA_ARGS__);
 
 // number of channels that can be represented in a word mask
 #define CAPI_CMN_CHANNELS_PER_MASK              32
@@ -557,6 +561,27 @@ bool_t capi_cmn_check_v2_channel_mask_duplication(uint32_t  miid,
 												  uint32_t* check_channel_mask_arr_ptr,
 												  uint32_t* offset_ptr,
 												  uint32_t  per_cfg_base_payload_size);
+
+capi_err_t capi_cmn_check_and_update_intf_extn_status(uint32_t    num_supported_extensions,
+                                                      uint32_t   *module_supported_extns_list,
+                                                      capi_buf_t *payload_ptr);
+
+
+capi_err_t capi_cmn_intf_extn_event_module_input_buffer_reuse(uint32_t                    log_id,
+                                                              capi_event_callback_info_t *cb_info_ptr,
+                                                              uint32_t                    port_index,
+                                                              bool_t                      is_enable,
+                                                              uint32_t                    buffer_mgr_cb_handle,
+                                                              intf_extn_get_module_input_buf_func_t get_input_buf_fn);
+
+
+capi_err_t capi_cmn_intf_extn_event_module_output_buffer_reuse(uint32_t                    log_id,
+                                                              capi_event_callback_info_t *cb_info_ptr,
+                                                              uint32_t                    port_index,
+                                                              bool_t                      is_enable,
+                                                              uint32_t                    buffer_mgr_cb_handle,
+                                                              intf_extn_return_module_output_buf_func_t return_output_buf_fn);
+
 #ifdef AVS_BUILD_SOS
 #include "spf_dyn_loading_func_mapping.h"
 

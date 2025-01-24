@@ -1474,6 +1474,20 @@ capi_err_t gen_topo_capi_callback_non_island(void *context_ptr, capi_event_id_t 
                result = gen_topo_handle_port_propagated_capi_event(topo_ptr, module_ptr, event_info_ptr);
                break;
             }
+            case INTF_EXTN_EVENT_ID_MODULE_BUFFER_ACCESS_ENABLE:
+            {
+               if (topo_ptr->topo_to_cntr_vtable_ptr->module_buffer_access_event)
+               {
+                  result = topo_ptr->topo_to_cntr_vtable_ptr->module_buffer_access_event(topo_ptr,
+                                                                                         module_ptr,
+                                                                                         event_info_ptr);
+               }
+               else
+               {
+                  return CAPI_EUNSUPPORTED;
+               }
+               break;
+            }
             case FWK_EXTN_EVENT_ID_DATA_TRIGGER_IN_ST_CNTR:
             {
                // non-island call.

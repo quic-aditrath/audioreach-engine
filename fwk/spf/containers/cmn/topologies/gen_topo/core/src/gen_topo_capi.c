@@ -185,9 +185,9 @@ ar_result_t gen_topo_get_aggregated_capi_stack_size(gen_topo_t *topo_ptr, uint32
             capi_proplist_t init_proplist;
             capi_prop_t     init_props[NUM_INIT_PARAMS];
 
-            capi_event_callback_info_t cb_obj             = { .event_cb      = gen_topo_capi_callback,
-                                                  .event_context = (void *)module_ptr };
-            capi_port_num_info_t       num_max_ports_info = { .num_input_ports  = module_ptr->gu.max_input_ports,
+            capi_event_callback_info_t cb_obj = { .event_cb = topo_ptr->capi_cb, .event_context = (void *)module_ptr };
+
+            capi_port_num_info_t num_max_ports_info = { .num_input_ports  = module_ptr->gu.max_input_ports,
                                                         .num_output_ports = module_ptr->gu.max_output_ports };
 
             /**

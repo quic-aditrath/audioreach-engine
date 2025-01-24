@@ -620,6 +620,29 @@ ar_result_t cu_handle_sg_mgmt_cmd(cu_base_t *me_ptr, uint32_t sg_ops, topo_sg_st
       }
    }
 
+   if (me_ptr->cntr_vtbl_ptr->post_operate_on_ext_out_port)
+   {
+      for (uint32_t i = 0; i < cmd_gmgmt_ptr->cntr_port_hdl_list.num_op_port_handle; i++)
+      {
+         gu_ext_out_port_t *ext_out_port_ptr =
+            (gu_ext_out_port_t *)cmd_gmgmt_ptr->cntr_port_hdl_list.op_port_handle_list_pptr[i];
+
+         if (!gu_is_sg_id_found_in_spf_array(sg_list_ptr, ext_out_port_ptr->sg_ptr->id))
+         {
+#if 0
+         CU_MSG(me_ptr->gu_ptr->log_id,
+                DBG_LOW_PRIO,
+                "post operate on ext out port. External output of module, port (0x%lx, 0x%lx)",
+                ext_out_port_ptr->int_out_port_ptr->cmn.module_ptr->module_instance_id,
+                ext_out_port_ptr->int_out_port_ptr->cmn.id);
+#endif
+
+            TRY(result,
+                me_ptr->cntr_vtbl_ptr->post_operate_on_ext_out_port(me_ptr, sg_ops, &ext_out_port_ptr, sg_list_ptr));
+         }
+      }
+   }
+
    /** post operations (mainly DFG/EOS handling) */
    if (me_ptr->cntr_vtbl_ptr->post_operate_on_subgraph)
    {

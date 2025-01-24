@@ -411,9 +411,6 @@ typedef struct gen_cntr_t
    uint32_t         *wait_mask_arr;             /**< wait mask for each parallel path. (me_ptr->cu.gu_ptr->num_parallel_paths)
                                                      this is bitmask where each bit corresponds to an external port.*/
    spf_list_node_t  *async_signal_list_ptr;     /**< list of async signals created for the container, node type is gen_cntr_async_signal_t */
-#if defined(USES_FEF_CONTAINER)
-   posal_timer_t     periodic_timer;            /**< periodic timer for the container*/
-#endif
 } gen_cntr_t;
 
 typedef struct gen_cntr_render_eos_cb_context_t
@@ -762,6 +759,8 @@ static inline void gen_cntr_check_and_send_prebuffers(gen_cntr_t *             m
 ar_result_t gen_cntr_workloop_async_signal_trigger_handler(cu_base_t* base_ptr, uint32_t bit_mask);
 ar_result_t gen_cntr_fwk_extn_async_signal_enable(gen_cntr_t *me_ptr, gen_topo_module_t *module_ptr);
 ar_result_t gen_cntr_fwk_extn_async_signal_disable(gen_cntr_t *me_ptr, gen_topo_module_t *module_ptr);
+
+void gen_cntr_set_stm_ts_to_module (gen_cntr_t *me_ptr);
 
 #ifdef __cplusplus
 }

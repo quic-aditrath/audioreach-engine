@@ -1526,14 +1526,16 @@ void gen_topo_process_attached_elementary_modules(gen_topo_t *topo_ptr, gen_topo
                                     "before");
 #endif
 
-         PROF_BEFORE_PROCESS(out_attached_module_ptr->prof_info_ptr)
+         // clang-format off
+         IRM_PROFILE_MOD_PROCESS_SECTION(out_attached_module_ptr->prof_info_ptr,  topo_ptr->gu.prof_mutex,
          attached_proc_result =
             out_attached_module_ptr->capi_ptr->vtbl_ptr
                ->process(out_attached_module_ptr->capi_ptr,
                          (capi_stream_data_t **)&(topo_ptr->proc_context.out_port_sdata_pptr[out_port_idx]),
                          (capi_stream_data_t **)&(topo_ptr->proc_context.out_port_sdata_pptr[out_port_idx]));
 
-         PROF_AFTER_PROCESS(out_attached_module_ptr->prof_info_ptr, topo_ptr->gu.prof_mutex)
+         );
+         // clang-format on
 
 #ifdef VERBOSE_DEBUGGING
          PRINT_PORT_INFO_AT_PROCESS(out_attached_module_ptr->gu.module_instance_id,
@@ -1806,8 +1808,6 @@ GEN_TOPO_STATIC ar_result_t gen_topo_module_process(gen_topo_t *       topo_ptr,
     *                      the output->actual_len is output data, & data starts from data_ptr.
     */
 
-   PROF_BEFORE_PROCESS(module_ptr->prof_info_ptr)
-
 #ifdef PROC_DELAY_DEBUG
    uint64_t time_before = posal_timer_get_time();
 #endif
@@ -1815,9 +1815,15 @@ GEN_TOPO_STATIC ar_result_t gen_topo_module_process(gen_topo_t *       topo_ptr,
    if (module_ptr->capi_ptr && (!module_ptr->bypass_ptr))
    {
       pc->process_info.is_in_mod_proc_context = TRUE;
-      result                                  = module_ptr->capi_ptr->vtbl_ptr->process(module_ptr->capi_ptr,
+
+      // clang-format off
+      IRM_PROFILE_MOD_PROCESS_SECTION(module_ptr->prof_info_ptr, topo_ptr->gu.prof_mutex,
+      result = module_ptr->capi_ptr->vtbl_ptr->process(module_ptr->capi_ptr,
                                                        (capi_stream_data_t **)pc->in_port_sdata_pptr,
                                                        (capi_stream_data_t **)pc->out_port_sdata_pptr);
+      );
+      // clang-format on
+
       pc->process_info.is_in_mod_proc_context = FALSE;
       if (is_siso_input_raw_and_output_pcm)
       {
@@ -1837,10 +1843,14 @@ GEN_TOPO_STATIC ar_result_t gen_topo_module_process(gen_topo_t *       topo_ptr,
    else // PCM use cases, SH MEM EP, bypass use cases etc
    {
       // metadata prop is taken care in gen_topo_propagate_metadata
+      // clang-format off
+      IRM_PROFILE_MOD_PROCESS_SECTION(module_ptr->prof_info_ptr, topo_ptr->gu.prof_mutex,
       result = gen_topo_copy_input_to_output(topo_ptr,
                                              module_ptr,
                                              (capi_stream_data_t **)pc->in_port_sdata_pptr,
                                              (capi_stream_data_t **)pc->out_port_sdata_pptr);
+      );
+      // clang-format on
    }
 #ifdef PROC_DELAY_DEBUG
    if (APM_SUB_GRAPH_SID_VOICE_CALL == module_ptr->gu.sg_ptr->sid)
@@ -1852,8 +1862,6 @@ GEN_TOPO_STATIC ar_result_t gen_topo_module_process(gen_topo_t *       topo_ptr,
                       (uint32_t)(posal_timer_get_time() - time_before));
    }
 #endif
-
-   PROF_AFTER_PROCESS(module_ptr->prof_info_ptr, topo_ptr->gu.prof_mutex)
 
    proc_result = result;
    need_more   = (result == CAPI_ENEEDMORE);

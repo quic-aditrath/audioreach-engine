@@ -12,10 +12,7 @@
 
 #include "gen_cntr_i.h"
 #include "capi_fwk_extns_island.h"
-
-#if defined(USES_FEF_CONTAINER)
-#include "fef_cntr_i.h"
-#endif
+#include "pt_cntr.h"
 
 #ifdef PROD_SPECIFIC_MAX_CH
 static const uint32_t GEN_CNTR_PROCESS_STACK_SIZE     = 2048; // additional requirement based on profiling
@@ -817,7 +814,8 @@ ar_result_t gen_cntr_fwk_extn_handle_at_start(gen_cntr_t *me_ptr, gu_module_list
 {
    ar_result_t result = AR_EOK;
 
-   gen_topo_module_t *stm_module_ptr = NULL;
+   gu_module_list_t *st_module_list_ptr = NULL;
+
    // first handle async extension modules
    // check if STM extension module is found and cache that module ptr
    for (; (NULL != module_list_ptr); LIST_ADVANCE(module_list_ptr))
@@ -830,51 +828,50 @@ ar_result_t gen_cntr_fwk_extn_handle_at_start(gen_cntr_t *me_ptr, gu_module_list
       }
       else if (module_ptr->flags.need_stm_extn)
       {
-         // caches the first STM module, if more than one STM module is found return error
-         if (NULL == stm_module_ptr)
-         {
-            stm_module_ptr = module_ptr;
-         }
-         else
-         {
-            GEN_CNTR_MSG(me_ptr->topo.gu.log_id, DBG_ERROR_PRIO, "more than 1 STM modules found.");
-            return AR_EFAILED;
-         }
+         // caches the STM module,
+         spf_list_insert_tail((spf_list_node_t **)&st_module_list_ptr, module_ptr, me_ptr->cu.heap_id, TRUE);
       }
    }
 
-   // handle the STM module at the end to avoid signal misses.
-   // note that currently only one STM enable is supported, if more than 1 present it returns failure
-   if (stm_module_ptr)
+   // handle STM module enable
+   if (st_module_list_ptr)
    {
-      result |= gen_cntr_stm_fwk_extn_handle_enable(me_ptr, stm_module_ptr);
+      // pass thru container allows enabling multiple HW instances in one container.
+      if (check_if_pass_thru_container(me_ptr))
+      {
+         result |= pt_cntr_stm_fwk_extn_handle_enable((pt_cntr_t *)me_ptr, st_module_list_ptr);
+      }
+      else
+      {
+         if (NULL == st_module_list_ptr->next_ptr)
+         {
+            result |= gen_cntr_stm_fwk_extn_handle_enable(me_ptr, (gen_topo_module_t *)st_module_list_ptr->module_ptr);
+         }
+         else // if more than one STM module is found in generic container return error
+         {
+            GEN_CNTR_MSG(me_ptr->topo.gu.log_id, DBG_ERROR_PRIO, "more than 1 STM modules found.");
+            result = AR_EFAILED;
+         }
+      }
+
+      spf_list_delete_list((spf_list_node_t **)&st_module_list_ptr, TRUE);
    }
-#if defined(USES_FEF_CONTAINER)
-   else if(APM_CONTAINER_TYPE_ID_FRONT_END_FWK == me_ptr->cu.cntr_type)
-   {
-      return fef_cntr_enable_timer(me_ptr);
-   }
-#endif
+
    return result;
 }
 
 ar_result_t gen_cntr_fwk_extn_handle_at_stop(gen_cntr_t *me_ptr, gu_module_list_t *module_list_ptr)
 {
-   ar_result_t result         = AR_EOK;
-   gen_topo_module_t *stm_module_ptr = NULL;
+   ar_result_t       result             = AR_EOK;
+   gu_module_list_t *st_module_list_ptr = NULL;
+
    for (; (NULL != module_list_ptr); LIST_ADVANCE(module_list_ptr))
    {
       gen_topo_module_t *module_ptr = (gen_topo_module_t *)module_list_ptr->module_ptr;
       if (module_ptr->flags.need_stm_extn)
       {
-         if (NULL == stm_module_ptr)
-         {
-            stm_module_ptr = module_ptr;
-         }
-         else
-         {
-            GEN_CNTR_MSG(me_ptr->topo.gu.log_id, DBG_ERROR_PRIO, "more than 1 STM modules found.");
-         }
+         // caches the STM module,
+         spf_list_insert_tail((spf_list_node_t **)&st_module_list_ptr, module_ptr, me_ptr->cu.heap_id, TRUE);
       }
       else if (module_ptr->flags.need_async_st_extn)
       {
@@ -882,37 +879,43 @@ ar_result_t gen_cntr_fwk_extn_handle_at_stop(gen_cntr_t *me_ptr, gu_module_list_
       }
    }
 
-   if(stm_module_ptr)
+   // handle STM module disable
+   if (st_module_list_ptr)
    {
-      result |= gen_cntr_stm_fwk_extn_handle_disable(me_ptr, stm_module_ptr);
+      if (check_if_pass_thru_container(me_ptr))
+      {
+         result = pt_cntr_stm_fwk_extn_handle_disable((pt_cntr_t *)me_ptr, st_module_list_ptr);
+      }
+      else
+      {
+         if (NULL == st_module_list_ptr->next_ptr)
+         {
+            result |= gen_cntr_stm_fwk_extn_handle_disable(me_ptr, (gen_topo_module_t *)st_module_list_ptr->module_ptr);
+         }
+         else
+         {
+            GEN_CNTR_MSG(me_ptr->topo.gu.log_id, DBG_ERROR_PRIO, "more than 1 STM modules found.");
+            result = AR_EFAILED;
+         }
+      }
+      spf_list_delete_list((spf_list_node_t **)&st_module_list_ptr, TRUE);
    }
-#if defined(USES_FEF_CONTAINER)
-   else if(APM_CONTAINER_TYPE_ID_FRONT_END_FWK == me_ptr->cu.cntr_type)
-   {
-      return fef_cntr_disable_timer(me_ptr);
-   }
-#endif
+
    return result;
 }
 
 static ar_result_t gen_cntr_fwk_extn_handle_at_suspend(gen_cntr_t *me_ptr, gu_module_list_t *module_list_ptr)
 {
    ar_result_t result         = AR_EOK;
-   gen_topo_module_t *stm_module_ptr = NULL;
+   gu_module_list_t *st_module_list_ptr = NULL;
 
    for (; (NULL != module_list_ptr); LIST_ADVANCE(module_list_ptr))
    {
       gen_topo_module_t *module_ptr = (gen_topo_module_t *)module_list_ptr->module_ptr;
       if (module_ptr->flags.need_stm_extn)
       {
-         if (NULL == stm_module_ptr)
-         {
-            stm_module_ptr = module_ptr;
-         }
-         else
-         {
-            GEN_CNTR_MSG(me_ptr->topo.gu.log_id, DBG_ERROR_PRIO, "more than 1 STM modules found.");
-         }
+         // caches the STM module,
+         spf_list_insert_tail((spf_list_node_t **)&st_module_list_ptr, module_ptr, me_ptr->cu.heap_id, TRUE);
       }
       else if (module_ptr->flags.need_async_st_extn)
       {
@@ -920,17 +923,27 @@ static ar_result_t gen_cntr_fwk_extn_handle_at_suspend(gen_cntr_t *me_ptr, gu_mo
       }
    }
 
-   if(stm_module_ptr)
+   if (st_module_list_ptr)
    {
-      result |= gen_cntr_stm_fwk_extn_handle_disable(me_ptr, stm_module_ptr);
+      if (check_if_pass_thru_container(me_ptr))
+      {
+         result = pt_cntr_stm_fwk_extn_handle_disable((pt_cntr_t *)me_ptr, st_module_list_ptr);
+      }
+      else // gen cntr
+      {
+         if (NULL == st_module_list_ptr->next_ptr)
+         {
+            result |= gen_cntr_stm_fwk_extn_handle_disable(me_ptr, (gen_topo_module_t *)st_module_list_ptr->module_ptr);
+         }
+         else
+         {
+            GEN_CNTR_MSG(me_ptr->topo.gu.log_id, DBG_ERROR_PRIO, "more than 1 STM modules found.");
+            result = AR_EFAILED;
+         }
+      }
    }
-#if defined(USES_FEF_CONTAINER)
-   else if(APM_CONTAINER_TYPE_ID_FRONT_END_FWK == me_ptr->cu.cntr_type)
-   {
-      return fef_cntr_disable_timer(me_ptr);
-   }
-#endif
 
+   spf_list_delete_list((spf_list_node_t **)&st_module_list_ptr, TRUE);
    return result;
 }
 
@@ -1865,6 +1878,30 @@ ar_result_t gen_cntr_handle_fwk_events_util_(gen_cntr_t *                me_ptr,
       me_ptr->cu.voice_info_ptr->event_flags.did_hw_acc_proc_delay_change =
          capi_event_flag_ptr->hw_acc_proc_delay_event;
    }
+
+#if 0
+   // if there is MF/SG state change/process state change/threshold change process list is required to be udpated
+   // for pass thru container.
+   // this takes care of
+   if (check_if_pass_thru_container(me_ptr))
+   {
+      if (me_ptr->cu.flags.is_cntr_started)
+      {
+         if ((fwk_event_flag_ptr->port_state_change || fwk_event_flag_ptr->sg_state_change ||
+              capi_event_flag_ptr->port_prop_is_up_strm_rt_change))
+         {
+            result |= pt_cntr_update_module_process_list((pt_cntr_t *)me_ptr);
+         }
+
+         if (fwk_event_flag_ptr->frame_len_change || fwk_event_flag_ptr->upstream_frame_len_change ||
+             capi_event_flag_ptr->media_fmt_event || capi_event_flag_ptr->port_thresh)
+         {
+            /** Assign topo buffers to the modules in the proc list*/
+            result |= pt_cntr_assign_port_buffers((pt_cntr_t *)me_ptr);
+         }
+      }
+   }
+#endif
 
    capi_event_flag_ptr->word                     = 0;
    fwk_event_flag_ptr->word                      = 0;

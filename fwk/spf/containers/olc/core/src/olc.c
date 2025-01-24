@@ -74,6 +74,7 @@ static const cu_cntr_vtable_t olc_cntr_funcs = {
    .deinit_ext_in_port                      = olc_deinit_ext_in_port,
    .operate_on_ext_in_port                  = olc_operate_on_ext_in_port,
    .post_operate_on_ext_in_port             = olc_post_operate_on_ext_in_port,
+   .post_operate_on_ext_out_port            = NULL,
    .input_media_format_received             = olc_input_media_format_received,
 
    .init_ext_out_port                       = olc_init_ext_out_port,
@@ -139,6 +140,7 @@ static const topo_to_cntr_vtable_t topo_to_olc_vtable = {
    .check_for_error_print                       = NULL,
 
    .notify_ts_disc_evt                          = NULL,
+   .module_buffer_access_event                  = NULL,
 };
 
 // function table for response handling.

@@ -572,13 +572,16 @@ GEN_TOPO_STATIC ar_result_t st_topo_module_process(gen_topo_t *topo_ptr, gen_top
     * At output of process, the input->actual_len is the amount of data consumed (read) by CAPI.
     *                      the output->actual_len is output data, & data starts from data_ptr.
     */
-   PROF_BEFORE_PROCESS(module_ptr->prof_info_ptr)
    if (module_ptr->capi_ptr && (!module_ptr->bypass_ptr))
    {
       pc->process_info.is_in_mod_proc_context = TRUE;
-      result                                  = module_ptr->capi_ptr->vtbl_ptr->process(module_ptr->capi_ptr,
+      // clang-format off
+      IRM_PROFILE_MOD_PROCESS_SECTION(module_ptr->prof_info_ptr, topo_ptr->gu.prof_mutex,
+      result = module_ptr->capi_ptr->vtbl_ptr->process(module_ptr->capi_ptr,
                                                        (capi_stream_data_t **)pc->in_port_sdata_pptr,
                                                        (capi_stream_data_t **)pc->out_port_sdata_pptr);
+      );
+      // clang-format on
       pc->process_info.is_in_mod_proc_context = FALSE;
 
       /* Not handling TS for decoders in ST topo, check vocoders*/
@@ -600,12 +603,15 @@ GEN_TOPO_STATIC ar_result_t st_topo_module_process(gen_topo_t *topo_ptr, gen_top
    else // PCM use cases, SH MEM EP, bypass use cases etc
    {
       // metadata prop is taken care in gen_topo_propagate_metadata
+      // clang-format off
+      IRM_PROFILE_MOD_PROCESS_SECTION(module_ptr->prof_info_ptr, topo_ptr->gu.prof_mutex,
       result = gen_topo_copy_input_to_output(topo_ptr,
                                              module_ptr,
                                              (capi_stream_data_t **)pc->in_port_sdata_pptr,
                                              (capi_stream_data_t **)pc->out_port_sdata_pptr);
+      );
+      // clang-format on
    }
-   PROF_AFTER_PROCESS(module_ptr->prof_info_ptr, topo_ptr->gu.prof_mutex)
 
    proc_result = result;
 

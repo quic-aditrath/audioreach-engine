@@ -604,13 +604,15 @@ ar_result_t olc_input_dataQ_trigger(cu_base_t *base_ptr, uint32_t channel_bit_in
       ext_in_port_ptr->sdm_wdp_input_data.offset       = 0;
       ext_in_port_ptr->sdm_wdp_input_data.buf_ts       = &ext_in_port_ptr->inbuf_ts;
       ext_in_port_ptr->sdm_wdp_input_data.md_list_pptr = &ext_in_port_ptr->md_list_ptr;
-      PROF_BEFORE_PROCESS(((gen_topo_module_t *)ext_in_port_ptr->gu.int_in_port_ptr->cmn.module_ptr)->prof_info_ptr);
+
+      // clang-format off
+      IRM_PROFILE_MOD_PROCESS_SECTION(((gen_topo_module_t *)ext_in_port_ptr->gu.int_in_port_ptr->cmn.module_ptr)->prof_info_ptr, me_ptr->topo.gu.prof_mutex,
       spdm_process_data_write(&me_ptr->spgm_info,
                               ext_in_port_ptr->wdp_ctrl_cfg_ptr->sdm_port_index,
                               &ext_in_port_ptr->sdm_wdp_input_data,
                               &is_data_consumed);
-      PROF_AFTER_PROCESS(((gen_topo_module_t *)ext_in_port_ptr->gu.int_in_port_ptr->cmn.module_ptr)->prof_info_ptr,
-                         me_ptr->topo.gu.prof_mutex);
+      );
+      // clang-format on
 
       if ((FALSE == ext_in_port_ptr->input_has_md) && (FALSE == is_data_consumed))
       {

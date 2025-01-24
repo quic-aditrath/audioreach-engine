@@ -56,10 +56,6 @@ static const topo_cu_vtable_t gen_topo_cu_vtable =
 extern const topo_cu_island_vtable_t gen_topo_cu_island_vtable;
 extern const gen_topo_vtable_t       gen_topo_vtable;
 
-#if defined(USES_FEF_CONTAINER)
-extern void fef_cntr_init_sdata(gen_topo_t *topo_ptr);
-#endif
-
 /* =======================================================================
 Public Function Definitions
 ========================================================================== */
@@ -602,6 +598,8 @@ ar_result_t gen_topo_create_modules(gen_topo_t *topo_ptr, gen_topo_graph_init_t 
 
    gu_sg_list_t *sg_list_ptr = get_gu_ptr_for_current_command_context(&topo_ptr->gu)->sg_list_ptr;
 
+   topo_ptr->capi_cb = (NULL == graph_init_ptr->capi_cb) ? gen_topo_capi_callback : graph_init_ptr->capi_cb;
+
    for (; (NULL != sg_list_ptr); LIST_ADVANCE(sg_list_ptr))
    {
       gu_sg_t *sg_ptr = sg_list_ptr->sg_ptr;
@@ -846,9 +844,6 @@ ar_result_t gen_topo_check_n_realloc_scratch_memory(gen_topo_t *topo_ptr, bool_t
 
       topo_ptr->proc_context.num_ext_out_ports = num_ext_out_ports;
    }
-#if defined(USES_FEF_CONTAINER)
-   fef_cntr_init_sdata(topo_ptr);
-#endif
 
    SPF_CRITICAL_SECTION_END(&topo_ptr->gu);
 

@@ -404,7 +404,7 @@ ar_result_t spdm_process_data_read_done(spgm_info_t *spgm_ptr, gpr_packet_t *pac
 	   return AR_EFAILED;
    }
 
-   PROF_BEFORE_PROCESS(module_ptr->prof_info_ptr);
+   IRM_PROFILE_MODULE_PROCESS_BEGIN(module_ptr->prof_info_ptr);
 
    // Verify the shared memory pointer and invalidate the memory
    VERIFY(result, (NULL != data_buf_node_ptr->ipc_data_buf.shm_mem_ptr));
@@ -441,7 +441,8 @@ ar_result_t spdm_process_data_read_done(spgm_info_t *spgm_ptr, gpr_packet_t *pac
                              rd_ptr->db_obj.data_buf.data_buf.actual_data_len,
                              rd_ptr->port_info.ctrl_cfg.sat_rd_ep_opfs_bytes));
 
-   PROF_AFTER_PROCESS(module_ptr->prof_info_ptr, spgm_ptr->cu_ptr->gu_ptr->prof_mutex);
+   IRM_PROFILE_MODULE_PROCESS_END(module_ptr->prof_info_ptr, spgm_ptr->cu_ptr->gu_ptr->prof_mutex);
+
 #ifdef SGM_ENABLE_READ_DATA_FLOW_LEVEL_MSG
    OLC_SDM_MSG(OLC_SDM_ID, DBG_MED_PRIO, "read_data_done: process completed");
 #endif

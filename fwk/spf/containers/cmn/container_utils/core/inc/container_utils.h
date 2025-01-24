@@ -40,6 +40,7 @@
 #include "cu_prof.h"
 #include "cu_exit_island.h"
 #include "cu_duty_cycle.h"
+#include "posal_internal_inline.h"
 #ifdef CONTAINER_ASYNC_CMD_HANDLING
 #include "cu_async_cmd_handle.h"
 #endif
@@ -540,6 +541,10 @@ typedef struct cu_cntr_vtable_t
                                                uint32_t           sg_ops,
                                                gu_ext_in_port_t **ext_in_port_pptr,
                                                spf_cntr_sub_graph_list_t *spf_sg_list_ptr);
+   ar_result_t (*post_operate_on_ext_out_port)(void *             me_ptr,
+                                               uint32_t           sg_ops,
+                                               gu_ext_out_port_t **ext_in_port_pptr,
+                                               spf_cntr_sub_graph_list_t *spf_sg_list_ptr);
    ar_result_t (*input_media_format_received)(void *            me_ptr,
                                               gu_ext_in_port_t *ext_in_port_ptr,
                                               topo_media_fmt_t *media_format_ptr,
@@ -772,6 +777,13 @@ static inline topo_port_state_t cu_get_external_output_ds_downgraded_port_state(
    cu_ext_out_port_t *ext_out_port_ptr = (cu_ext_out_port_t *)(temp_ptr + me_ptr->ext_out_port_cu_offset);
    return ext_out_port_ptr->downgraded_port_state;
 }
+
+static inline topo_port_state_t cu_get_external_output_ds_downgraded_port_state_v2(cu_ext_out_port_t *ext_out_port_ptr)
+{
+   return ext_out_port_ptr->downgraded_port_state;
+}
+
+
 topo_port_state_t cu_evaluate_n_update_ext_out_ds_downgraded_port_state(cu_base_t *me_ptr, gu_ext_out_port_t *gu_ext_out_port_ptr);
 
 ar_result_t cu_update_all_sg_port_states(cu_base_t *me_ptr, bool_t is_skip_ctrl_ports);
@@ -973,10 +985,15 @@ Static inline functions
 static inline ar_result_t cu_poll_and_process_ctrl_msgs(cu_base_t *me_ptr)
 {
    ar_result_t result = AR_EOK;
+   uint32_t set_ch_bitmask;
+
+   if(0 == (set_ch_bitmask = posal_channel_poll_inline(me_ptr->ctrl_channel_ptr, 0xFFFFFFFF)))
+   {
+      return AR_EOK;
+   }
 
    // Poll for channel for ext ctrl port messages
-   uint32_t set_ch_bitmask = posal_channel_poll(me_ptr->ctrl_channel_ptr, me_ptr->curr_ext_ctrl_chan_mask);
-   if (set_ch_bitmask)
+   if (set_ch_bitmask & me_ptr->curr_ext_ctrl_chan_mask)
    {
       // Exit lpi if ctrl port lib is compiled in nlpi
       cu_vote_against_lpi_if_ctrl_port_lib_in_nlpi(me_ptr);
@@ -984,9 +1001,7 @@ static inline ar_result_t cu_poll_and_process_ctrl_msgs(cu_base_t *me_ptr)
    }
 
    // Poll for channel for internal ctrl port messages
-   set_ch_bitmask =
-      posal_channel_poll(me_ptr->ctrl_channel_ptr, posal_queue_get_channel_bit(me_ptr->cntr_cmn_imcl_handle.q_ptr));
-   if (set_ch_bitmask)
+   if (set_ch_bitmask & posal_queue_get_channel_bit(me_ptr->cntr_cmn_imcl_handle.q_ptr))
    {
       // Exit lpi if ctrl port lib is compiled in nlpi
       cu_vote_against_lpi_if_ctrl_port_lib_in_nlpi(me_ptr);

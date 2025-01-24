@@ -54,6 +54,7 @@ static const cu_cntr_vtable_t spl_cntr_cntr_funcs = {
    .deinit_ext_in_port                    = spl_cntr_deinit_ext_in_port,
    .operate_on_ext_in_port                = spl_cntr_operate_on_ext_in_port,
    .post_operate_on_ext_in_port           = spl_cntr_post_operate_on_ext_in_port,
+   .post_operate_on_ext_out_port          = NULL,
    .input_media_format_received           = spl_cntr_input_media_format_received,
 
    .init_ext_out_port                     = spl_cntr_init_ext_out_port,
@@ -157,6 +158,7 @@ static const topo_to_cntr_vtable_t topo_to_spl_cntr_vtable = {
    .aggregate_ext_out_port_delay                = spl_cntr_aggregate_ext_out_port_delay_topo_cb,
 
    .notify_ts_disc_evt                          = NULL,
+   .module_buffer_access_event                  = NULL,
 };
 // clang-format on
 

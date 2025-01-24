@@ -48,6 +48,12 @@ capi_err_t capi_mux_demux_init(capi_t *_pif, capi_proplist_t *init_props_ptr)
 
    me_ptr->vtbl = &mux_demux_vtbl;
 
+#ifdef MUX_DEMUX_INTERLEAVED_DATA_WORKAROUND
+   me_ptr->data_interleaving   = CAPI_DEINTERLEAVED_UNPACKED_V2;
+#endif
+
+   result |= capi_cmn_raise_deinterleaved_unpacked_v2_supported_event(&me_ptr->cb_info);
+
    AR_MSG(DBG_LOW_PRIO, "Init done, status 0x%x.", result);
 
    return result;
@@ -435,6 +441,15 @@ capi_err_t capi_mux_demux_set_properties(capi_t *_pif, capi_proplist_t *props_pt
             payload_ptr->actual_data_len = 0;
             break;
          }
+         case CAPI_MODULE_INSTANCE_ID:
+         {
+            if (payload_ptr->actual_data_len >= sizeof(capi_module_instance_id_t))
+            {
+               capi_module_instance_id_t *data_ptr = (capi_module_instance_id_t *)payload_ptr->data_ptr;
+               me_ptr->miid                         = data_ptr->module_instance_id;
+            }
+            break;
+         }
          case CAPI_PORT_NUM_INFO:
          {
             const capi_port_num_info_t *port_info_ptr = (capi_port_num_info_t *)payload_ptr->data_ptr;
@@ -484,13 +499,28 @@ capi_err_t capi_mux_demux_set_properties(capi_t *_pif, capi_proplist_t *props_pt
 
             result2 |=
                ((CAPI_FIXED_POINT != fmt_ptr->header.format_header.data_format) ||
-                (CAPI_DEINTERLEAVED_UNPACKED != fmt_ptr->format.data_interleaving && fmt_ptr->format.num_channels != 1) ||
                 (CAPI_MAX_CHANNELS_V2 < fmt_ptr->format.num_channels) ||
                 (BIT_WIDTH_16 != fmt_ptr->format.bits_per_sample && BIT_WIDTH_32 != fmt_ptr->format.bits_per_sample) ||
                 (PCM_Q_FACTOR_15 != fmt_ptr->format.q_factor && PCM_Q_FACTOR_27 != fmt_ptr->format.q_factor &&
                  PCM_Q_FACTOR_31 != fmt_ptr->format.q_factor))
                   ? CAPI_EBADPARAM
                   : CAPI_EOK;
+
+#ifdef MUX_DEMUX_INTERLEAVED_DATA_WORKAROUND
+            if ((CAPI_DEINTERLEAVED_UNPACKED != fmt_ptr->format.data_interleaving &&
+                 CAPI_DEINTERLEAVED_UNPACKED_V2 != fmt_ptr->format.data_interleaving) &&
+                (CAPI_INTERLEAVED != fmt_ptr->format.data_interleaving) && (fmt_ptr->format.num_channels != 1))
+            {
+               result2 |= CAPI_EBADPARAM;
+            }
+#else
+            if ((CAPI_DEINTERLEAVED_UNPACKED != fmt_ptr->format.data_interleaving &&
+                 CAPI_DEINTERLEAVED_UNPACKED_V2 != fmt_ptr->format.data_interleaving) &&
+                (fmt_ptr->format.num_channels != 1))
+            {
+               result2 |= CAPI_EBADPARAM;
+            }
+#endif
 
             if (CAPI_FAILED(result2))
             {
@@ -508,6 +538,13 @@ capi_err_t capi_mux_demux_set_properties(capi_t *_pif, capi_proplist_t *props_pt
                me_ptr->input_port_info_ptr[port_index].fmt.bits_per_sample = fmt_ptr->format.bits_per_sample;
                me_ptr->input_port_info_ptr[port_index].fmt.q_factor        = fmt_ptr->format.q_factor;
                me_ptr->input_port_info_ptr[port_index].fmt.is_valid        = FALSE;
+
+#ifdef MUX_DEMUX_INTERLEAVED_DATA_WORKAROUND
+               if(CAPI_INTERLEAVED == fmt_ptr->format.data_interleaving)
+               {
+                  me_ptr->data_interleaving   = CAPI_INTERLEAVED;
+               }
+#endif
 
 #ifdef MUX_DEMUX_TX_DEBUG_INFO
                AR_MSG(DBG_LOW_PRIO,
