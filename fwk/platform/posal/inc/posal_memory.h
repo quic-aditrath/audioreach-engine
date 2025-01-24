@@ -1,7 +1,7 @@
 /**
  * \file posal_memory.h
  * \brief
- *  	 This file contains utilities for memory allocation and release. This file provides memory allocation functions
+ *       This file contains utilities for memory allocation and release. This file provides memory allocation functions
  * and macros for both C and C++.
  *
  * \copyright

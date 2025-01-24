@@ -66,6 +66,9 @@ typedef enum
  */
 struct posal_memorymap_node_t
 {
+   uint32_t shmem_id;
+   /**< A unique identifier to map with this shared memory regions
+    * */
 
    uint32_t MemPool;
    /**< Memory pool from which the memory region is created. */
@@ -85,6 +88,9 @@ struct posal_memorymap_node_t
    uint32_t mapping_mode;
    /**< Specifies whether the mapping is physical or virtual, or if it is a
         physical offset. */
+
+   uint32_t reserved;
+   /**< reserved field to ensure this structure size is 64 bytes aligned. */
 
    posal_memorymap_node_t *pNext;
    /**< Pointer to the next node in the linked list.
@@ -254,7 +260,7 @@ ar_result_t posal_memorymap_shm_mem_map(uint32_t                      client_tok
                                         bool_t                        is_cached,
                                         bool_t                        is_offset_map,
                                         POSAL_MEMORYPOOLTYPE          pool_id,
-                                        uint32_t *                    shm_mem_map_handle_ptr,
+                                        uint32_t                     *shm_mem_map_handle_ptr,
                                         POSAL_HEAP_ID                 heap_id);
 
 /**
@@ -295,8 +301,69 @@ ar_result_t posal_memorymap_virtaddr_mem_map(uint32_t                      clien
                                              bool_t                        is_cached,
                                              bool_t                        is_offset_map,
                                              POSAL_MEMORYPOOLTYPE          pool_id,
-                                             uint32_t *                    shm_mem_map_handle_ptr,
+                                             uint32_t                     *shm_mem_map_handle_ptr,
                                              POSAL_HEAP_ID                 heap_id);
+
+/**
+ Maps the shmem_id to the mem_map_handle for a given client.
+
+ @param[in]  client_token           Client token.
+
+ @param[in] shm_mem_map_handle      Memory map handle of the shared memory region created.
+
+ @param[in] shmem_id                shared memory id set by the client.
+
+ @return
+ 0 -- Success
+ @par
+ Nonzero -- Failure
+
+ @dependencies
+ Before calling this function, the client object must be registered and
+ valid shared memory regions should be created with shared_mem_map_handle.
+ */
+ar_result_t posal_memorymap_set_shmem_id(uint32_t client_token, uint32_t shm_mem_map_handle, uint32_t shmem_id);
+
+/**
+ Gets the associated shmem_id from the mem_map_handle for a given client.
+
+ @param[in]  client_token           Client token.
+
+ @param[in] shm_mem_map_handle      Memory map handle of the shared memory region created.
+
+ @param[out] shmem_id_ptr           shared memory id set by the client.
+
+ @return
+ 0 -- Success
+ @par
+ Nonzero -- Failure
+
+ @dependencies
+ Before calling this function, the client object must be registered and
+ valid shared memory regions should be created with shared_mem_map_handle.
+ */
+ar_result_t posal_memorymap_get_shmem_id(uint32_t client_token, uint32_t shm_mem_map_handle, uint32_t *shmem_id_ptr);
+
+/**
+ Gets the associated mem_map_handle for a given client based on the shmem_id.
+
+ @param[in]  client_token           Client token.
+ @param[in]  shmem_id               Shared memory id set by the client.
+ @param[out] shm_mem_map_handle_ptr  Pointer to the memory map handle of the
+                                     shared memory region created.
+
+ @return
+ 0 -- Success
+ @par
+ Nonzero -- Failure
+
+ @dependencies
+ Before calling this function, the client object must be registered and
+ valid shared memory regions should be created with shmem_id.
+ */
+ar_result_t posal_memorymap_get_mem_map_handle(uint32_t  client_token,
+                                               uint32_t  shmem_id,
+                                               uint32_t *shm_mem_map_handle_ptr);
 
 /**
   Gets the memory mapping mode for a specified memory map handle.
@@ -421,7 +488,7 @@ ar_result_t posal_memorymap_get_virtual_addr_from_shm_handle_v2(uint32_t client_
                                                                 uint32_t shm_addr_msw,
                                                                 uint32_t reg_size,
                                                                 bool_t   is_ref_counted,
-                                                                void *   virt_addr_ptr);
+                                                                void    *virt_addr_ptr);
 /**
   Gets the corresponding mem_map_handle for a specified VA address. It also
   returns the offset from the base virt_addr of the node.

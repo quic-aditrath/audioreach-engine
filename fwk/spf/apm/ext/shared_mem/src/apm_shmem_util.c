@@ -21,34 +21,113 @@ bool_t apm_shmem_is_supported_mem_pool(uint16_t mem_pool_id);
    Global Defines
 ==============================================================================*/
 
-apm_shmem_utils_vtable_t shmem_util_funcs = {.apm_shmem_cmd_handler_fptr = apm_shmem_cmd_handler,
-
-                                             .apm_shmem_is_supported_mem_pool_fptr = apm_shmem_is_supported_mem_pool };
+apm_shmem_utils_vtable_t shmem_util_funcs = { .apm_shmem_cmd_handler_fptr           = apm_shmem_cmd_handler,
+                                              .apm_shmem_is_supported_mem_pool_fptr = apm_shmem_is_supported_mem_pool };
 
 /*----------------------------------------------------------------------------
  * Externalized Function Definitions
  * -------------------------------------------------------------------------*/
+#if 0
+static ar_result_t apm_shmem_handle_set_loaned_memory(uint32_t mem_map_client,
+      apm_cmd_loan_global_shared_mem_t *loan_mem_payload_ptr)
+{
+   uint32_t mem_map_handle = 0;
+   ar_result_t result = AR_EOK;
+
+   if (0 == loan_mem_payload_ptr->loaned_mem_block_size)
+   {
+      return AR_EOK; // no loaned memory.
+   }
+
+   if (AR_DID_FAIL(
+         result = posal_memorymap_get_mem_map_handle(mem_map_client, loan_mem_payload_ptr->shmem_id, &mem_map_handle)))
+   {
+      AR_MSG(DBG_ERROR_PRIO, "apm_shmem_util: Failed to handle loaned memory as mapping not found. 0x%x", result);
+      return result;
+   }
+
+   /** todo:
+    *  create heap manager for the loaned memory and associate it with the shmem_id/mem_map_handle.
+    */
+
+   return AR_EOK;
+}
+
+static ar_result_t apm_shmem_handle_unset_loaned_memory(uint32_t mem_map_client,
+      apm_cmd_unloan_global_shared_mem_t *unloan_mem_payload_ptr)
+{
+   uint32_t mem_map_handle = 0;
+   ar_result_t result = AR_EOK;
+
+   if (AR_DID_FAIL(
+         result = posal_memorymap_get_mem_map_handle(mem_map_client, unloan_mem_payload_ptr->shmem_id,
+                                                     &mem_map_handle)))
+   {
+      AR_MSG(DBG_ERROR_PRIO, "apm_shmem_util: Failed to handle loaned memory as mapping not found. 0x%x", result);
+      return result;
+   }
+
+   /** todo:
+    *  delete heap manager for the loaned memory after ensuring all memory is freed
+    */
+
+   return AR_EOK;
+}
+#endif
 
 static ar_result_t apm_mem_shared_memory_map_regions_cmd_handler(uint32_t      mem_map_client,
                                                                  gpr_packet_t *pkt_ptr,
-                                                                 uint32_t      resp_opcode,
                                                                  POSAL_HEAP_ID heap_id)
 {
    ar_result_t                       result = AR_EOK;
-   void *                            payload_ptr, *dummy_ptr;
-   apm_cmd_shared_mem_map_regions_t *mem_map_regions_payload_ptr;
-   uint32_t                          mem_map_handle = 0;
-   gpr_packet_t *                    resp_pkt_ptr   = NULL;
+   void                             *payload_ptr, *dummy_ptr;
+   apm_cmd_shared_mem_map_regions_t  common_mem_map_region_payload = { 0 };
+   uint32_t                          mem_map_handle                = 0;
+   gpr_packet_t                     *resp_pkt_ptr                  = NULL;
    POSAL_MEMORYPOOLTYPE              mem_pool;
    apm_shared_map_region_payload_t **region_pptr;
    bool_t                            is_virtual, is_cached, is_offset_map, is_mem_loaned;
-   apm_ext_utils_t *                 ext_utils_ptr;
-
+   bool_t   is_global_shmem_map_cmd = (APM_CMD_GLOBAL_SHARED_MEM_MAP_REGIONS == pkt_ptr->opcode) ? TRUE : FALSE;
+   uint32_t resp_opcode, resp_size;
    payload_ptr = GPR_PKT_GET_PAYLOAD(void, pkt_ptr);
 
-   mem_map_regions_payload_ptr = (apm_cmd_shared_mem_map_regions_t *)payload_ptr;
+   if (is_global_shmem_map_cmd)
+   {
+      apm_cmd_global_shared_mem_map_regions_t *mem_map_regions_payload_ptr =
+         (apm_cmd_global_shared_mem_map_regions_t *)payload_ptr;
+      uint32_t temp = 0;
 
-   switch (mem_map_regions_payload_ptr->mem_pool_id)
+      common_mem_map_region_payload.mem_pool_id   = mem_map_regions_payload_ptr->mem_pool_id;
+      common_mem_map_region_payload.num_regions   = mem_map_regions_payload_ptr->num_regions;
+      common_mem_map_region_payload.property_flag = mem_map_regions_payload_ptr->property_flag;
+
+      dummy_ptr   = ((uint8_t *)payload_ptr + sizeof(apm_cmd_global_shared_mem_map_regions_t));
+      region_pptr = (apm_shared_map_region_payload_t **)&dummy_ptr;
+
+      resp_opcode = GPR_IBASIC_RSP_RESULT;
+      resp_size   = sizeof(gpr_ibasic_rsp_result_t);
+
+      if (0 == mem_map_regions_payload_ptr->shmem_id ||
+          AR_EOK == posal_memorymap_get_mem_map_handle(mem_map_client, mem_map_regions_payload_ptr->shmem_id, &temp))
+      {
+         AR_MSG(DBG_ERROR_PRIO, "received invalid shmem_id: %lu", mem_map_regions_payload_ptr->shmem_id);
+         result = AR_EBADPARAM;
+         goto _apm_mem_shared_memory_map_regions_cmd_handler_bail_1;
+      }
+   }
+   else
+   {
+      apm_cmd_shared_mem_map_regions_t *mem_map_regions_payload_ptr = (apm_cmd_shared_mem_map_regions_t *)payload_ptr;
+      common_mem_map_region_payload                                 = *mem_map_regions_payload_ptr;
+
+      dummy_ptr   = ((uint8_t *)payload_ptr + sizeof(apm_cmd_shared_mem_map_regions_t));
+      region_pptr = (apm_shared_map_region_payload_t **)&dummy_ptr;
+
+      resp_opcode = APM_CMD_RSP_SHARED_MEM_MAP_REGIONS;
+      resp_size   = sizeof(apm_cmd_rsp_shared_mem_map_regions_t);
+   }
+
+   switch (common_mem_map_region_payload.mem_pool_id)
    {
       case APM_MEMORY_MAP_SHMEM8_4K_POOL:
       {
@@ -60,7 +139,7 @@ static ar_result_t apm_mem_shared_memory_map_regions_cmd_handler(uint32_t      m
          result = AR_EBADPARAM;
          AR_MSG(DBG_ERROR_PRIO,
                 "spf_shmem_util MemMapRegCmdHandler: Received Invalid PoolID: %d",
-                mem_map_regions_payload_ptr->mem_pool_id);
+                common_mem_map_region_payload.mem_pool_id);
 
          goto _apm_mem_shared_memory_map_regions_cmd_handler_bail_1;
       }
@@ -68,12 +147,9 @@ static ar_result_t apm_mem_shared_memory_map_regions_cmd_handler(uint32_t      m
 
    AR_MSG(DBG_HIGH_PRIO,
           "spf_shmem_util memory map: mem_pool_id 0x%hx, num_regions 0x%hx, property flag 0x%lx",
-          mem_map_regions_payload_ptr->mem_pool_id,
-          mem_map_regions_payload_ptr->num_regions,
-          mem_map_regions_payload_ptr->property_flag);
-
-   /** Get the pointer to ext utils vtbl   */
-   ext_utils_ptr = apm_get_ext_utils_ptr();
+          common_mem_map_region_payload.mem_pool_id,
+          common_mem_map_region_payload.num_regions,
+          common_mem_map_region_payload.property_flag);
 
    /* Allocate the response packet */
    gpr_cmd_alloc_ext_t args;
@@ -83,7 +159,7 @@ static ar_result_t apm_mem_shared_memory_map_regions_cmd_handler(uint32_t      m
    args.dst_port      = pkt_ptr->src_port;
    args.token         = pkt_ptr->token;
    args.opcode        = resp_opcode;
-   args.payload_size  = sizeof(apm_cmd_rsp_shared_mem_map_regions_t);
+   args.payload_size  = resp_size;
    args.ret_packet    = &resp_pkt_ptr;
    args.client_data   = 0;
    result             = __gpr_cmd_alloc_ext(&args);
@@ -98,30 +174,22 @@ static ar_result_t apm_mem_shared_memory_map_regions_cmd_handler(uint32_t      m
       goto _apm_mem_shared_memory_map_regions_cmd_handler_bail_1;
    }
 
-   /* prepare the Response payload pointer */
-   apm_cmd_rsp_shared_mem_map_regions_t *resp_payload_ptr;
-   dummy_ptr        = GPR_PKT_GET_PAYLOAD(void, resp_pkt_ptr);
-   resp_payload_ptr = (apm_cmd_rsp_shared_mem_map_regions_t *)dummy_ptr;
-
-   dummy_ptr   = ((uint8_t *)payload_ptr + sizeof(apm_cmd_shared_mem_map_regions_t));
-   region_pptr = (apm_shared_map_region_payload_t **)&dummy_ptr;
-
    // allocate posal_memorymap_shm_region_t, why not direct cast? because want to be free from
    // api data structure change or any compiler pack
    posal_memorymap_shm_region_t *phy_regions;
    if (NULL ==
        (phy_regions = (posal_memorymap_shm_region_t *)posal_memory_malloc(sizeof(posal_memorymap_shm_region_t) *
-                                                                             mem_map_regions_payload_ptr->num_regions,
+                                                                             common_mem_map_region_payload.num_regions,
                                                                           heap_id)))
    {
       AR_MSG(DBG_ERROR_PRIO,
              "apm_shmem_util MemMapRegCmdHandler: memory map region allocation failed, num_regions = %lu",
-             mem_map_regions_payload_ptr->num_regions);
+             common_mem_map_region_payload.num_regions);
 
       result = AR_ENOMEMORY;
       goto _apm_mem_shared_memory_map_regions_cmd_handler_bail_2;
    }
-   for (int i = 0; i < mem_map_regions_payload_ptr->num_regions; ++i)
+   for (int i = 0; i < common_mem_map_region_payload.num_regions; ++i)
    {
       phy_regions[i].shm_addr_lsw = (*region_pptr + i)->shm_addr_lsw;
       phy_regions[i].shm_addr_msw = (*region_pptr + i)->shm_addr_msw;
@@ -135,21 +203,25 @@ static ar_result_t apm_mem_shared_memory_map_regions_cmd_handler(uint32_t      m
              phy_regions[i].mem_size);
    }
 
-   is_virtual = (mem_map_regions_payload_ptr->property_flag & APM_MEMORY_MAP_BIT_MASK_IS_VIRTUAL) >>
+   is_virtual = (common_mem_map_region_payload.property_flag & APM_MEMORY_MAP_BIT_MASK_IS_VIRTUAL) >>
                 APM_MEMORY_MAP_SHIFT_IS_VIRTUAL;
-   is_cached = !((mem_map_regions_payload_ptr->property_flag & APM_MEMORY_MAP_BIT_MASK_IS_UNCACHED) >>
+   is_cached     = !((common_mem_map_region_payload.property_flag & APM_MEMORY_MAP_BIT_MASK_IS_UNCACHED) >>
                  APM_MEMORY_MAP_SHIFT_IS_UNCACHED);
-   is_offset_map = (mem_map_regions_payload_ptr->property_flag & APM_MEMORY_MAP_BIT_MASK_IS_OFFSET_MODE) >>
+   is_offset_map = (common_mem_map_region_payload.property_flag & APM_MEMORY_MAP_BIT_MASK_IS_OFFSET_MODE) >>
                    APM_MEMORY_MAP_SHIFT_IS_OFFSET_MODE;
-   is_mem_loaned = (mem_map_regions_payload_ptr->property_flag & APM_MEMORY_MAP_BIT_MASK_IS_MEM_LOANED) >>
-                   APM_MEMORY_MAP_SHIFT_IS_MEM_LOANED;
+
+   if (!is_global_shmem_map_cmd)
+   {
+      is_mem_loaned = (common_mem_map_region_payload.property_flag & APM_MEMORY_MAP_BIT_MASK_IS_MEM_LOANED) >>
+                      APM_MEMORY_MAP_SHIFT_IS_MEM_LOANED;
+   }
 
    if (0 == is_virtual)
    {
       // physical mapping
       if (AR_DID_FAIL(result = posal_memorymap_shm_mem_map(mem_map_client,
                                                            phy_regions,
-                                                           mem_map_regions_payload_ptr->num_regions,
+                                                           common_mem_map_region_payload.num_regions,
                                                            is_cached,
                                                            is_offset_map,
                                                            mem_pool,
@@ -165,7 +237,7 @@ static ar_result_t apm_mem_shared_memory_map_regions_cmd_handler(uint32_t      m
       // virtual mapping
       if (AR_DID_FAIL(result = posal_memorymap_virtaddr_mem_map(mem_map_client,
                                                                 phy_regions,
-                                                                mem_map_regions_payload_ptr->num_regions,
+                                                                common_mem_map_region_payload.num_regions,
                                                                 is_cached,
                                                                 is_offset_map,
                                                                 mem_pool,
@@ -185,45 +257,74 @@ static ar_result_t apm_mem_shared_memory_map_regions_cmd_handler(uint32_t      m
       goto _apm_mem_shared_memory_map_regions_cmd_handler_bail_3;
    }
 
-   // store the memory map handle in the response payload
-   resp_payload_ptr->mem_map_handle = mem_map_handle;
-   // register here. is_loaned field will be false on the satellite, that's how we'll avoid heap creation there
-
    AR_MSG(DBG_HIGH_PRIO,
           "spf_shmem_util memory map success, mem_pool_id 0x%hx, num_regions 0x%hx, property flag 0x%lx, handle "
           "0x%lx",
-          mem_map_regions_payload_ptr->mem_pool_id,
-          mem_map_regions_payload_ptr->num_regions,
-          mem_map_regions_payload_ptr->property_flag,
+          common_mem_map_region_payload.mem_pool_id,
+          common_mem_map_region_payload.num_regions,
+          common_mem_map_region_payload.property_flag,
           mem_map_handle);
 
-   if (is_mem_loaned && is_offset_map)
+   if (is_global_shmem_map_cmd)
    {
-      if (ext_utils_ptr->offload_vtbl_ptr &&
-          ext_utils_ptr->offload_vtbl_ptr->apm_offload_master_memorymap_register_fptr)
+      gpr_ibasic_rsp_result_t                 *resp_payload_ptr;
+      apm_cmd_global_shared_mem_map_regions_t *mem_map_regions_payload_ptr =
+         (apm_cmd_global_shared_mem_map_regions_t *)payload_ptr;
+
+      if (AR_DID_FAIL(
+             result =
+                posal_memorymap_set_shmem_id(mem_map_client, mem_map_handle, mem_map_regions_payload_ptr->shmem_id)))
       {
-         if (AR_EOK !=
-             (result =
-                 ext_utils_ptr->offload_vtbl_ptr->apm_offload_master_memorymap_register_fptr(mem_map_client,
-                                                                                             mem_map_handle,
-                                                                                             phy_regions[0].mem_size)))
+         AR_MSG(DBG_ERROR_PRIO, "apm_shmem_util: Failed to set shmem_id to mem_map_handle 0x%x", result);
+         goto _apm_mem_shared_memory_map_regions_cmd_handler_bail_3;
+      }
+
+      /* prepare the Response payload pointer */
+      resp_payload_ptr = (gpr_ibasic_rsp_result_t *)GPR_PKT_GET_PAYLOAD(void, resp_pkt_ptr);
+
+      resp_payload_ptr->opcode = pkt_ptr->opcode;
+      resp_payload_ptr->status = AR_EOK;
+   }
+   else
+   {
+      apm_cmd_rsp_shared_mem_map_regions_t *resp_payload_ptr;
+
+      // register here. is_loaned field will be false on the satellite, that's how we'll avoid heap creation there
+      if (is_mem_loaned && is_offset_map)
+      {
+         /** Get the pointer to ext utils vtbl   */
+         apm_ext_utils_t *ext_utils_ptr = apm_get_ext_utils_ptr();
+
+         if (ext_utils_ptr->offload_vtbl_ptr &&
+             ext_utils_ptr->offload_vtbl_ptr->apm_offload_master_memorymap_register_fptr)
          {
-            AR_MSG(DBG_ERROR_PRIO,
-                   "MDF: Failed to register Loaned Master memory, Handle 0x%lx of size %lu",
-                   mem_map_handle,
-                   phy_regions[0].mem_size);
+            if (AR_EOK != (result = ext_utils_ptr->offload_vtbl_ptr
+                                       ->apm_offload_master_memorymap_register_fptr(mem_map_client,
+                                                                                    mem_map_handle,
+                                                                                    phy_regions[0].mem_size)))
+            {
+               AR_MSG(DBG_ERROR_PRIO,
+                      "MDF: Failed to register Loaned Master memory, Handle 0x%lx of size %lu",
+                      mem_map_handle,
+                      phy_regions[0].mem_size);
+
+               goto _apm_mem_shared_memory_map_regions_cmd_handler_bail_3;
+            }
+         }
+         else /** Offload mem map operations are not supported */
+         {
+            result = AR_EUNSUPPORTED;
+
+            AR_MSG(DBG_ERROR_PRIO, "MDF: Offload memory map operation is not supported");
 
             goto _apm_mem_shared_memory_map_regions_cmd_handler_bail_3;
          }
       }
-      else /** Offload mem map operations are not supported */
-      {
-         result = AR_EUNSUPPORTED;
 
-         AR_MSG(DBG_ERROR_PRIO, "MDF: Offload memory map operation is not supported");
-
-         goto _apm_mem_shared_memory_map_regions_cmd_handler_bail_3;
-      }
+      /* prepare the Response payload pointer */
+      resp_payload_ptr = (apm_cmd_rsp_shared_mem_map_regions_t *)GPR_PKT_GET_PAYLOAD(void, resp_pkt_ptr);
+      // store the memory map handle in the response payload
+      resp_payload_ptr->mem_map_handle = mem_map_handle;
    }
 
    /* send response */
@@ -251,48 +352,68 @@ _apm_mem_shared_memory_map_regions_cmd_handler_bail_1:
 
 static ar_result_t apm_mem_shared_memory_un_map_regions_cmd_handler(uint32_t mem_map_client, gpr_packet_t *pkt_ptr)
 {
-   ar_result_t                         result = AR_EOK;
-   void *                              payload_ptr;
-   apm_cmd_shared_mem_unmap_regions_t *unmap_regions_payload_ptr;
-   apm_ext_utils_t *                   ext_utils_ptr;
+   ar_result_t result = AR_EOK;
+   void       *payload_ptr;
+
+   apm_ext_utils_t *ext_utils_ptr;
+   uint32_t         mem_map_handle;
+   bool_t is_global_shmem_unmap_cmd = (APM_CMD_GLOBAL_SHARED_MEM_UNMAP_REGIONS == pkt_ptr->opcode) ? TRUE : FALSE;
 
    payload_ptr = GPR_PKT_GET_PAYLOAD(void, pkt_ptr);
 
-   unmap_regions_payload_ptr = (apm_cmd_shared_mem_unmap_regions_t *)payload_ptr;
+   if (is_global_shmem_unmap_cmd)
+   {
+      apm_cmd_global_shared_mem_unmap_regions_t *unmap_regions_payload_ptr =
+         (apm_cmd_global_shared_mem_unmap_regions_t *)payload_ptr;
+
+      if (AR_DID_FAIL(result = posal_memorymap_get_mem_map_handle(mem_map_client,
+                                                                  unmap_regions_payload_ptr->shmem_id,
+                                                                  &mem_map_handle)))
+      {
+         AR_MSG(DBG_ERROR_PRIO, "apm_shmem_util: Failed to get mem_map_handle 0x%x", result);
+         goto _apm_mem_shared_memory_un_map_regions_cmd_handler_bail_1;
+      }
+   }
+   else
+   {
+      apm_cmd_shared_mem_unmap_regions_t *unmap_regions_payload_ptr = (apm_cmd_shared_mem_unmap_regions_t *)payload_ptr;
+      mem_map_handle                                                = unmap_regions_payload_ptr->mem_map_handle;
+   }
 
    /** Get the pointer to ext utils vtbl   */
    ext_utils_ptr = apm_get_ext_utils_ptr();
 
-   AR_MSG(DBG_HIGH_PRIO, "apm_shmem_util: memory unmap handle 0x%lx", unmap_regions_payload_ptr->mem_map_handle);
+   AR_MSG(DBG_HIGH_PRIO, "apm_shmem_util: memory unmap handle 0x%lx", mem_map_handle);
 
-   if (0 == unmap_regions_payload_ptr->mem_map_handle)
+   if (0 == mem_map_handle)
    {
-      AR_MSG(DBG_ERROR_PRIO, "apm_shmem_util: null memory map handle received in the unmap cmd payload, client token %lu", mem_map_client);
+      AR_MSG(DBG_ERROR_PRIO,
+             "apm_shmem_util: null memory map handle received in the unmap cmd payload, client token %lu",
+             mem_map_client);
       result = AR_EBADPARAM;
       goto _apm_mem_shared_memory_un_map_regions_cmd_handler_bail_1;
    }
 
-   if (AR_DID_FAIL(result = posal_memorymap_shm_mem_unmap(mem_map_client, unmap_regions_payload_ptr->mem_map_handle)))
+   if (AR_DID_FAIL(result = posal_memorymap_shm_mem_unmap(mem_map_client, mem_map_handle)))
    {
       AR_MSG(DBG_ERROR_PRIO,
-             "apm_shmem_util: Failed to unmap the physical memory - bailing out, error code is 0x%x, client token %lu, memmap handle "
+             "apm_shmem_util: Failed to unmap the physical memory - bailing out, error code is 0x%x, client token %lu, "
+             "memmap handle "
              "0x%lx",
              result,
              mem_map_client,
-             unmap_regions_payload_ptr->mem_map_handle);
+             mem_map_handle);
       goto _apm_mem_shared_memory_un_map_regions_cmd_handler_bail_1;
    }
 
-   if (ext_utils_ptr->offload_vtbl_ptr &&
+   if (!is_global_shmem_unmap_cmd && ext_utils_ptr->offload_vtbl_ptr &&
        ext_utils_ptr->offload_vtbl_ptr->apm_offload_master_memorymap_check_deregister_fptr)
    {
       // deregister here. have to search if the handle was registered and if so, deregister it
       if (AR_EOK != (result = ext_utils_ptr->offload_vtbl_ptr->apm_offload_master_memorymap_check_deregister_fptr(
-                        unmap_regions_payload_ptr->mem_map_handle)))
+                        mem_map_handle)))
       {
-         AR_MSG(DBG_ERROR_PRIO,
-                "MDF: Failed to deregister Loaned Master memory, Handle 0x%lx",
-                unmap_regions_payload_ptr->mem_map_handle);
+         AR_MSG(DBG_ERROR_PRIO, "MDF: Failed to deregister Loaned Master memory, Handle 0x%lx", mem_map_handle);
          goto _apm_mem_shared_memory_un_map_regions_cmd_handler_bail_1;
       }
    }
@@ -337,14 +458,14 @@ ar_result_t apm_shmem_cmd_handler(uint32_t memory_map_client, spf_msg_t *msg_ptr
    switch (cmd_opcode)
    {
       case APM_CMD_SHARED_MEM_MAP_REGIONS:
+      case APM_CMD_GLOBAL_SHARED_MEM_MAP_REGIONS:
       {
-         result = apm_mem_shared_memory_map_regions_cmd_handler(memory_map_client,
-                                                                gpr_pkt_ptr,
-                                                                APM_CMD_RSP_SHARED_MEM_MAP_REGIONS,
-                                                                APM_INTERNAL_STATIC_HEAP_ID);
+         result =
+            apm_mem_shared_memory_map_regions_cmd_handler(memory_map_client, gpr_pkt_ptr, APM_INTERNAL_STATIC_HEAP_ID);
          break;
       }
       case APM_CMD_SHARED_MEM_UNMAP_REGIONS:
+      case APM_CMD_GLOBAL_SHARED_MEM_UNMAP_REGIONS:
       {
          result = apm_mem_shared_memory_un_map_regions_cmd_handler(memory_map_client, gpr_pkt_ptr);
          break;

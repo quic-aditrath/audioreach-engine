@@ -29,12 +29,12 @@
 static ar_result_t apm_get_gpr_cmd_payload(apm_t *apm_info_ptr, spf_msg_t *msg_ptr)
 {
    ar_result_t       result = AR_EOK;
-   gpr_packet_t *    gpr_pkt_ptr;
+   gpr_packet_t     *gpr_pkt_ptr;
    uint32_t          cmd_opcode;
    uint32_t          byte_aligned_size;
-   uint8_t *         cmd_payload_ptr;
-   gpr_packet_t *    cur_gpr_pkt_ptr;
-   gpr_packet_t *    gpr_cmd_rsp_ptr;
+   uint8_t          *cmd_payload_ptr;
+   gpr_packet_t     *cur_gpr_pkt_ptr;
+   gpr_packet_t     *gpr_cmd_rsp_ptr;
    apm_cmd_header_t *cmd_header_ptr;
 
    /** Get the GPR packet pointer */
@@ -213,7 +213,7 @@ __bailout_cmd_rsc_alloc_fail:
 }
 
 ar_result_t apm_allocate_cmd_rsp_payload(uint32_t       log_id,
-                                         gpr_packet_t * gpr_pkt_ptr,
+                                         gpr_packet_t  *gpr_pkt_ptr,
                                          gpr_packet_t **gpr_rsp_pkt_pptr,
                                          uint32_t       cmd_rsp_opcode,
                                          uint32_t       cmd_rsp_payload_size)
@@ -246,8 +246,8 @@ ar_result_t apm_allocate_cmd_rsp_payload(uint32_t       log_id,
 static ar_result_t apm_get_fwk_status_cmd_handler(apm_t *apm_info_ptr, spf_msg_t *msg_ptr)
 {
    ar_result_t                   result = AR_EOK;
-   gpr_packet_t *                gpr_pkt_ptr;
-   gpr_packet_t *                gpr_pkt_rsp_ptr;
+   gpr_packet_t                 *gpr_pkt_ptr;
+   gpr_packet_t                 *gpr_pkt_rsp_ptr;
    apm_cmd_rsp_get_spf_status_t *rsp_payload_ptr;
 
    /** Get the pointer to GPR command */
@@ -304,7 +304,7 @@ __bail_out_fwk_s_cmd_hdlr:
 static ar_result_t apm_gpr_cmd_handler(apm_t *apm_info_ptr, spf_msg_t *msg_ptr)
 {
    ar_result_t      result = AR_EOK;
-   gpr_packet_t *   gpr_pkt_ptr;
+   gpr_packet_t    *gpr_pkt_ptr;
    uint32_t         cmd_opcode;
    apm_ext_utils_t *ext_utils_ptr;
 
@@ -375,7 +375,7 @@ static ar_result_t apm_gpr_cmd_handler(apm_t *apm_info_ptr, spf_msg_t *msg_ptr)
 ar_result_t apm_cmdq_gpr_cmd_handler(apm_t *apm_info_ptr, spf_msg_t *msg_ptr)
 {
    ar_result_t      result = AR_EOK;
-   gpr_packet_t *   gpr_pkt_ptr;
+   gpr_packet_t    *gpr_pkt_ptr;
    uint32_t         cmd_opcode;
    apm_ext_utils_t *ext_utils_ptr;
 
@@ -391,7 +391,9 @@ ar_result_t apm_cmdq_gpr_cmd_handler(apm_t *apm_info_ptr, spf_msg_t *msg_ptr)
    switch (cmd_opcode)
    {
       case APM_CMD_SHARED_MEM_MAP_REGIONS:
+      case APM_CMD_GLOBAL_SHARED_MEM_MAP_REGIONS:
       case APM_CMD_SHARED_MEM_UNMAP_REGIONS:
+      case APM_CMD_GLOBAL_SHARED_MEM_UNMAP_REGIONS:
       {
          if (ext_utils_ptr->shmem_vtbl_ptr && ext_utils_ptr->shmem_vtbl_ptr->apm_shmem_cmd_handler_fptr)
          {
