@@ -91,6 +91,15 @@ uint32_t cu_gpr_callback(gpr_packet_t *packet, void *callback_data)
          }
          break;
       }
+      case AR_GUID_TYPE_CONTROL_CMD_RSP:
+      {
+         AR_MSG(DBG_ERROR_PRIO, "CNTR TID: 0x%lx received response GUID 0x%lX. This is unexpected!", thread_id, packet->opcode);
+
+         //response command should just be freed. calling __gpr_cmd_end_command will result into sending another response back.
+         //If a module is sending a GPR command to somewhere then its ack can come back to the container.
+         __gpr_cmd_free(packet);
+         return AR_EFAILED;
+      }
       default:
       {
          AR_MSG(DBG_ERROR_PRIO, "CNTR TID: 0x%lx Improper GUID 0x%lX", thread_id, packet->opcode);

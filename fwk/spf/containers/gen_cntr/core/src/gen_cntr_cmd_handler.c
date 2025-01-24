@@ -838,7 +838,8 @@ ar_result_t gen_cntr_set_get_cfg(cu_base_t *base_ptr)
 
       cu_reset_handle_rest(base_ptr);
 
-      is_ack_cmd = TRUE;
+      //check to avoid double ack. in some case (error) ack may been raised already.
+      is_ack_cmd = (me_ptr->cu.cmd_msg.payload_ptr)? TRUE: FALSE;
    }
 
    me_ptr->cu.flags.apm_cmd_context = TRUE;
