@@ -217,6 +217,17 @@ capi_err_t capi_rat_set_param(capi_t *                _pif,
             break;
          }
          param_id_module_data_interleaving_t *rat_data_int_ptr = (param_id_module_data_interleaving_t *)params_ptr->data_ptr;
+
+         if ((PCM_DEINTERLEAVED_UNPACKED != rat_data_int_ptr->data_interleaving) &&
+             (PCM_INTERLEAVED != rat_data_int_ptr->data_interleaving))
+         {
+            AR_MSG(DBG_ERROR_PRIO,
+                   "CAPI_RAT: Interleaving value [%lu] not supported. ",
+                   rat_data_int_ptr->data_interleaving);
+            capi_result = CAPI_EBADPARAM;
+            break;
+         }
+
          pcm_to_capi_interleaved_with_native_param(&me_ptr->configured_media_fmt.format.data_interleaving,
                                                    rat_data_int_ptr->data_interleaving,
                                                    CAPI_INVALID_INTERLEAVING);
