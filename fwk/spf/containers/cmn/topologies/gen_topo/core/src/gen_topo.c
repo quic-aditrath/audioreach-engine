@@ -730,7 +730,6 @@ ar_result_t gen_topo_check_n_realloc_scratch_memory(gen_topo_t *topo_ptr, bool_t
 
    // Validate the max ports and num channels before proeceeding with allocations
    VERIFY(result, (CAPI_MAX_CHANNELS_V2 >= max_num_channels) && (0 < max_num_channels));
-   VERIFY(result, (0 < max_input_ports) || (0 < max_output_ports));
 
    int8_t *                          in_port_scratch_ptr      = NULL;
    int8_t *                          out_port_scratch_ptr     = NULL;
