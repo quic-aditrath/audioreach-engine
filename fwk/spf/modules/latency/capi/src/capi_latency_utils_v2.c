@@ -107,7 +107,7 @@ capi_err_t capi_latency_set_config_v2(capi_latency_t *me_ptr, uint32_t param_id,
        uint32_t ch_mask_list_size = 0;
        for (uint32_t count = 0; count < num_config; count++)
        {
-    	   temp_cfg_ptr += offset;
+           temp_cfg_ptr += offset;
 
            delay_param_per_ch_cfg_v2_t *delay_cfg_ptr = (delay_param_per_ch_cfg_v2_t *)temp_cfg_ptr;
            uint32_t delay_us = 0;
@@ -146,7 +146,7 @@ capi_err_t capi_latency_set_config_v2(capi_latency_t *me_ptr, uint32_t param_id,
        {
           AR_MSG(DBG_FATAL_PRIO,
                  "CAPI Latency: No memory to store cache_delay_per_config. Requires %lu bytes",
-				 req_payload_size);
+                 req_payload_size);
           return CAPI_ENOMEMORY;
        }
        memscpy(me_ptr->cache_delay_v2.cache_delay_per_config_v2_ptr, req_payload_size, data_ptr, req_payload_size);
@@ -301,11 +301,11 @@ capi_err_t capi_latency_validate_per_channel_v2_payload(capi_latency_t *me_ptr,
          AR_MSG(
                  DBG_ERROR_PRIO,
                  "Failed while validating required size for config #%lu. Total config: %lu. Total size required till this point is %lu. "
-				 "Param size received %lu",
+                 "Param size received %lu",
                  count,
                  num_cfg,
-				 (*required_size_ptr + per_cfg_base_payload_size),
-				 param_size);
+                 (*required_size_ptr + per_cfg_base_payload_size),
+                 param_size);
          return CAPI_ENEEDMORE;
       }
       else
@@ -315,17 +315,17 @@ capi_err_t capi_latency_validate_per_channel_v2_payload(capi_latency_t *me_ptr,
          ch_type_group_mask          = *((uint32_t *)base_payload_ptr);
 #ifdef CAPI_LATENCY_DBG_MSG
          AR_MSG(
-                 DBG_HIGH_PRIO,
+                 DBG_LOW_PRIO,
                  "Channel group mask %#lx received for param 0x%#x for config %lu.",
                  ch_type_group_mask,
                  param_id,
-				 count);
+                 count);
 #endif
          // check for group mask payload if only desired bits are set or not
          if (0 == (ch_type_group_mask >> CAPI_CMN_MAX_CHANNEL_MAP_GROUPS))
          {
             capi_result = capi_cmn_check_payload_validation(miid, ch_type_group_mask, per_cfg_base_payload_size,
-           		    count, param_size, &config_size, required_size_ptr);
+                       count, param_size, &config_size, required_size_ptr);
             if(CAPI_FAILED(capi_result))
             {
                return capi_result;
@@ -347,11 +347,11 @@ capi_err_t capi_latency_validate_per_channel_v2_payload(capi_latency_t *me_ptr,
 
    // validate the configs for duplication
    if (!capi_latency_check_multi_ch_channel_mask_v2_param(miid,
-			                                     num_cfg,
-												 param_id,
-	                                             (int8_t *)data_ptr,
-	                                             base_payload_size,
-												 per_cfg_base_payload_size))
+                                                 num_cfg,
+                                                 param_id,
+                                                 (int8_t *)data_ptr,
+                                                 base_payload_size,
+                                                 per_cfg_base_payload_size))
    {
       AR_MSG(DBG_ERROR_PRIO, "Trying to set different delay to same channel, returning");
       return CAPI_EBADPARAM;
@@ -361,11 +361,11 @@ capi_err_t capi_latency_validate_per_channel_v2_payload(capi_latency_t *me_ptr,
 
 /* Returns FALSE if same channel is set to multiple times in different configs */
 bool_t capi_latency_check_multi_ch_channel_mask_v2_param(uint32_t miid,
-		                                    uint32_t    num_config,
+                                            uint32_t    num_config,
                                             uint32_t    param_id,
                                             int8_t *    param_ptr,
                                             uint32_t    base_payload_size,
-											uint32_t    per_cfg_base_payload_size)
+                                            uint32_t    per_cfg_base_payload_size)
 {
    uint32_t *temp_mask_list_ptr                               = NULL;
    int8_t *  data_ptr                                         = param_ptr; // points to the start of the payload
@@ -381,19 +381,19 @@ bool_t capi_latency_check_multi_ch_channel_mask_v2_param(uint32_t miid,
       data_ptr += offset;
       channel_group_mask          = *((uint32_t *)data_ptr);
 #ifdef CAPI_LATENCY_DBG_MSG
-      AR_MSG(DBG_HIGH_PRIO, "channel_group_mask %#lx, offset %lu for config %lu", channel_group_mask, offset, cnfg_cntr);
+      AR_MSG(DBG_LOW_PRIO, "channel_group_mask %#lx, offset %lu for config %lu", channel_group_mask, offset, cnfg_cntr);
 #endif
       temp_mask_list_ptr = (uint32_t *)(data_ptr + CAPI_CMN_INT32_SIZE_IN_BYTES);
       if(!capi_cmn_check_v2_channel_mask_duplication(miid,
                                                      cnfg_cntr,
-    		                                         channel_group_mask,
-    		                                         temp_mask_list_ptr,
-													 current_channel_mask_arr,
-													 check_channel_mask_arr,
-													 &offset,
-													 per_cfg_base_payload_size))
+                                                     channel_group_mask,
+                                                     temp_mask_list_ptr,
+                                                     current_channel_mask_arr,
+                                                     check_channel_mask_arr,
+                                                     &offset,
+                                                     per_cfg_base_payload_size))
       {
-    	  return FALSE;
+          return FALSE;
       }
    }
    return check;
@@ -406,7 +406,7 @@ void capi_delay_set_delay_v2(capi_latency_t *me_ptr)
    {
       for (uint32_t chan_num = 0; chan_num < me_ptr->media_fmt.format.num_channels; chan_num++)
       {
-    	  me_ptr->lib_config.mchan_config[chan_num].delay_in_us = cfg_ptr->global_delay_us;
+          me_ptr->lib_config.mchan_config[chan_num].delay_in_us = cfg_ptr->global_delay_us;
       }
    }
    else
@@ -414,7 +414,7 @@ void capi_delay_set_delay_v2(capi_latency_t *me_ptr)
       for (uint32_t chan_num = 0; chan_num < me_ptr->media_fmt.format.num_channels; chan_num++)
       {
          int8_t * delay_cfg_ptr = (int8_t *)me_ptr->cache_delay_v2.cache_delay_per_config_v2_ptr;
-   	     uint32_t offset           = sizeof(param_id_latency_cfg_v2_t);
+         uint32_t offset           = sizeof(param_id_latency_cfg_v2_t);
          for (uint32_t count = 0; count < me_ptr->cache_delay_v2.cache_delay_per_config_v2_ptr->num_config; count++)
          {
             uint32_t *ch_mask_arr_ptr = NULL;
@@ -431,7 +431,7 @@ void capi_delay_set_delay_v2(capi_latency_t *me_ptr)
             ch_mask_list_size        = capi_cmn_count_set_bits(channel_group_mask);
             delay_us = *(ch_mask_arr_ptr + ch_mask_list_size);
 #ifdef CAPI_LATENCY_DBG_MSG
-            AR_MSG(DBG_ERROR_PRIO,
+            AR_MSG(DBG_LOW_PRIO,
                         "CAPI Latency Set Delay %lu for config %lu, channel group mask %#lx", delay_us, count, channel_group_mask);
 #endif
             uint32_t curr_ch_mask    = (1 << CAPI_CMN_MOD_WITH_32(channel_type));
@@ -442,18 +442,18 @@ void capi_delay_set_delay_v2(capi_latency_t *me_ptr)
                //get the index of this group amongst the set bits in group mask
                uint32_t set_index = capi_cmn_count_set_bits_in_lower_n_bits(channel_group_mask, ch_index_grp_no);
 #ifdef CAPI_LATENCY_DBG_MSG
-               AR_MSG(DBG_HIGH_PRIO,
+               AR_MSG(DBG_LOW_PRIO,
                     "curr_ch_mask %lu, temp_cfg_ptr[%lu]: %lu",
                     curr_ch_mask,
                     set_index,
-					ch_mask_arr_ptr[set_index]);
+                    ch_mask_arr_ptr[set_index]);
 #endif
                if (curr_ch_mask & ch_mask_arr_ptr[set_index])
                {
 
                   me_ptr->lib_config.mchan_config[chan_num].delay_in_us = delay_us;
 #ifdef CAPI_LATENCY_DBG_MSG
-                  AR_MSG(DBG_HIGH_PRIO,
+                  AR_MSG(DBG_LOW_PRIO,
                        "chan_num %lu,  channel_type: %lu, delay in us: %lu",
                        chan_num,
                        channel_type,
@@ -510,7 +510,7 @@ capi_err_t capi_latency_get_config_v2(
                   (param_id_latency_cfg_v2_t *)me_ptr->cache_delay_v2.cache_delay_per_config_v2_ptr;
                params_ptr->actual_data_len = memscpy(delay_cfg_ptr,
                                                    params_ptr->max_data_len,
-												   cached_delay_cfg_ptr,
+                                                   cached_delay_cfg_ptr,
                                                    me_ptr->cache_delay_v2.cache_delay_per_config_v2_size);
 
                CAPI_SET_ERROR(capi_result, CAPI_EOK);
