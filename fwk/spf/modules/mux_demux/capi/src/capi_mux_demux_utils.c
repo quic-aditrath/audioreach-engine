@@ -336,6 +336,11 @@ capi_err_t capi_mux_demux_port_operation(capi_mux_demux_t *                     
                       0,
                       sizeof(mux_demux_input_media_fmt_t));
             }
+            else
+            {
+              //Resetting the output media format sum as port is closed, when it is reopend mf on output port is raised again.
+              ((mux_demux_output_port_info_t *)port_info_ptr)[out_arr_index].fmt.media_fmt_sum = 0;
+            }
          }
 #ifdef MUX_DEMUX_TX_DEBUG_INFO
          AR_MSG(DBG_LOW_PRIO,
