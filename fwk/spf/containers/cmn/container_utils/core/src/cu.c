@@ -32,13 +32,10 @@ static uint32_t cu_global_unique_id = 1; // 0 reserved for not initialized.
  * Create function of a container
  */
 typedef ar_result_t (*spf_cntr_create_function_t)(cntr_cmn_init_params_t *init_param_ptr,
-                                                  spf_handle_t **         cntr_handle,
+                                                  spf_handle_t          **cntr_handle,
                                                   uint32_t                cntr_type);
 
-typedef void (*spf_cntr_dump_debug_info_t)(spf_handle_t *         cntr_handle,
-                                                  int8_t *start_address,
-                                                  uint32_t max_size);
-
+typedef void (*spf_cntr_dump_debug_info_t)(spf_handle_t *cntr_handle, int8_t *start_address, uint32_t max_size);
 
 /**
  * the index is used for getting entry point function
@@ -65,12 +62,11 @@ const spf_cntr_create_function_t global_cntr_create_ftable[] = {
 const spf_cntr_dump_debug_info_t global_dump_debug_info_ftable[] = {
    NULL, // APM_CONTAINER_TYPE_ID_SC
    NULL, // APM_CONTAINER_TYPE_ID_GC
-   NULL,      // APM_CONTAINER_TYPE_ID_OLC
+   NULL, // APM_CONTAINER_TYPE_ID_OLC
 #if defined(USES_FEF_CONTAINER)
    NULL,      // APM_CONTAINER_TYPE_ID_FRONT_END_FWK
 #endif
 };
-
 
 /* =======================================================================
 Static Function Declarations
@@ -342,7 +338,7 @@ ar_result_t cu_check_launch_thread(cu_base_t *me_ptr,
    return result;
 }
 
-ar_result_t cu_create_send_icb_info_msg_to_upstreams(cu_base_t *       base_ptr,
+ar_result_t cu_create_send_icb_info_msg_to_upstreams(cu_base_t        *base_ptr,
                                                      cu_ext_in_port_t *ext_in_port_ptr,
                                                      gu_ext_in_port_t *gu_ext_in_port_ptr)
 {
@@ -350,7 +346,7 @@ ar_result_t cu_create_send_icb_info_msg_to_upstreams(cu_base_t *       base_ptr,
    INIT_EXCEPTION_HANDLING
 
    spf_msg_t                      msg;
-   spf_msg_header_t *             cmd_header_ptr;
+   spf_msg_header_t              *cmd_header_ptr;
    spf_msg_cmd_inform_icb_info_t *cmd_ptr;
    uint32_t                       cmd_size = sizeof(spf_msg_cmd_inform_icb_info_t);
    cmd_size                                = GET_SPF_MSG_REQ_SIZE(cmd_size);
@@ -492,7 +488,7 @@ ar_result_t cu_handle_frame_len_change(cu_base_t *base_ptr, icb_frame_length_t *
              base_ptr->cntr_proc_duration,
              base_ptr->flags.is_cntr_proc_dur_set_paramed,
              frame_len_changed);
-      }
+   }
 
    for (gu_ext_in_port_list_t *ext_in_port_list_ptr = base_ptr->gu_ptr->ext_in_port_list_ptr;
         (NULL != ext_in_port_list_ptr);
@@ -540,8 +536,8 @@ ar_result_t cu_handle_frame_len_change(cu_base_t *base_ptr, icb_frame_length_t *
 /*If client doesn't send the heap ID property, we assume Default heap.
 We have to validate only if the property is received*/
 ar_result_t cu_parse_get_self_and_peer_heap_ids(apm_container_cfg_t *container_cfg_ptr,
-                                                POSAL_HEAP_ID *      self_heap_id_ptr,
-                                                POSAL_HEAP_ID *      peer_heap_id_ptr)
+                                                POSAL_HEAP_ID       *self_heap_id_ptr,
+                                                POSAL_HEAP_ID       *peer_heap_id_ptr)
 {
    apm_prop_data_t *cntr_prop_ptr;
    *self_heap_id_ptr = POSAL_HEAP_DEFAULT;
@@ -619,10 +615,9 @@ ar_result_t cu_set_cntr_type_bits_in_log_id(uint32_t cntr_type, uint32_t *log_id
    return result;
 }
 
-
 void cntr_cmn_dump_debug_info(spf_handle_t *cntr_handle, uint32_t type_id, int8_t *start_address, uint32_t max_size)
 {
-   return ;
+   return;
 }
 
 /**
@@ -664,6 +659,49 @@ ar_result_t cu_parse_container_cfg(cu_base_t *me_ptr, apm_container_cfg_t *conta
    {
       switch (cntr_prop_ptr->prop_id)
       {
+         case APM_CONTAINER_PROP_ID_FRAME_SIZE:
+         {
+            VERIFY(result, cntr_prop_ptr->prop_size >= sizeof(apm_cont_prop_id_frame_size_t));
+
+            apm_cont_prop_id_frame_size_t *fs_ptr = (apm_cont_prop_id_frame_size_t *)(cntr_prop_ptr + 1);
+
+            switch (fs_ptr->mode)
+            {
+               case APM_CONTAINER_PROP_FRAME_SIZE_TIME:
+               {
+                  VERIFY(result,
+                         cntr_prop_ptr->prop_size >=
+                            sizeof(apm_cont_prop_id_frame_size_t) + sizeof(apm_cont_prop_id_frame_size_time_t));
+                  apm_cont_prop_id_frame_size_time_t *temp = (apm_cont_prop_id_frame_size_time_t *)(fs_ptr + 1);
+                  me_ptr->conf_frame_len.frame_len_us      = temp->frame_size_us;
+
+                  break;
+               }
+               case APM_CONTAINER_PROP_FRAME_SIZE_SAMPLES:
+               {
+                  VERIFY(result,
+                         cntr_prop_ptr->prop_size >=
+                            sizeof(apm_cont_prop_id_frame_size_t) + sizeof(apm_cont_prop_id_frame_size_samples_t));
+                  apm_cont_prop_id_frame_size_samples_t *temp = (apm_cont_prop_id_frame_size_samples_t *)(fs_ptr + 1);
+                  me_ptr->conf_frame_len.frame_len_samples    = temp->frame_size_samples;
+
+                  break;
+               }
+               case APM_CONTAINER_PROP_FRAME_SIZE_DEFAULT:
+               default:
+                  break;
+            }
+
+            CU_MSG(me_ptr->gu_ptr->log_id,
+                   DBG_LOW_PRIO,
+                   "Configured container frame size: mode = %lu [0: ignore, 1: time, 2: samples],  %lu us, %lu "
+                   "samples.",
+                   fs_ptr->mode,
+                   me_ptr->conf_frame_len.frame_len_us,
+                   me_ptr->conf_frame_len.frame_len_samples);
+
+            break;
+         }
          case APM_CONTAINER_PROP_ID_CONTAINER_TYPE:
          {
             VERIFY(result, cntr_prop_ptr->prop_size >= sizeof(apm_cont_prop_id_type_t));

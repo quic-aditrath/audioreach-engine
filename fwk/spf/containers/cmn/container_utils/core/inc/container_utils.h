@@ -72,6 +72,7 @@ Macros
 
 #define FRAME_LEN_1000_US        (1000)
 #define FRAME_LEN_5000_US        (5000)
+#define FRAME_LEN_10000_US       (10000)
 #define FRAME_LEN_20000_US       (20000)
 #define FRAME_LEN_40000_US       (40000)
 
@@ -271,7 +272,11 @@ typedef struct cu_base_t
    uint32_t               island_ctrl_chan_mask;   /**< Channels masks for the external control ports which are allocated in island heap. */
    uint32_t               available_ctrl_chan_mask;/**< Available bits in the bit mask of the control commands channel */
    uint16_t               active_non_island_num_buffers_for_ctrl_port; /**< number of non-island control port buffers held by module.*/
-   icb_frame_length_t     cntr_frame_len;          /**< Overall (LCM) frame length of the container. Determined from module threshold or perf-mode.  */
+   icb_frame_length_t     conf_frame_len;          /**< Frame length configured as container property. */
+   icb_frame_length_t     cntr_frame_len;          /**< Final container frame length.
+                                                        First decided based on the threshold module in the container if any.
+                                                        If no threshold modules then decided based on the conf_frame_len (configured as container property).
+                                                        And if neither of those then at last decided based on the any one Subgraph's perf-mode property. */
    uint32_t               period_us;               /**< us, period of the container, in microseconds. Usually same as cntr_frame_len except for voice which has 40 ms etc for CDRX40. */
    uint32_t               cntr_proc_duration;      /**< us, processing duration of the container per frame = scaled frame_size*/
    cu_flags_t             flags;                   /**< general flags */

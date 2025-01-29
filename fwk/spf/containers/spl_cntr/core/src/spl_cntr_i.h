@@ -263,8 +263,9 @@ typedef struct cntr_fwk_extn_info_t
  */
 typedef struct spl_cntr_threshold_data_t
 {
-   uint32_t configured_frame_size_us;          /**< Configured frame size in microseconds, derived from performance
+   uint32_t configured_frame_size_us;          /**< Configured frame size in microseconds, derived from container property or from performance
                                                     mode of sgs sent in graph_open. */
+   uint32_t configured_frame_size_samples;     /**< Configured frame size in samples, derived from container property sent in graph_open. */
    uint32_t aggregated_threshold_us;           /**< The aggregated framework threshold in microseconds. This is the
                                                     largest of the thresholds reported by ports. */
    uint32_t threshold_port_sample_rate;        /**< Sampling rate of the port which determined the fwk (aggregated)
@@ -320,8 +321,6 @@ typedef struct spl_cntr_t
    uint32_t        total_flush_eos_stuck;     /**< total flushing EOSes stuck in the container. needed for voting */
 
    cont_trigger_policy_t          trigger_policy;
-
-   bool_t is_vprx;
    bool_t is_voice_delivery_cntr;
 } spl_cntr_t;
 

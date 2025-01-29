@@ -16,27 +16,26 @@
 Static Function Declarations.
 ========================================================================== */
 static uint32_t spl_cntr_calc_ext_out_buf_deliver_size(
-   spl_cntr_t *             me_ptr,
+   spl_cntr_t              *me_ptr,
    spl_cntr_ext_out_port_t *ext_out_port_ptr); // use calc everywhere
-static ar_result_t spl_cntr_pack_external_output(spl_cntr_t *             me_ptr,
+static ar_result_t spl_cntr_pack_external_output(spl_cntr_t              *me_ptr,
                                                  spl_cntr_ext_out_port_t *ext_out_port_ptr,
-                                                 spf_msg_data_buffer_t *  out_buf_ptr);
-static bool_t spl_cntr_check_if_new_threshold_is_multiple(spl_cntr_t *me_ptr,
-                                                          uint32_t    agg_thresh_samples_per_channel,
-                                                          uint32_t    agg_thresh_sample_rate,
-                                                          uint32_t    new_thresh_samples_per_channel,
-                                                          uint32_t    new_thresh_sample_rate,
-                                                          uint32_t *  multiple_ptr);
-static void spl_cntr_threshold_update_module_process_iters(spl_cntr_t *me_ptr, spl_topo_module_t *curr_module_ptr);
+                                                 spf_msg_data_buffer_t   *out_buf_ptr);
+static bool_t      spl_cntr_check_if_new_threshold_is_multiple(spl_cntr_t *me_ptr,
+                                                               uint32_t    agg_thresh_samples_per_channel,
+                                                               uint32_t    agg_thresh_sample_rate,
+                                                               uint32_t    new_thresh_samples_per_channel,
+                                                               uint32_t    new_thresh_sample_rate,
+                                                               uint32_t   *multiple_ptr);
 static bool_t spl_cntr_threshold_a_greater_than_b(spl_cntr_t *me_ptr,
                                                   uint64_t    a_samples,
                                                   uint64_t    a_sr,
                                                   uint64_t    b_samples,
                                                   uint64_t    b_sr);
 
-static bool_t spl_cntr_ext_in_port_check_timestamp_discontinuity(spl_cntr_t *            me_ptr,
+static bool_t spl_cntr_ext_in_port_check_timestamp_discontinuity(spl_cntr_t             *me_ptr,
                                                                  spl_cntr_ext_in_port_t *ext_in_port_ptr,
-                                                                 spf_msg_data_buffer_t * data_msg_buf_ptr);
+                                                                 spf_msg_data_buffer_t  *data_msg_buf_ptr);
 
 /* =======================================================================
 Static Function Definitions
@@ -46,14 +45,14 @@ Static Function Definitions
  * Checks for timestamp discontinuity between most recent timestamp in the external input port list vs the
  * timestamp in the data msg.
  */
-static bool_t spl_cntr_ext_in_port_check_timestamp_discontinuity(spl_cntr_t *            me_ptr,
+static bool_t spl_cntr_ext_in_port_check_timestamp_discontinuity(spl_cntr_t             *me_ptr,
                                                                  spl_cntr_ext_in_port_t *ext_in_port_ptr,
-                                                                 spf_msg_data_buffer_t * data_msg_buf_ptr)
+                                                                 spf_msg_data_buffer_t  *data_msg_buf_ptr)
 {
    bool_t                     TS_IS_VALID_TRUE   = TRUE;
    spl_topo_timestamp_info_t *timestamp_ptr      = NULL;
    int64_t                    expected_ts        = 0;
-   uint64_t *                 FRAC_TIME_PTR_NULL = NULL;
+   uint64_t                  *FRAC_TIME_PTR_NULL = NULL;
    int64_t                    input_ts           = data_msg_buf_ptr->timestamp;
 
    // If there are no timestamps at the local buffer, there is no timestamp discontinuity.
@@ -75,10 +74,11 @@ static bool_t spl_cntr_ext_in_port_check_timestamp_discontinuity(spl_cntr_t *   
                       : &(ext_in_port_ptr->topo_buf.buf_timestamp_info);
 
    // Extrapolate the timestamp. ts = ts + (distance between ts offset and end of local buffer)
-   expected_ts = timestamp_ptr->timestamp +
-                 (topo_bytes_per_ch_to_us(ext_in_port_ptr->topo_buf.buf_ptr[0].actual_data_len - timestamp_ptr->offset_bytes_per_ch,
-                                          &(ext_in_port_ptr->cu.media_fmt),
-                                          FRAC_TIME_PTR_NULL));
+   expected_ts =
+      timestamp_ptr->timestamp + (topo_bytes_per_ch_to_us(ext_in_port_ptr->topo_buf.buf_ptr[0].actual_data_len -
+                                                             timestamp_ptr->offset_bytes_per_ch,
+                                                          &(ext_in_port_ptr->cu.media_fmt),
+                                                          FRAC_TIME_PTR_NULL));
 
 #if SPL_CNTR_DEBUG_LEVEL >= SPL_CNTR_DEBUG_LEVEL_3
    SPL_CNTR_MSG(me_ptr->topo.t_base.gu.log_id,
@@ -116,9 +116,9 @@ static bool_t spl_cntr_ext_in_port_check_timestamp_discontinuity(spl_cntr_t *   
  * output buffers that already contain some data in them), but they must be
  * packed before sending downstream.
  */
-static ar_result_t spl_cntr_pack_external_output(spl_cntr_t *             me_ptr,
+static ar_result_t spl_cntr_pack_external_output(spl_cntr_t              *me_ptr,
                                                  spl_cntr_ext_out_port_t *ext_out_port_ptr,
-                                                 spf_msg_data_buffer_t *  out_buf_ptr)
+                                                 spf_msg_data_buffer_t   *out_buf_ptr)
 {
    ar_result_t result       = AR_EOK;
    uint32_t    buf_offset_1 = ext_out_port_ptr->topo_buf.buf_ptr[0].actual_data_len;
@@ -167,16 +167,17 @@ static ar_result_t spl_cntr_pack_external_output(spl_cntr_t *             me_ptr
 /**
  * outbuf_size should be initialized
  */
-static inline ar_result_t spl_cntr_get_required_out_buf_size_and_count(spl_cntr_t *             me_ptr,
+static inline ar_result_t spl_cntr_get_required_out_buf_size_and_count(spl_cntr_t              *me_ptr,
                                                                        spl_cntr_ext_out_port_t *ext_out_port_ptr,
-                                                                       uint32_t *               num_out_buf_ptr,
-                                                                       uint32_t *               req_out_buf_size,
+                                                                       uint32_t                *num_out_buf_ptr,
+                                                                       uint32_t                *req_out_buf_size,
                                                                        uint32_t                 specified_out_buf_size,
                                                                        uint32_t                 metadata_size)
 {
    ar_result_t result = cu_determine_ext_out_buffering(&me_ptr->cu, &ext_out_port_ptr->gu);
 
-   if (me_ptr->is_vprx)
+   if (APM_SUB_GRAPH_DIRECTION_RX == me_ptr->topo.t_base.gu.sg_list_ptr->sg_ptr->direction &&
+       cu_has_voice_sid(&me_ptr->cu))
    {
       SPL_CNTR_MSG(me_ptr->topo.t_base.gu.log_id,
                    DBG_MED_PRIO,
@@ -385,14 +386,15 @@ static bool_t spl_cntr_is_fractional_rate(uint64_t frame_us, uint32_t sample_rat
 // check all the external and source module ports to find the fractional sampling rate.
 static uint32_t spl_cntr_get_fractional_sampling_rate_for_cntr_frame_len(spl_cntr_t *me_ptr)
 {
-   uint32_t    configured_frame_size_us = me_ptr->threshold_data.configured_frame_size_us;
+   uint32_t configured_frame_size_us       = me_ptr->threshold_data.configured_frame_size_us;
+   bool_t   pick_first_valid_sampling_rate = (0 == configured_frame_size_us) ? TRUE : FALSE;
 
    // Check if input sample rate is fractional
    for (gu_ext_in_port_list_t *ext_in_port_list_ptr = me_ptr->topo.t_base.gu.ext_in_port_list_ptr; ext_in_port_list_ptr;
         LIST_ADVANCE(ext_in_port_list_ptr))
    {
       spl_cntr_ext_in_port_t *ext_in_port_ptr = (spl_cntr_ext_in_port_t *)ext_in_port_list_ptr->ext_in_port_ptr;
-      gen_topo_input_port_t * in_port_ptr =
+      gen_topo_input_port_t  *in_port_ptr =
          (gen_topo_input_port_t *)ext_in_port_list_ptr->ext_in_port_ptr->int_in_port_ptr;
 
       // skip the ports which are in variable data path because extra buffer will anyway be created (prebuffer) in ICB.
@@ -405,10 +407,12 @@ static uint32_t spl_cntr_get_fractional_sampling_rate_for_cntr_frame_len(spl_cnt
        * If the conversion is from 48K to 11025Hz. Then fractional rate will be on fixed data path and we should pick
        * 11025Hz.
        */
-      if (!ext_in_port_ptr->cu.icb_info.flags.variable_input)
+      if (in_port_ptr->common.flags.is_mf_valid)
       {
-         if (in_port_ptr->common.flags.is_mf_valid &&
-             spl_cntr_is_fractional_rate(configured_frame_size_us, in_port_ptr->common.media_fmt_ptr->pcm.sample_rate))
+         if (pick_first_valid_sampling_rate ||
+             (!ext_in_port_ptr->cu.icb_info.flags.variable_input &&
+              spl_cntr_is_fractional_rate(configured_frame_size_us,
+                                          in_port_ptr->common.media_fmt_ptr->pcm.sample_rate)))
          {
             return in_port_ptr->common.media_fmt_ptr->pcm.sample_rate;
          }
@@ -431,8 +435,9 @@ static uint32_t spl_cntr_get_fractional_sampling_rate_for_cntr_frame_len(spl_cnt
                gen_topo_output_port_t *out_port_ptr = (gen_topo_output_port_t *)out_port_list_ptr->op_port_ptr;
 
                if (out_port_ptr->common.flags.is_mf_valid &&
-                   spl_cntr_is_fractional_rate(configured_frame_size_us,
-                                               out_port_ptr->common.media_fmt_ptr->pcm.sample_rate))
+                   (pick_first_valid_sampling_rate ||
+                    spl_cntr_is_fractional_rate(configured_frame_size_us,
+                                                out_port_ptr->common.media_fmt_ptr->pcm.sample_rate)))
                {
                   return out_port_ptr->common.media_fmt_ptr->pcm.sample_rate;
                }
@@ -447,14 +452,16 @@ static uint32_t spl_cntr_get_fractional_sampling_rate_for_cntr_frame_len(spl_cnt
         LIST_ADVANCE(ext_out_port_list_ptr))
    {
       spl_cntr_ext_out_port_t *ext_out_port_ptr = (spl_cntr_ext_out_port_t *)ext_out_port_list_ptr->ext_out_port_ptr;
-      gen_topo_output_port_t * out_port_ptr =
+      gen_topo_output_port_t  *out_port_ptr =
          (gen_topo_output_port_t *)ext_out_port_list_ptr->ext_out_port_ptr->int_out_port_ptr;
 
       // skip the ports which are in variable data path because extra buffer will anyway be created (prebuffer) in ICB.
-      if (!ext_out_port_ptr->cu.icb_info.flags.variable_output)
+      if (out_port_ptr->common.flags.is_mf_valid)
       {
-         if (out_port_ptr->common.flags.is_mf_valid &&
-             spl_cntr_is_fractional_rate(configured_frame_size_us, out_port_ptr->common.media_fmt_ptr->pcm.sample_rate))
+         if (pick_first_valid_sampling_rate ||
+             (!ext_out_port_ptr->cu.icb_info.flags.variable_output &&
+              spl_cntr_is_fractional_rate(configured_frame_size_us,
+                                          out_port_ptr->common.media_fmt_ptr->pcm.sample_rate)))
          {
             return out_port_ptr->common.media_fmt_ptr->pcm.sample_rate;
          }
@@ -467,7 +474,7 @@ static uint32_t spl_cntr_get_fractional_sampling_rate_for_cntr_frame_len(spl_cnt
 /**
  * Reallocates the external input port local buffer according to the required size.
  */
-ar_result_t spl_cntr_check_resize_ext_in_buffer(spl_cntr_t *            me_ptr,
+ar_result_t spl_cntr_check_resize_ext_in_buffer(spl_cntr_t             *me_ptr,
                                                 spl_cntr_ext_in_port_t *ext_in_port_ptr,
                                                 uint32_t                required_size_bytes)
 {
@@ -589,7 +596,7 @@ ar_result_t spl_cntr_check_resize_ext_in_buffer(spl_cntr_t *            me_ptr,
 
    // Find nominal samples which should be equivalent to deliver size when media format doesn't change through
    // the topology. Exaple 44.1k, delivery size should be 44 samples, nominal samples should also be 44 samples.
-   nominal_bytes = spl_topo_calc_buf_size(&(me_ptr->topo),
+   nominal_bytes                    = spl_topo_calc_buf_size(&(me_ptr->topo),
                                           me_ptr->topo.cntr_frame_len,
                                           &ext_in_port_ptr->cu.media_fmt,
                                           FOR_DELIVERY_TRUE);
@@ -610,9 +617,9 @@ ar_result_t spl_cntr_check_resize_ext_in_buffer(spl_cntr_t *            me_ptr,
    return result;
 }
 
-ar_result_t spl_cntr_buffer_held_input_metadata(spl_cntr_t *            me_ptr,
+ar_result_t spl_cntr_buffer_held_input_metadata(spl_cntr_t             *me_ptr,
                                                 spl_cntr_ext_in_port_t *ext_in_port_ptr,
-                                                spf_msg_data_buffer_t * data_msg_buf_ptr,
+                                                spf_msg_data_buffer_t  *data_msg_buf_ptr,
                                                 uint32_t                local_buf_bytes_before_per_ch,
                                                 uint32_t                held_data_msg_consumed_bytes_before,
                                                 uint32_t                total_bytes_buffered_per_ch)
@@ -631,7 +638,7 @@ ar_result_t spl_cntr_buffer_held_input_metadata(spl_cntr_t *            me_ptr,
       {
          // Since we might move the node to a different list, we need to find the next node in the loop up front.
          module_cmn_md_list_t *next_node_ptr = node_ptr->next_ptr;
-         module_cmn_md_t *     md_ptr        = node_ptr->obj_ptr;
+         module_cmn_md_t      *md_ptr        = node_ptr->obj_ptr;
 
          // calculate the number of bytes per channel consumed at this point, including this process call
          uint32_t held_data_msg_consumed_samples_after_per_ch =
@@ -898,9 +905,9 @@ uint32_t spl_cntr_ext_in_get_free_space(spl_cntr_t *me_ptr, spl_cntr_ext_in_port
 /**
  * Buffers a held input data message into the external port local buffering.
  */
-ar_result_t spl_cntr_buffer_held_input_data(spl_cntr_t *            me_ptr,
+ar_result_t spl_cntr_buffer_held_input_data(spl_cntr_t             *me_ptr,
                                             spl_cntr_ext_in_port_t *ext_in_port_ptr,
-                                            uint32_t *              data_needed_bytes_per_ch_ptr)
+                                            uint32_t               *data_needed_bytes_per_ch_ptr)
 {
    INIT_EXCEPTION_HANDLING
    ar_result_t            result           = AR_EOK;
@@ -924,7 +931,7 @@ ar_result_t spl_cntr_buffer_held_input_data(spl_cntr_t *            me_ptr,
    const uint32_t IN_FILE_STR_CH_IDX = 21;
    const int32_t  IN_FILENAME_LEN    = 26;
    char           file_str_arr[IN_FILENAME_LEN + 1];
-   const char *   file_str_ptr = "spl_cntr_ext_in_port_0_ch_0.raw";
+   const char    *file_str_ptr = "spl_cntr_ext_in_port_0_ch_0.raw";
 #endif
 
    DBG_VERIFY(result, (NULL != header_ptr));
@@ -960,7 +967,7 @@ ar_result_t spl_cntr_buffer_held_input_data(spl_cntr_t *            me_ptr,
 
    /* off setting the input data ptr by number of bytes consumed per channel */
    input_data_ptr = (int8_t *)(data_msg_buf_ptr->data_buf) + held_data_msg_consumed_bytes_per_ch;
-   //log_write_ptr  = input_data_ptr;
+   // log_write_ptr  = input_data_ptr;
 
    // Copy the held msg's timestamp. Only do this if we haven't buffered any data yet. TS handling not required for
    // voice use case.
@@ -1030,8 +1037,8 @@ ar_result_t spl_cntr_buffer_held_input_data(spl_cntr_t *            me_ptr,
       *data_needed_bytes_per_ch_ptr = spl_cntr_ext_in_get_free_space(me_ptr, ext_in_port_ptr);
    }
 
-   // VPTX attempts to fill timestamp discontinuity with zeros in order to robustly handle data drops, for example due to
-   // signal miss in upstream speaker ep.
+   // VPTX attempts to fill timestamp discontinuity with zeros in order to robustly handle data drops, for example due
+   // to signal miss in upstream speaker ep.
    if ((0 != ext_in_port_ptr->vptx_ts_zeros_to_push_us) && spl_cntr_fwk_extn_voice_delivery_found(me_ptr, NULL))
    {
       TRY(result,
@@ -1205,7 +1212,7 @@ ar_result_t spl_cntr_alloc_temp_out_buf(spl_cntr_t *me_ptr, spl_cntr_ext_out_por
  * num_bufs_allocated reaches buf_q_num_elements, and stores them in
  * ext_port_ptr's buffer queue.
  */
-ar_result_t spl_cntr_create_ext_out_bufs(spl_cntr_t *             me_ptr,
+ar_result_t spl_cntr_create_ext_out_bufs(spl_cntr_t              *me_ptr,
                                          spl_cntr_ext_out_port_t *ext_port_ptr,
                                          uint32_t                 buf_size,
                                          uint32_t                 num_out_bufs)
@@ -1241,7 +1248,8 @@ ar_result_t spl_cntr_create_ext_out_bufs(spl_cntr_t *             me_ptr,
                                                          num_out_bufs,
                                                          ext_port_ptr->gu.downstream_handle.spf_handle_ptr,
                                                          gu_get_downgraded_heap_id(me_ptr->topo.t_base.heap_id,
-                                                                              ext_port_ptr->gu.downstream_handle.heap_id),
+                                                                                   ext_port_ptr->gu.downstream_handle
+                                                                                      .heap_id),
                                                          &ext_port_ptr->cu.num_buf_allocated);
 
    return result;
@@ -1268,9 +1276,9 @@ ar_result_t spl_cntr_init_after_getting_out_buf(spl_cntr_t *me_ptr, spl_cntr_ext
    INIT_EXCEPTION_HANDLING
    uint32_t               result      = AR_EOK;
    uint32_t               buf_size    = 0;
-   spf_msg_header_t *     header_ptr  = NULL;
+   spf_msg_header_t      *header_ptr  = NULL;
    spf_msg_data_buffer_t *out_buf_ptr = NULL;
-   int8_t *               buf_ptr     = NULL;
+   int8_t                *buf_ptr     = NULL;
 
 #if SPL_CNTR_DEBUG_LEVEL >= SPL_CNTR_DEBUG_LEVEL_4
    SPL_CNTR_MSG(me_ptr->topo.t_base.gu.log_id, DBG_MED_PRIO, "entering spl_cntr_init_after_getting_out_buf");
@@ -1395,7 +1403,7 @@ ar_result_t spl_cntr_check_realloc_ext_out_buffer(spl_cntr_t *me_ptr, spl_cntr_e
    }
 
    spf_msg_data_buffer_t *data_buf_ptr = (spf_msg_data_buffer_t *)&buffer_ptr->payload_start;
-   uint32_t max_size = data_buf_ptr->max_size;
+   uint32_t               max_size     = data_buf_ptr->max_size;
    // if buf size or count doesn't match then recreate.
    uint32_t num_bufs_needed =
       ext_port_ptr->cu.icb_info.icb.num_reg_bufs + ext_port_ptr->cu.icb_info.icb.num_reg_prebufs;
@@ -1406,12 +1414,11 @@ ar_result_t spl_cntr_check_realloc_ext_out_buffer(spl_cntr_t *me_ptr, spl_cntr_e
    if ((data_buf_ptr->max_size != ext_port_ptr->cu.buf_max_size) || (num_bufs_to_destroy > 0))
    {
 
-	  SPL_CNTR_MSG(me_ptr->topo.t_base.gu.log_id, DBG_LOW_PRIO, " Destroyed 1 external buffers 0x%p", buffer_ptr);
+      SPL_CNTR_MSG(me_ptr->topo.t_base.gu.log_id, DBG_LOW_PRIO, " Destroyed 1 external buffers 0x%p", buffer_ptr);
       // Free the buffer
       posal_memory_free(buffer_ptr);
       ext_port_ptr->cu.num_buf_allocated--;
       ext_port_ptr->cu.out_bufmgr_node.buf_ptr = NULL;
-
    }
 
    uint32_t num_bufs_to_create =
@@ -1540,7 +1547,7 @@ ar_result_t spl_cntr_deliver_output_buffer(spl_cntr_t *me_ptr, spl_cntr_ext_out_
    INIT_EXCEPTION_HANDLING
 
    ar_result_t             result           = AR_EOK;
-   bool_t FOR_DELIVERY= TRUE;
+   bool_t                  FOR_DELIVERY     = TRUE;
    spl_topo_output_port_t *int_out_port_ptr = (spl_topo_output_port_t *)ext_out_port_ptr->gu.int_out_port_ptr;
 
    if (!(ext_out_port_ptr->cu.out_bufmgr_node.buf_ptr))
@@ -1593,14 +1600,14 @@ ar_result_t spl_cntr_deliver_output_buffer(spl_cntr_t *me_ptr, spl_cntr_ext_out_
    }
 
    posal_bufmgr_node_t    out_buf_node    = ext_out_port_ptr->cu.out_bufmgr_node;
-   spf_msg_header_t *     header_ptr      = (spf_msg_header_t *)(out_buf_node.buf_ptr);
+   spf_msg_header_t      *header_ptr      = (spf_msg_header_t *)(out_buf_node.buf_ptr);
    spf_msg_data_buffer_t *out_buf_msg_ptr = (spf_msg_data_buffer_t *)&header_ptr->payload_start;
 
 #ifdef SPL_CNTR_LOG_AT_OUTPUT
    const uint32_t OUT_FILE_STR_CH_IDX = 22;
    const int32_t  OUT_FILENAME_LEN    = 27;
    char           file_str_arr[OUT_FILENAME_LEN + 1];
-   const char *   file_str_ptr = "spl_cntr_ext_out_port_0_ch_0.raw";
+   const char    *file_str_ptr = "spl_cntr_ext_out_port_0_ch_0.raw";
 
    memscpy(file_str_arr, OUT_FILENAME_LEN * sizeof(char), file_str_ptr, OUT_FILENAME_LEN * sizeof(char));
    file_str_arr[OUT_FILENAME_LEN] = '\0';
@@ -1609,7 +1616,7 @@ ar_result_t spl_cntr_deliver_output_buffer(spl_cntr_t *me_ptr, spl_cntr_ext_out_
    {
       bool_t   opened                   = TRUE;
       uint32_t channel_size             = ext_out_port_ptr->topo_buf.buf_ptr[0].actual_data_len;
-      int8_t * log_write_ptr            = (int8_t *)ext_out_port_ptr->topo_buf.buf_ptr[i].data_ptr;
+      int8_t  *log_write_ptr            = (int8_t *)ext_out_port_ptr->topo_buf.buf_ptr[i].data_ptr;
       file_str_arr[OUT_FILE_STR_CH_IDX] = '0' + i;
 
       FILE *file = fopen(file_str_arr, "a");
@@ -1646,7 +1653,6 @@ ar_result_t spl_cntr_deliver_output_buffer(spl_cntr_t *me_ptr, spl_cntr_ext_out_
                                                  &(ext_out_port_ptr->pending_media_fmt),
                                                  FOR_DELIVERY));
    }
-
 
 #if SPL_CNTR_DEBUG_LEVEL >= SPL_CNTR_DEBUG_LEVEL_3
    SPL_CNTR_MSG(me_ptr->topo.t_base.gu.log_id,
@@ -1743,7 +1749,7 @@ ar_result_t spl_cntr_deliver_output_buffer(spl_cntr_t *me_ptr, spl_cntr_ext_out_
  * destroys (ext_port_ptr->cu.num_buf_allocated - num_bufs_to_keep) num of buffers,
  * where num_bufs_to_keep can be different from num_buf_allocated
  */
-static void spl_cntr_destroy_ext_buffers(spl_cntr_t *             me_ptr,
+static void spl_cntr_destroy_ext_buffers(spl_cntr_t              *me_ptr,
                                          spl_cntr_ext_out_port_t *ext_port_ptr,
                                          uint32_t                 num_bufs_to_keep)
 {
@@ -1786,8 +1792,8 @@ ar_result_t spl_cntr_recreate_ext_out_buffers(void *ctx_ptr, gu_ext_out_port_t *
    INIT_EXCEPTION_HANDLING
    ar_result_t              result           = AR_EOK;
    spl_cntr_ext_out_port_t *ext_out_port_ptr = (spl_cntr_ext_out_port_t *)gu_out_port_ptr;
-   cu_base_t *              base_ptr         = (cu_base_t *)ctx_ptr;
-   spl_cntr_t *             me_ptr           = (spl_cntr_t *)base_ptr;
+   cu_base_t               *base_ptr         = (cu_base_t *)ctx_ptr;
+   spl_cntr_t              *me_ptr           = (spl_cntr_t *)base_ptr;
    uint32_t                 buf_size         = spl_cntr_calc_required_ext_out_buf_size(me_ptr, ext_out_port_ptr);
 
    if (buf_size)
@@ -1873,8 +1879,8 @@ ar_result_t spl_cntr_handle_ext_buffer_size_change(void *ctx_ptr)
 {
    INIT_EXCEPTION_HANDLING
    ar_result_t             result                = AR_EOK;
-   spl_cntr_t *            me_ptr                = (spl_cntr_t *)ctx_ptr;
-   gu_ext_in_port_list_t * ext_in_port_list_ptr  = NULL;
+   spl_cntr_t             *me_ptr                = (spl_cntr_t *)ctx_ptr;
+   gu_ext_in_port_list_t  *ext_in_port_list_ptr  = NULL;
    gu_ext_out_port_list_t *ext_out_port_list_ptr = NULL;
    ext_in_port_list_ptr                          = me_ptr->topo.t_base.gu.ext_in_port_list_ptr;
    bool_t IS_MAX_TRUE                            = TRUE;
@@ -1939,7 +1945,7 @@ static bool_t spl_cntr_check_if_new_threshold_is_multiple(spl_cntr_t *me_ptr,
                                                           uint32_t    agg_thresh_sample_rate,
                                                           uint32_t    new_thresh_samples_per_channel,
                                                           uint32_t    new_thresh_sample_rate,
-                                                          uint32_t *  multiple_ptr)
+                                                          uint32_t   *multiple_ptr)
 {
    uint64_t a_samples = new_thresh_samples_per_channel;
    uint64_t a_sr      = new_thresh_sample_rate;
@@ -1993,33 +1999,6 @@ static bool_t spl_cntr_threshold_a_greater_than_b(spl_cntr_t *me_ptr,
    return (a_samples * b_sr) > (b_samples * a_sr);
 }
 
-/*
- * Update the module's num_iters field according to the framework (overall) and module threhsolds.
- * Uses the same principle as spl_cntr_check_if_new_threshold_is_multiple() to avoid rounding errors.
- */
-static void spl_cntr_threshold_update_module_process_iters(spl_cntr_t *me_ptr, spl_topo_module_t *curr_module_ptr)
-{
-   uint32_t num_iters = 1;
-
-   if (curr_module_ptr->threshold_data.is_threshold_module)
-   {
-      uint64_t new_threshold_in_samples_per_channel = me_ptr->cu.cntr_frame_len.frame_len_samples;
-      uint64_t new_threshold_port_sample_rate       = me_ptr->threshold_data.threshold_port_sample_rate;
-
-      num_iters = (new_threshold_in_samples_per_channel * curr_module_ptr->threshold_data.thresh_port_sample_rate) /
-                  (curr_module_ptr->threshold_data.thresh_in_samples_per_channel * new_threshold_port_sample_rate);
-   }
-#if SPL_CNTR_DEBUG_LEVEL >= SPL_CNTR_DEBUG_LEVEL_4
-   SPL_CNTR_MSG(me_ptr->topo.t_base.gu.log_id,
-                DBG_HIGH_PRIO,
-                "miid 0x%lx number of process iterations: %u",
-                curr_module_ptr->t_base.gu.module_instance_id,
-                num_iters);
-#endif
-
-   curr_module_ptr->t_base.num_proc_loops = num_iters;
-}
-
 /**
  * Called when a port raises a threshold event. Updates the port's module's threshold fields, and
  * reaggregates threshold across the container. Then calls another function to recalculate the
@@ -2043,7 +2022,7 @@ ar_result_t spl_cntr_handle_int_port_data_thresh_change_event(void *ctx_ptr)
       {
          spl_topo_module_t *module_ptr                           = (spl_topo_module_t *)module_list_ptr->module_ptr;
          uint32_t           module_threshold_samples_per_channel = 0;
-         topo_media_fmt_t * module_threshold_port_mf             = NULL;
+         topo_media_fmt_t  *module_threshold_port_mf             = NULL;
 
          // clear the module threshold data, will be aggregated across all the ports.
          memset(&module_ptr->threshold_data, 0, sizeof(module_ptr->threshold_data));
@@ -2069,8 +2048,7 @@ ar_result_t spl_cntr_handle_int_port_data_thresh_change_event(void *ctx_ptr)
                                                        module_threshold_port_mf->pcm.sample_rate))
                {
                   module_threshold_samples_per_channel =
-                     topo_bytes_to_samples_per_ch(in_port_ptr->common.threshold_raised,
-                                                  in_port_media_format_ptr);
+                     topo_bytes_to_samples_per_ch(in_port_ptr->common.threshold_raised, in_port_media_format_ptr);
                   module_threshold_port_mf = in_port_media_format_ptr;
                }
             }
@@ -2087,8 +2065,7 @@ ar_result_t spl_cntr_handle_int_port_data_thresh_change_event(void *ctx_ptr)
             {
                topo_media_fmt_t *out_port_media_format_ptr = out_port_ptr->common.media_fmt_ptr;
                uint32_t          port_threshold_samples_per_channel =
-                  topo_bytes_to_samples_per_ch(out_port_ptr->common.threshold_raised,
-                                               out_port_media_format_ptr);
+                  topo_bytes_to_samples_per_ch(out_port_ptr->common.threshold_raised, out_port_media_format_ptr);
 
                if (!module_threshold_port_mf ||
                    spl_cntr_threshold_a_greater_than_b(me_ptr,
@@ -2098,8 +2075,7 @@ ar_result_t spl_cntr_handle_int_port_data_thresh_change_event(void *ctx_ptr)
                                                        module_threshold_port_mf->pcm.sample_rate))
                {
                   module_threshold_samples_per_channel =
-                     topo_bytes_to_samples_per_ch(out_port_ptr->common.threshold_raised,
-                                                  out_port_media_format_ptr);
+                     topo_bytes_to_samples_per_ch(out_port_ptr->common.threshold_raised, out_port_media_format_ptr);
                   module_threshold_port_mf = out_port_media_format_ptr;
                }
             }
@@ -2224,60 +2200,48 @@ ar_result_t spl_cntr_handle_int_port_data_thresh_change_event(void *ctx_ptr)
 ar_result_t spl_cntr_determine_update_cntr_frame_len_us_from_cfg_and_thresh(spl_cntr_t *me_ptr)
 {
    INIT_EXCEPTION_HANDLING
-   ar_result_t        result                        = AR_EOK;
-   uint32_t           new_cntr_frame_length_us      = 0;
-   uint32_t           old_cntr_frame_length_samples = me_ptr->cu.cntr_frame_len.frame_len_samples;
-   uint32_t           frame_length_multiplier       = 0;
-   bool_t             is_using_threshold            = (me_ptr->threshold_data.threshold_in_samples_per_channel > 0);
-   icb_frame_length_t fm                            = { 0 };
+   ar_result_t        result                   = AR_EOK;
+   uint32_t           new_cntr_frame_length_us = 0;
+   bool_t             is_using_threshold       = (me_ptr->threshold_data.threshold_in_samples_per_channel > 0);
+   icb_frame_length_t fm                       = { 0 };
 
    // If there is a threshold, then aggregate threshold and configured frame size. Otherwise
    // just take configured frame size.
    if (is_using_threshold)
    {
-      // round up aggregated threshold to 0.5 ms multiple
-      uint32_t rounded_up_threshold_us = TOPO_CEIL(me_ptr->threshold_data.aggregated_threshold_us, 500) * 500;
-
-      frame_length_multiplier  = TOPO_CEIL(me_ptr->threshold_data.configured_frame_size_us, rounded_up_threshold_us);
-      new_cntr_frame_length_us = me_ptr->threshold_data.aggregated_threshold_us * frame_length_multiplier;
-
-#if SPL_CNTR_DEBUG_LEVEL >= SPL_CNTR_DEBUG_LEVEL_1
-      if (1 < frame_length_multiplier)
-      {
-         SPL_CNTR_MSG(me_ptr->topo.t_base.gu.log_id,
-                      DBG_HIGH_PRIO,
-                      "aggregated threshold us %lu us is less than configured frame size %lu us, multiplier used is "
-                      "%lu",
-                      me_ptr->threshold_data.aggregated_threshold_us,
-                      me_ptr->threshold_data.configured_frame_size_us,
-                      frame_length_multiplier);
-      }
-#endif
-
       // Assign sample rate and samples fields of icb structure.
-      fm.frame_len_us      = new_cntr_frame_length_us;
+      fm.frame_len_us      = me_ptr->threshold_data.aggregated_threshold_us;
       fm.sample_rate       = me_ptr->threshold_data.threshold_port_sample_rate;
-      fm.frame_len_samples = me_ptr->threshold_data.threshold_in_samples_per_channel * frame_length_multiplier;
+      fm.frame_len_samples = me_ptr->threshold_data.threshold_in_samples_per_channel;
    }
    else
    {
-      // If there is no threshold port then pick the first port (in fixed data path) which have fractional sample rate.
-      // this is to adjust the container frame size according to the fractional rate.
+      // If there is no threshold port then pick sampling rate of the first port (in fixed data path)
+      // 1. if frame size in time then pick the fractional sample rate to adjust the container frame size according to
+      // the fractional rate.
+      // 2. if frame size in samples then just pick the first sample rate.
       fm.sample_rate = spl_cntr_get_fractional_sampling_rate_for_cntr_frame_len(me_ptr);
       if (0 == fm.sample_rate)
       {
          fm.sample_rate = 48000;
       }
 
-      // rounded samples.
-      fm.frame_len_samples =
-         ((uint64_t)me_ptr->threshold_data.configured_frame_size_us * fm.sample_rate) / (uint64_t)NUM_US_PER_SEC;
+      if (me_ptr->threshold_data.configured_frame_size_samples)
+      {
+         fm.frame_len_samples = me_ptr->threshold_data.configured_frame_size_samples;
+      }
+      else
+      {
+         // rounded samples.
+         fm.frame_len_samples =
+            ((uint64_t)me_ptr->threshold_data.configured_frame_size_us * fm.sample_rate) / (uint64_t)NUM_US_PER_SEC;
+      }
 
       // rounded frame size in us
       fm.frame_len_us = topo_samples_to_us(fm.frame_len_samples, fm.sample_rate, NULL);
-
-      new_cntr_frame_length_us = fm.frame_len_us;
    }
+
+   new_cntr_frame_length_us = fm.frame_len_us;
 
    // For voice stream PP's, the only supported configurations are ones which result in 20ms container
    // frame length.
@@ -2293,32 +2257,6 @@ ar_result_t spl_cntr_determine_update_cntr_frame_len_us_from_cfg_and_thresh(spl_
    // Handle buffer size changed.
    result = spl_cntr_handle_ext_buffer_size_change(me_ptr);
 
-   // Threshold related handling when the container frame length changes. These must be done the first time a
-   // threshold is raised even if that doesn't change the container frame length due to threshold < configured frame
-   // size. Thus, we check the me_ptr->cu.cntr_frame_len.frame_len_samples variable which is only set in threshold use
-   // cases. Even if the container frame length doesn't change, the threshold can vary during the use case.
-   // If threshold <= container frame length, the process iterations need to be updated always.
-   if (is_using_threshold &&
-       ((old_cntr_frame_length_samples != me_ptr->cu.cntr_frame_len.frame_len_samples) ||
-        (me_ptr->threshold_data.aggregated_threshold_us <= me_ptr->topo.cntr_frame_len.frame_len_us)))
-   {
-#if SPL_CNTR_DEBUG_LEVEL >= SPL_CNTR_DEBUG_LEVEL_1
-      SPL_CNTR_MSG(me_ptr->topo.t_base.gu.log_id, DBG_HIGH_PRIO, "Updating module process iterations");
-#endif
-
-      // Update the number of iterations through each module.
-      for (gu_sg_list_t *sg_list_ptr = me_ptr->topo.t_base.gu.sg_list_ptr; sg_list_ptr; LIST_ADVANCE(sg_list_ptr))
-      {
-         for (gu_module_list_t *module_list_ptr = sg_list_ptr->sg_ptr->module_list_ptr; (NULL != module_list_ptr);
-              LIST_ADVANCE(module_list_ptr))
-         {
-            spl_topo_module_t *curr_module_ptr = (spl_topo_module_t *)module_list_ptr->module_ptr;
-
-            spl_cntr_threshold_update_module_process_iters(me_ptr, curr_module_ptr);
-         }
-      }
-   }
-
    CATCH(result, SPL_CNTR_MSG_PREFIX, me_ptr->topo.t_base.gu.log_id)
    {
    }
@@ -2331,7 +2269,7 @@ ar_result_t spl_cntr_update_input_port_max_samples(gen_topo_t *topo_ptr, gen_top
    INIT_EXCEPTION_HANDLING
    ar_result_t            result      = AR_EOK;
    uint32_t               topo_offset = offsetof(spl_cntr_t, topo);
-   spl_cntr_t *           me_ptr      = (spl_cntr_t *)(((uint8_t *)topo_ptr) - topo_offset);
+   spl_cntr_t            *me_ptr      = (spl_cntr_t *)(((uint8_t *)topo_ptr) - topo_offset);
    spl_cntr_input_port_t *inport_ptr  = (spl_cntr_input_port_t *)topo_inport_ptr;
 
 #if SPL_CNTR_DEBUG_LEVEL >= SPL_CNTR_DEBUG_LEVEL_3

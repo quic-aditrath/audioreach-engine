@@ -983,33 +983,6 @@ ar_result_t gen_topo_destroy_topo(gen_topo_t *topo_ptr)
    return AR_EOK;
 }
 
-uint32_t gen_topo_get_default_port_threshold(gen_topo_module_t *module_ptr, topo_media_fmt_t *media_fmt_ptr)
-{
-   uint32_t buf_size = 0;
-   if (SPF_UNKNOWN_DATA_FORMAT == media_fmt_ptr->data_format)
-   {
-      buf_size = 0;
-   }
-   else if (SPF_IS_PACKETIZED_OR_PCM(media_fmt_ptr->data_format))
-   {
-      // Calculate size based on the current Format Sample Rate
-      uint32_t unit_frame_size = tu_get_unit_frame_size(media_fmt_ptr->pcm.sample_rate);
-      buf_size =
-         TOPO_BITS_TO_BYTES(media_fmt_ptr->pcm.bits_per_sample) * media_fmt_ptr->pcm.num_channels * (unit_frame_size);
-
-      buf_size *= TOPO_PERF_MODE_TO_FRAME_DURATION_MS(module_ptr->gu.sg_ptr->perf_mode);
-   }
-   else
-   {
-      buf_size = 2048;
-   }
-
-   // GEN_TOPO_MSG(log_id, DBG_HIGH_PRIO, "Module 0x%lX: Default buffer size used %lu",
-   // module_ptr->gu.module_instance_id, buf_size);
-
-   return buf_size;
-}
-
 uint32_t gen_topo_get_port_threshold(void *port_ptr)
 {
    gen_topo_output_port_t *out_port_ptr = (gen_topo_output_port_t *)port_ptr;

@@ -261,7 +261,6 @@ ar_result_t gen_cntr_create_module(gen_topo_t *           topo_ptr,
 ar_result_t gen_cntr_destroy_module(gen_topo_t *       topo_ptr,
                                     gen_topo_module_t *module_ptr,
                                     bool_t             reset_capi_dependent_dont_destroy);
-ar_result_t gen_cntr_capi_set_fwk_extn_cntr_frame_dur(gen_cntr_t *me_ptr, uint32_t cont_frame_dur_us);
 ar_result_t gen_cntr_capi_set_fwk_extn_proc_dur(gen_cntr_t *me_ptr, uint32_t cont_proc_dur_us);
 
 ar_result_t gen_cntr_fwk_extn_handle_at_stop(gen_cntr_t *me_ptr, gu_module_list_t *module_list_ptr);

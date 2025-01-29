@@ -1177,7 +1177,7 @@ capi_err_t spr_timer_enable(capi_spr_t *me_ptr)
 
          // use deferrable timer if frame size is >= 5ms
          posal_timer_duration_t abs_timertype;
-         if(me_ptr->frame_dur_ms >= SPR_TIMER_DURATION_5_MS)
+         if (me_ptr->frame_dur_us >= SPR_TIMER_DURATION_5_MS * NUM_US_PER_MS)
          {
             abs_timertype = POSAL_TIMER_ONESHOT_ABSOLUTE_DEFERRABLE;
             SPR_MSG(me_ptr->miid, DBG_HIGH_PRIO, "Using absolute defferable timer.");
@@ -1199,19 +1199,12 @@ capi_err_t spr_timer_enable(capi_spr_t *me_ptr)
          }
          me_ptr->flags.timer_created_started = TRUE;
 
-         // first time set the signal. otherwise, there'll be a delay of 1 frame duration.
+         // first time set the signal. One-shot timer will start from the process()
          posal_signal_send((posal_signal_t)me_ptr->signal_ptr);
 
-         // Initially start timer for one frame dur length and save this ts
-         me_ptr->absolute_start_time_us = (int64_t)me_ptr->frame_dur_us + (int64_t)posal_timer_get_time();
+         me_ptr->absolute_start_time_us = (int64_t)posal_timer_get_time();
 
-         rc = posal_timer_oneshot_start_absolute(me_ptr->timer, me_ptr->absolute_start_time_us);
-         if (rc)
-         {
-            SPR_MSG(me_ptr->miid, DBG_ERROR_PRIO, "one shot timer start failed result: %lu", rc);
-            return CAPI_EFAILED;
-         }
-         SPR_MSG(me_ptr->miid, DBG_HIGH_PRIO, "started timer, absolute time %ld us", me_ptr->absolute_start_time_us);
+         SPR_MSG(me_ptr->miid, DBG_HIGH_PRIO, "start time %ld us", me_ptr->absolute_start_time_us);
       }
    }
    else
@@ -1269,6 +1262,8 @@ capi_err_t capi_spr_calc_set_timer(capi_spr_t *me_ptr)
       {
          // should be +ve
          qt_adj_us = (int64_t)(SPR_MAX_US_CORR_PER_MS_IN_QT_INT * me_ptr->frame_dur_us) / NUM_US_PER_MS;
+         qt_adj_us = MAX(qt_adj_us, SPR_MAX_US_CORR_PER_MS_IN_QT_INT);
+         qt_adj_us = MIN(qt_adj_us, me_ptr->spr_pending_drift_us);
       }
    }
    /* -ve => QT is slower than hwep. Means hwep is faster than QT.
@@ -1279,6 +1274,8 @@ capi_err_t capi_spr_calc_set_timer(capi_spr_t *me_ptr)
       {
          // should be -ve
          qt_adj_us = -(int64_t)(SPR_MAX_US_CORR_PER_MS_IN_QT_INT * me_ptr->frame_dur_us) / NUM_US_PER_MS;
+         qt_adj_us = MIN(qt_adj_us, -SPR_MAX_US_CORR_PER_MS_IN_QT_INT);
+         qt_adj_us = MAX(qt_adj_us, me_ptr->spr_pending_drift_us);
       }
    }
 
@@ -1290,12 +1287,16 @@ capi_err_t capi_spr_calc_set_timer(capi_spr_t *me_ptr)
    // when inp mf is not received use nominal frame length
    if (!me_ptr->flags.is_input_media_fmt_set)
    {
-      frame_dur_us = me_ptr->frame_dur_us * me_ptr->counter;
+      me_ptr->absolute_start_time_us += (int64_t)me_ptr->frame_dur_us;
+      frame_dur_us = 0;
    }
    else // calc based on sampling rate
    {
       calc_sr_us   = me_ptr->integ_sr_us * me_ptr->counter;
       frame_dur_us = calc_sr_us / me_ptr->operating_mf.format.sampling_rate;
+
+      // Increment counter for next process
+      me_ptr->counter++;
    }
 
    me_ptr->spr_out_drift_info.spr_acc_drift.time_stamp_us =
@@ -1339,20 +1340,20 @@ capi_err_t capi_spr_calc_set_timer(capi_spr_t *me_ptr)
 
       while (me_ptr->spr_out_drift_info.spr_acc_drift.time_stamp_us < curr_time_us)
       {
-
-         // Increment counter which is used for calculating absolute-time based frame duration, incrementing by 1 is
-         // equivalent to adding one frame dur ms
-         me_ptr->counter++;
-
          // when inp mf is not received use nominal frame length
          if (!me_ptr->flags.is_input_media_fmt_set)
          {
-            frame_dur_us = me_ptr->frame_dur_us * me_ptr->counter;
+            me_ptr->absolute_start_time_us += (int64_t)me_ptr->frame_dur_us;
+            frame_dur_us = 0;
          }
          else // calc based on sampling rate
          {
             calc_sr_us   = me_ptr->integ_sr_us * me_ptr->counter;
             frame_dur_us = calc_sr_us / me_ptr->operating_mf.format.sampling_rate;
+
+            // Increment counter which is used for calculating absolute-time based frame duration, incrementing by 1 is
+            // equivalent to adding one frame dur ms
+            me_ptr->counter++;
          }
 
          // New output timestamp
@@ -1372,9 +1373,6 @@ capi_err_t capi_spr_calc_set_timer(capi_spr_t *me_ptr)
               curr_time_us);
 #endif // SIM
    }
-
-   // Increment counter for next process
-   me_ptr->counter++;
 
    /** Set up timer for specified absolute duration */
    int32_t rc =
@@ -1518,9 +1516,11 @@ static capi_err_t capi_spr_check_reinit_ports(capi_spr_t *         me_ptr,
       }
       // TODO: Error state handling for media format failure
 
-      // Calculate the integer sampler rate us here to prevent recalc in process, changes if inp mf changes
+      // Calculate the integer sampler rate us here to prevent recalc in process, changes if inp mf
+      // e.g. for frameduration 2100us at 48K, this will be 100*10^6 which will be equivalent to 2083us.
       me_ptr->integ_sr_us =
-         (me_ptr->operating_mf.format.sampling_rate / NUM_MS_PER_SEC) * me_ptr->frame_dur_us * NUM_MS_PER_SEC;
+         NUM_US_PER_SEC *
+         (((me_ptr->operating_mf.format.sampling_rate / NUM_MS_PER_SEC) * me_ptr->frame_dur_us) / NUM_US_PER_MS);
 
       capi_spr_update_frame_duration_in_bytes(me_ptr);
    }
@@ -1825,11 +1825,17 @@ void capi_spr_update_frame_duration_in_bytes(capi_spr_t *me_ptr)
    }
 
    // num_samples * frame_duration * bytes_per_sample
-   me_ptr->frame_dur_bytes_per_ch = (me_ptr->operating_mf.format.sampling_rate / NUM_MS_PER_SEC) *
-                                    (me_ptr->frame_dur_us / NUM_US_PER_MS) *
-                                    (CAPI_CMN_BITS_TO_BYTES(me_ptr->operating_mf.format.bits_per_sample));
+   me_ptr->frame_dur_bytes_per_ch =
+      (((me_ptr->operating_mf.format.sampling_rate / NUM_MS_PER_SEC) * me_ptr->frame_dur_us) / NUM_US_PER_MS) *
+      (CAPI_CMN_BITS_TO_BYTES(me_ptr->operating_mf.format.bits_per_sample));
 
    SPR_MSG(me_ptr->miid, DBG_LOW_PRIO, "Frame duration in bytes per channel %d", me_ptr->frame_dur_bytes_per_ch);
+
+   capi_cmn_update_port_data_threshold_event(&me_ptr->event_cb_info,
+                                             (me_ptr->frame_dur_bytes_per_ch *
+                                              me_ptr->operating_mf.format.num_channels),
+                                             TRUE,
+                                             me_ptr->in_port_info_arr[0].port_index);
 }
 
 #ifdef DEBUG_SPR_MODULE
@@ -2405,8 +2411,7 @@ static capi_err_t capi_spr_raise_allow_duty_cycling(capi_spr_t *me_ptr, bool_t a
    capi_err_t result = CAPI_EOK;
 
    intf_extn_event_id_allow_duty_cycling_v2_t event_payload;
-   SPR_MSG(me_ptr->miid, DBG_HIGH_PRIO,
-			"SPR Raise allow_duty_cycling:%d", allow_duty_cycling);
+   SPR_MSG(me_ptr->miid, DBG_HIGH_PRIO, "SPR Raise allow_duty_cycling:%d", allow_duty_cycling);
 
    event_payload.allow_duty_cycling = allow_duty_cycling;
 
@@ -2456,7 +2461,7 @@ capi_err_t capi_spr_check_timer_disable_update_tp(capi_spr_t *me_ptr)
 
    do
    {
-	  // Check the container is duty cycling enabled or not
+      // Check the container is duty cycling enabled or not
       if (!me_ptr->flags.is_cntr_duty_cycling)
       {
          break;
@@ -2505,10 +2510,11 @@ capi_err_t capi_spr_check_timer_disable_update_tp(capi_spr_t *me_ptr)
    SPR_MSG(me_ptr->miid,
          DBG_HIGH_PRIO,
            "capi_spr_utils: capi_spr_check_timer_disable_update_tp "
-           "is_timer_disabled_loc %lu, is_cntr_duty_cycling:%lu input_and_output_started %lu, num_started_output_ports %lu",
-		   is_timer_disabled_loc,
-		   me_ptr->flags.is_cntr_duty_cycling,
-		   input_and_output_started,
+           "is_timer_disabled_loc %lu, is_cntr_duty_cycling:%lu input_and_output_started %lu, num_started_output_ports "
+           "%lu",
+           is_timer_disabled_loc,
+           me_ptr->flags.is_cntr_duty_cycling,
+           input_and_output_started,
            me_ptr->num_started_output_ports);
 
    if (me_ptr->avsync_ptr)
@@ -2521,9 +2527,10 @@ capi_err_t capi_spr_check_timer_disable_update_tp(capi_spr_t *me_ptr)
               me_ptr->avsync_ptr->client_config.render_mode);
    }
 
-   SPR_MSG(me_ptr->miid, DBG_HIGH_PRIO,
-         "capi_spr_utils: capi_spr_check_is_ds_rt %lu",
-		 (uint32_t)capi_spr_check_is_ds_rt(me_ptr));
+   SPR_MSG(me_ptr->miid,
+           DBG_HIGH_PRIO,
+           "capi_spr_utils: capi_spr_check_is_ds_rt %lu",
+           (uint32_t)capi_spr_check_is_ds_rt(me_ptr));
 
    SPR_MSG(me_ptr->miid, DBG_HIGH_PRIO,
          "capi_spr_utils: capi_spr_check_timer_disable_update_tp underrun_event_info.dest_address %lu",

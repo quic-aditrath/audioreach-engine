@@ -731,7 +731,6 @@ static capi_err_t capi_spr_set_param(capi_t *                capi_ptr,
          }
          fwk_extn_param_id_threshold_cfg_t *fm_dur = (fwk_extn_param_id_threshold_cfg_t *)params_ptr->data_ptr;
          me_ptr->frame_dur_us                      = fm_dur->duration_us;
-         me_ptr->frame_dur_ms                      = fm_dur->duration_us/ NUM_US_PER_MS;
          SPR_MSG(me_ptr->miid, DBG_LOW_PRIO, "Frame duration of SPR configured to %lu us", fm_dur->duration_us);
 
          capi_spr_update_frame_duration_in_bytes(me_ptr);

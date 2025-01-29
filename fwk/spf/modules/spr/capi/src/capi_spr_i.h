@@ -356,7 +356,6 @@ typedef struct capi_spr_t
 
    uint32_t frame_dur_us;
    uint32_t frame_dur_bytes_per_ch;
-   uint32_t frame_dur_ms;
    // saving nominal frame dur
 
    void *signal_ptr;

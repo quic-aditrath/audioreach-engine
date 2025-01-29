@@ -17,87 +17,22 @@ Static Function Definitions
 ========================================================================== */
 
 /**
- * Static function to derive the container frame size based on perf mode.
- */
-static uint32_t spl_cntr_get_frame_size(spl_cntr_t *me_ptr, uint32_t sg_perf_mode, uint32_t direction)
-{
-   uint32_t frame_size_ms = FRAME_SIZE_5_MS;
-
-   me_ptr->is_vprx = FALSE;
-
-   /* Setting container operating frame size to 20ms for stream PP in voice call use cases,
-    * and this will not change after graph open as voice call stream PP would not have any
-    * threshold modules. This is to optimize stream PP as voice encoder always require 20ms packet */
-   if (APM_CONT_GRAPH_POS_STREAM == me_ptr->cu.position && cu_has_voice_sid(&me_ptr->cu))
-   {
-      frame_size_ms = FRAME_LEN_20000_US / 1000;
-
-      SPL_CNTR_MSG(me_ptr->topo.t_base.gu.log_id,
-                   DBG_HIGH_PRIO,
-                   "Setting container frame length to 20ms for this stream PP with voice SID");
-   }
-   else if (APM_SUB_GRAPH_DIRECTION_RX == direction && cu_has_voice_sid(&me_ptr->cu))
-   {
-      frame_size_ms = FRAME_LEN_20000_US / 1000;
-
-      SPL_CNTR_MSG(me_ptr->topo.t_base.gu.log_id,
-                   DBG_HIGH_PRIO,
-                   "Setting container frame length to 20ms for this rx device PP with voice SID");
-
-      me_ptr->is_vprx = TRUE;
-   }
-   else
-   {
-      if (APM_SG_PERF_MODE_LOW_LATENCY == sg_perf_mode)
-      {
-         frame_size_ms = FRAME_SIZE_1_MS;
-      }
-      else if (APM_SG_PERF_MODE_LOW_POWER == sg_perf_mode)
-      {
-         if (APM_CONT_GRAPH_POS_STREAM == me_ptr->cu.position)
-         {
-            frame_size_ms = FRAME_SIZE_10_MS;
-         }
-         else
-         {
-            frame_size_ms = FRAME_SIZE_5_MS;
-         }
-      }
-      else
-      {
-         SPL_CNTR_MSG(me_ptr->topo.t_base.gu.log_id,
-                      DBG_ERROR_PRIO,
-                      "CMD:GRAPH_OPEN:Unsupported perf mode %d using default frame size %d",
-                      sg_perf_mode,
-                      FRAME_SIZE_5_MS);
-      }
-   }
-
-   return frame_size_ms;
-}
-
-/**
  * Choose the frame size based on perf mode of all subgraphs.
  */
 static ar_result_t spl_cntr_check_sg_cfg_for_frame_size(spl_cntr_t *me_ptr, spf_msg_cmd_graph_open_t *open_cmd_ptr)
 {
-   INIT_EXCEPTION_HANDLING
-   ar_result_t result                    = AR_EOK;
-   uint32_t    sg_perf_mode              = 0;
-   gu_sg_t *   sg_ptr                    = NULL;
-   uint32_t    new_configured_frame_size = 0;
-   uint32_t    direction                 = 0;
+   ar_result_t result                            = AR_EOK;
+   uint32_t    sg_perf_mode                      = 0;
+   uint32_t    direction                         = 0;
+   uint32_t    new_configured_frame_size_us      = 0;
+   uint32_t    new_configured_frame_size_samples = 0;
 
-   // Check perf mode for all subgraphs in given open cmd
-   for (uint32_t i = 0; i < open_cmd_ptr->num_sub_graphs; i++)
+   for (gu_sg_list_t *sg_list_ptr = me_ptr->topo.t_base.gu.sg_list_ptr; sg_list_ptr; LIST_ADVANCE(sg_list_ptr))
    {
-      apm_sub_graph_cfg_t *sg_cmd_ptr = open_cmd_ptr->sg_cfg_list_pptr[i];
-
-      sg_ptr = gu_find_subgraph(&me_ptr->topo.t_base.gu, sg_cmd_ptr->sub_graph_id);
-      VERIFY(result, sg_ptr);
+      gu_sg_t *sg_ptr = sg_list_ptr->sg_ptr;
 
       /* If 0 -> perf mode not been set before, if it is low power perf mode always pick it
-      because it implies higher frame size */
+       because it implies higher frame size */
       if ((0 == sg_perf_mode) || (APM_SG_PERF_MODE_LOW_POWER == sg_ptr->perf_mode))
       {
          sg_perf_mode = sg_ptr->perf_mode;
@@ -106,49 +41,106 @@ static ar_result_t spl_cntr_check_sg_cfg_for_frame_size(spl_cntr_t *me_ptr, spf_
       direction = sg_ptr->direction;
    }
 
-   // If frame size is (0) or (greater AND sync fwk extension isn't present), set it
-   // With sync fwk extension, attempt to retain the configured frame size during
-   //  subsequent graph opens as well. Any port threshold raised by the modules in the
-   //  topology would kick in & be handled by spl_cntr_determine_update_cntr_frame_len_us_from_cfg_and_thresh()
-   new_configured_frame_size = spl_cntr_get_frame_size(me_ptr, sg_perf_mode, direction) * 1000;
-
-   if ((0 == me_ptr->threshold_data.configured_frame_size_us) ||
-       (me_ptr->threshold_data.configured_frame_size_us < new_configured_frame_size &&
-        !me_ptr->topo.t_base.flags.is_sync_module_present))
+   /* Setting container operating frame size to 20ms for stream PP in voice call use cases,
+    * and this will not change after graph open as voice call stream PP would not have any
+    * threshold modules. This is to optimize stream PP as voice encoder always require 20ms packet */
+   if (APM_CONT_GRAPH_POS_STREAM == me_ptr->cu.position && cu_has_voice_sid(&me_ptr->cu))
    {
-      if ((0 != me_ptr->threshold_data.configured_frame_size_us) &&
-          (spl_topo_fwk_ext_is_fixed_out_dm_module_present(me_ptr->topo.fwk_extn_info.dm_info)))
-      {
-         SPL_CNTR_MSG(me_ptr->topo.t_base.gu.log_id,
-                      DBG_ERROR_PRIO,
-                      "CMD:GRAPH_OPEN:Failure during threshold change with DM module present");
-         return AR_EFAILED;
-      }
+      new_configured_frame_size_us = FRAME_LEN_20000_US;
 
-      me_ptr->threshold_data.configured_frame_size_us = new_configured_frame_size;
+      SPL_CNTR_MSG(me_ptr->topo.t_base.gu.log_id,
+                   DBG_HIGH_PRIO,
+                   "Setting container frame length to 20ms for this stream PP with voice SID");
+   }
+   else if (APM_SUB_GRAPH_DIRECTION_RX == direction && cu_has_voice_sid(&me_ptr->cu))
+   {
+      new_configured_frame_size_us = FRAME_LEN_20000_US;
+
+      SPL_CNTR_MSG(me_ptr->topo.t_base.gu.log_id,
+                   DBG_HIGH_PRIO,
+                   "Setting container frame length to 20ms for this rx device PP with voice SID");
+   }
+   else
+   {
+      if (me_ptr->cu.conf_frame_len.frame_len_us)
+      {
+         // Container frame len property is configured for frame length in time.
+         new_configured_frame_size_us = me_ptr->cu.conf_frame_len.frame_len_us;
+      }
+      else if (me_ptr->cu.conf_frame_len.frame_len_samples)
+      {
+         new_configured_frame_size_us      = 0;
+         new_configured_frame_size_samples = me_ptr->cu.conf_frame_len.frame_len_samples;
+      }
+      else
+      {
+         if (APM_SG_PERF_MODE_LOW_LATENCY == sg_perf_mode)
+         {
+            new_configured_frame_size_us = FRAME_LEN_1000_US;
+         }
+         else // (APM_SG_PERF_MODE_LOW_POWER == sg_perf_mode)
+         {
+            if (APM_CONT_GRAPH_POS_STREAM == me_ptr->cu.position)
+            {
+               new_configured_frame_size_us = FRAME_LEN_10000_US;
+            }
+            else
+            {
+               new_configured_frame_size_us = FRAME_LEN_5000_US;
+            }
+         }
+      }
+   }
+
+   // frame size in samples is set from container property so it will be updated only once during first subgraph open.
+   if (new_configured_frame_size_samples != 0 &&
+       (new_configured_frame_size_samples != me_ptr->threshold_data.configured_frame_size_samples))
+   {
+      me_ptr->threshold_data.configured_frame_size_samples = new_configured_frame_size_samples;
 
       SPL_CNTR_MSG(me_ptr->topo.t_base.gu.log_id,
                    DBG_MED_PRIO,
-                   "CMD:GRAPH_OPEN: SPL_CNTR configured frame size is now %ld us.",
-                   me_ptr->threshold_data.configured_frame_size_us);
-
-      // Configured frame length changing could change the container frame length if the configured frame length
-      // is larger than the aggregated threshold. Frame length aggregation and handling if the frame length
-      // changes is therefore needed.
-      spl_cntr_determine_update_cntr_frame_len_us_from_cfg_and_thresh(me_ptr);
+                   "CMD:GRAPH_OPEN: SPL_CNTR configured frame size is now %ld samples.",
+                   me_ptr->threshold_data.configured_frame_size_samples);
    }
 
-   CATCH(result, SPL_CNTR_MSG_PREFIX, me_ptr->topo.t_base.gu.log_id)
+   // if frame size is not set in samples then check udpate in time
+   if (0 == me_ptr->threshold_data.configured_frame_size_samples && new_configured_frame_size_us)
    {
+      // If frame size is (0) or (greater AND sync fwk extension isn't present), set it
+      // With sync fwk extension, attempt to retain the configured frame size during
+      //  subsequent graph opens as well. Any port threshold raised by the modules in the
+      //  topology would kick in & be handled by spl_cntr_determine_update_cntr_frame_len_us_from_cfg_and_thresh()
+      if ((0 == me_ptr->threshold_data.configured_frame_size_us) ||
+          (me_ptr->threshold_data.configured_frame_size_us < new_configured_frame_size_us &&
+           !me_ptr->topo.t_base.flags.is_sync_module_present))
+      {
+         if ((0 != me_ptr->threshold_data.configured_frame_size_us) &&
+             (spl_topo_fwk_ext_is_fixed_out_dm_module_present(me_ptr->topo.fwk_extn_info.dm_info)))
+         {
+            SPL_CNTR_MSG(me_ptr->topo.t_base.gu.log_id,
+                         DBG_ERROR_PRIO,
+                         "CMD:GRAPH_OPEN:Failure during threshold change with DM module present");
+            return AR_EFAILED;
+         }
+
+         me_ptr->threshold_data.configured_frame_size_us = new_configured_frame_size_us;
+
+         SPL_CNTR_MSG(me_ptr->topo.t_base.gu.log_id,
+                      DBG_MED_PRIO,
+                      "CMD:GRAPH_OPEN: SPL_CNTR configured frame size is now %ld us.",
+                      me_ptr->threshold_data.configured_frame_size_us);
+      }
    }
+
    return result;
 }
 
 /**
  * Wrapper function to cu_set_get_cfgs_packed which calls set_param_begin/end beforehand for set_cfgs.
  */
-static ar_result_t spl_cntr_set_get_cfgs_packed(spl_cntr_t *        me_ptr,
-                                                gpr_packet_t *      packet_ptr,
+static ar_result_t spl_cntr_set_get_cfgs_packed(spl_cntr_t         *me_ptr,
+                                                gpr_packet_t       *packet_ptr,
                                                 spf_cfg_data_type_t cfg_type)
 {
    ar_result_t result     = AR_EOK;
@@ -184,7 +176,7 @@ static ar_result_t spl_cntr_set_get_cfgs_packed(spl_cntr_t *        me_ptr,
 /**
  * Wrapper function to cu_set_get_cfgs_fragmented which calls set_param_begin/end beforehand for set_cfgs.
  */
-static ar_result_t spl_cntr_set_get_cfgs_fragmented(spl_cntr_t *              me_ptr,
+static ar_result_t spl_cntr_set_get_cfgs_fragmented(spl_cntr_t               *me_ptr,
                                                     apm_module_param_data_t **param_data_pptr,
                                                     uint32_t                  num_param_id_cfg,
                                                     bool_t                    is_set_cfg,
@@ -380,11 +372,11 @@ ar_result_t spl_cntr_set_get_cfg_util(cu_base_t                         *base_pt
    return result;
 }
 
-ar_result_t spl_cntr_register_events_utils(cu_base_t *       base_ptr,
-                                           gu_module_t *     gu_module_ptr,
+ar_result_t spl_cntr_register_events_utils(cu_base_t        *base_ptr,
+                                           gu_module_t      *gu_module_ptr,
                                            topo_reg_event_t *reg_event_payload_ptr,
                                            bool_t            is_register,
-                                           bool_t *          capi_supports_v1_event_ptr)
+                                           bool_t           *capi_supports_v1_event_ptr)
 {
    ar_result_t result = AR_EOK;
    spl_cntr_t *me_ptr = (spl_cntr_t *)base_ptr;
@@ -541,15 +533,15 @@ static ar_result_t spl_cntr_handle_rest_of_graph_open(cu_base_t *base_ptr, void 
    ar_result_t result = AR_EOK;
    INIT_EXCEPTION_HANDLING
    SPF_MANAGE_CRITICAL_SECTION
-   spl_cntr_t *              me_ptr = (spl_cntr_t *)base_ptr;
+   spl_cntr_t               *me_ptr = (spl_cntr_t *)base_ptr;
    spf_msg_cmd_graph_open_t *open_cmd_ptr;
    bool_t                    pm_already_registered   = posal_power_mgr_is_registered(me_ptr->cu.pm_info.pm_handle_ptr);
    bool_t                    is_duty_cycling_allowed = FALSE;
    bool_t                    dcm_already_registered  = me_ptr->cu.pm_info.flags.register_with_dcm;
 
-   gen_topo_graph_init_t     graph_init_data         = { 0 };
-   gu_ext_in_port_list_t *   ext_in_port_list_ptr    = NULL;
-   gu_ext_out_port_list_t *  ext_out_port_list_ptr   = NULL;
+   gen_topo_graph_init_t   graph_init_data       = { 0 };
+   gu_ext_in_port_list_t  *ext_in_port_list_ptr  = NULL;
+   gu_ext_out_port_list_t *ext_out_port_list_ptr = NULL;
 
    spf_msg_header_t *header_ptr = (spf_msg_header_t *)me_ptr->cu.cmd_msg.payload_ptr;
    open_cmd_ptr                 = (spf_msg_cmd_graph_open_t *)&header_ptr->payload_start;
@@ -604,7 +596,7 @@ static ar_result_t spl_cntr_handle_rest_of_graph_open(cu_base_t *base_ptr, void 
    {
 
       apm_sub_graph_cfg_t *sg_cmd_ptr = open_cmd_ptr->sg_cfg_list_pptr[0];
-      gu_sg_t *            sg_ptr     = gu_find_subgraph(&me_ptr->topo.t_base.gu, sg_cmd_ptr->sub_graph_id);
+      gu_sg_t             *sg_ptr     = gu_find_subgraph(&me_ptr->topo.t_base.gu, sg_cmd_ptr->sub_graph_id);
       VERIFY(result, sg_ptr);
 
       spl_cntr_check_sg_cfg_for_frame_size(me_ptr, open_cmd_ptr);
@@ -696,7 +688,6 @@ static ar_result_t spl_cntr_handle_rest_of_graph_open(cu_base_t *base_ptr, void 
    // Register container with pm
    cu_register_with_pm(&me_ptr->cu, is_duty_cycling_allowed);
 
-
    CATCH(result, SPL_CNTR_MSG_PREFIX, me_ptr->topo.t_base.gu.log_id)
    {
       if (pm_already_registered)
@@ -723,14 +714,13 @@ static ar_result_t spl_cntr_handle_rest_of_graph_open(cu_base_t *base_ptr, void 
                 me_ptr->cu.curr_chan_mask,
                 result);
 
-
    return result;
 }
 
 static ar_result_t spl_cntr_relaunch_thread_and_handle_rest_of_graph_open(cu_base_t *base_ptr, void *ctx_ptr)
 {
    INIT_EXCEPTION_HANDLING
-   ar_result_t result = AR_EOK;
+   ar_result_t         result          = AR_EOK;
    posal_thread_prio_t thread_priority = 0;
    char_t              thread_name[POSAL_DEFAULT_NAME_LEN];
    bool_t              thread_launched = FALSE;
@@ -770,17 +760,17 @@ Public Function Definitions
  * operate on a subgraph, operate on all of its ports (internal and external).
  * If operations are successful, updates the current sg's state.
  */
-ar_result_t spl_cntr_operate_on_subgraph(void *                     base_ptr,
+ar_result_t spl_cntr_operate_on_subgraph(void                      *base_ptr,
                                          uint32_t                   sg_ops,
                                          topo_sg_state_t            sg_state,
-                                         gu_sg_t *                  gu_sg_ptr,
+                                         gu_sg_t                   *gu_sg_ptr,
                                          spf_cntr_sub_graph_list_t *spf_sg_list_ptr)
 {
    INIT_EXCEPTION_HANDLING
-   ar_result_t       result          = AR_EOK;
-   cu_base_t        *cu_ptr          = (cu_base_t *)base_ptr;
-   spl_cntr_t       *me_ptr          = (spl_cntr_t *)base_ptr;
-   gen_topo_sg_t    *sg_ptr          = (gen_topo_sg_t *)gu_sg_ptr;
+   ar_result_t    result = AR_EOK;
+   cu_base_t     *cu_ptr = (cu_base_t *)base_ptr;
+   spl_cntr_t    *me_ptr = (spl_cntr_t *)base_ptr;
+   gen_topo_sg_t *sg_ptr = (gen_topo_sg_t *)gu_sg_ptr;
 
    // operate on subgraph is a synchronous call so need to keep the processing only to the necessary ports.
    //  1. for STOP and SUSPEND; internal SG data ports and modules are handled in gen_cntr_operate_on_subgraph_async
@@ -993,10 +983,10 @@ ar_result_t spl_cntr_operate_on_subgraph_async(void                      *base_p
 /**
  * Operates on a subgraph after state/RT propagation occurs.
  */
-ar_result_t spl_cntr_post_operate_on_subgraph(void *                     base_ptr,
+ar_result_t spl_cntr_post_operate_on_subgraph(void                      *base_ptr,
                                               uint32_t                   sg_ops,
                                               topo_sg_state_t            sg_state,
-                                              gu_sg_t *                  gu_sg_ptr,
+                                              gu_sg_t                   *gu_sg_ptr,
                                               spf_cntr_sub_graph_list_t *spf_sg_list_ptr)
 {
    ar_result_t    result = AR_EOK;
@@ -1034,13 +1024,13 @@ ar_result_t spl_cntr_post_operate_on_subgraph(void *                     base_pt
  * Operates on downstream connected input ports. Used to set internal EOS on subgraph boundaries internal to the
  * container when the upstream subgraph is stopped.
  */
-ar_result_t spl_cntr_post_operate_on_connected_input(spl_cntr_t *               me_ptr,
-                                                     gen_topo_output_port_t *   out_port_ptr,
+ar_result_t spl_cntr_post_operate_on_connected_input(spl_cntr_t                *me_ptr,
+                                                     gen_topo_output_port_t    *out_port_ptr,
                                                      spf_cntr_sub_graph_list_t *spf_sg_list_ptr,
                                                      uint32_t                   sg_ops)
 {
    ar_result_t            result           = AR_EOK;
-   gen_topo_module_t *    module_ptr       = (gen_topo_module_t *)out_port_ptr->gu.cmn.module_ptr;
+   gen_topo_module_t     *module_ptr       = (gen_topo_module_t *)out_port_ptr->gu.cmn.module_ptr;
    gen_topo_input_port_t *conn_in_port_ptr = (gen_topo_input_port_t *)out_port_ptr->gu.conn_in_port_ptr;
    if (conn_in_port_ptr)
    {
@@ -1076,9 +1066,9 @@ ar_result_t spl_cntr_post_operate_on_connected_input(spl_cntr_t *               
                uint32_t                  INPUT_PORT_ID_NONE = 0; // Internal input port's don't have unique id's, use 0.
                bool_t                    IS_INPUT_TRUE      = TRUE;
                bool_t                    NEW_MARKER_EOS_TRUE = TRUE;
-               module_cmn_md_eos_flags_t eos_md_flag = {.word = 0 };
-               eos_md_flag.is_flushing_eos = TRUE;
-               eos_md_flag.is_internal_eos = TRUE;
+               module_cmn_md_eos_flags_t eos_md_flag         = { .word = 0 };
+               eos_md_flag.is_flushing_eos                   = TRUE;
+               eos_md_flag.is_internal_eos                   = TRUE;
 
                result =
                   gen_topo_create_eos_for_cntr(&me_ptr->topo.t_base,
@@ -1169,7 +1159,7 @@ ar_result_t spl_cntr_post_operate_on_connected_input(spl_cntr_t *               
  * This is a common utility.
  *
  */
-ar_result_t spl_cntr_operate_on_ext_in_port(void *             base_ptr,
+ar_result_t spl_cntr_operate_on_ext_in_port(void              *base_ptr,
                                             uint32_t           sg_ops,
                                             gu_ext_in_port_t **ext_in_port_pptr,
                                             bool_t             is_self_sg)
@@ -1286,9 +1276,9 @@ ar_result_t spl_cntr_operate_on_ext_in_port(void *             base_ptr,
 /**
  * Operate on external input ports after state/RT propagation is completed.
  */
-ar_result_t spl_cntr_post_operate_on_ext_in_port(void *                     base_ptr,
+ar_result_t spl_cntr_post_operate_on_ext_in_port(void                      *base_ptr,
                                                  uint32_t                   sg_ops,
-                                                 gu_ext_in_port_t **        ext_in_port_pptr,
+                                                 gu_ext_in_port_t         **ext_in_port_pptr,
                                                  spf_cntr_sub_graph_list_t *spf_sg_list_ptr)
 {
    INIT_EXCEPTION_HANDLING
@@ -1370,7 +1360,7 @@ ar_result_t spl_cntr_post_operate_on_ext_in_port(void *                     base
  *
  * CLOSE, FLUSH, RESET, STOP are handled in spl_cntr_operate_on_ext_in_port context.
  */
-ar_result_t spl_cntr_operate_on_ext_out_port(void *              base_ptr,
+ar_result_t spl_cntr_operate_on_ext_out_port(void               *base_ptr,
                                              uint32_t            sg_ops,
                                              gu_ext_out_port_t **ext_out_port_pptr,
                                              bool_t              is_self_sg)
@@ -1453,7 +1443,7 @@ ar_result_t spl_cntr_gpr_cmd(cu_base_t *base_ptr)
 {
    INIT_EXCEPTION_HANDLING
    ar_result_t   result     = AR_EOK;
-   spl_cntr_t *  me_ptr     = (spl_cntr_t *)base_ptr;
+   spl_cntr_t   *me_ptr     = (spl_cntr_t *)base_ptr;
    gpr_packet_t *packet_ptr = (gpr_packet_t *)me_ptr->cu.cmd_msg.payload_ptr;
 
    SPL_CNTR_MSG(me_ptr->topo.t_base.gu.log_id,
@@ -1526,9 +1516,9 @@ ar_result_t spl_cntr_graph_open(cu_base_t *base_ptr)
    ar_result_t result = AR_EOK;
    INIT_EXCEPTION_HANDLING
 
-   spl_cntr_t *              me_ptr          = (spl_cntr_t *)base_ptr;
-   spf_msg_cmd_graph_open_t *open_cmd_ptr    = NULL;
-   uint32_t                  stack_size      = 0;
+   spl_cntr_t               *me_ptr       = (spl_cntr_t *)base_ptr;
+   spf_msg_cmd_graph_open_t *open_cmd_ptr = NULL;
+   uint32_t                  stack_size   = 0;
 
    SPL_CNTR_MSG(me_ptr->topo.t_base.gu.log_id,
                 DBG_HIGH_PRIO,
@@ -1629,7 +1619,7 @@ ar_result_t spl_cntr_set_get_cfg(cu_base_t *base_ptr)
 {
    ar_result_t result = AR_EOK;
    INIT_EXCEPTION_HANDLING
-   spl_cntr_t *                  me_ptr = (spl_cntr_t *)base_ptr;
+   spl_cntr_t                   *me_ptr = (spl_cntr_t *)base_ptr;
    spf_msg_cmd_param_data_cfg_t *cfg_cmd_ptr;
    // is_set_cfg is used to decide whether to do set param or get param. We need to do set param
    // if it is reg, dereg, or set cfg.
@@ -1734,8 +1724,8 @@ ar_result_t spl_cntr_graph_prepare(cu_base_t *base_ptr)
 {
    ar_result_t result = AR_EOK;
    INIT_EXCEPTION_HANDLING
-   spl_cntr_t *              me_ptr        = (spl_cntr_t *)base_ptr;
-   uint32_t                  log_id        = me_ptr->topo.t_base.gu.log_id;
+   spl_cntr_t *me_ptr = (spl_cntr_t *)base_ptr;
+   uint32_t    log_id = me_ptr->topo.t_base.gu.log_id;
 
    SPL_CNTR_MSG(log_id, DBG_HIGH_PRIO, "CMD:Prepare Graph: Executing prepare graph.");
 
@@ -1998,7 +1988,7 @@ ar_result_t spl_cntr_graph_connect(cu_base_t *base_ptr)
    while (ext_out_port_list_ptr)
    {
       spl_cntr_ext_out_port_t *ext_out_port_ptr = (spl_cntr_ext_out_port_t *)ext_out_port_list_ptr->ext_out_port_ptr;
-      spl_topo_output_port_t * out_port_ptr =
+      spl_topo_output_port_t  *out_port_ptr =
          (spl_topo_output_port_t *)ext_out_port_list_ptr->ext_out_port_ptr->int_out_port_ptr;
 
       if ((out_port_ptr->t_base.common.flags.is_mf_valid) &&
@@ -2170,7 +2160,7 @@ ar_result_t spl_cntr_icb_info_from_downstream(cu_base_t *base_ptr)
  *
  * This function is called from cu_update_all_port_state.
  */
-ar_result_t spl_cntr_apply_downgraded_state_on_output_port(cu_base_t *       cu_ptr,
+ar_result_t spl_cntr_apply_downgraded_state_on_output_port(cu_base_t        *cu_ptr,
                                                            gu_output_port_t *gu_out_port_ptr,
                                                            topo_port_state_t downgraded_state)
 {
@@ -2181,7 +2171,7 @@ ar_result_t spl_cntr_apply_downgraded_state_on_output_port(cu_base_t *       cu_
    VERIFY(result, gu_out_port_ptr && cu_ptr);
 
    spl_cntr_ext_out_port_t *ext_out_port_ptr = (spl_cntr_ext_out_port_t *)gu_out_port_ptr->ext_out_port_ptr;
-   gen_topo_output_port_t * out_port_ptr     = NULL;
+   gen_topo_output_port_t  *out_port_ptr     = NULL;
 
    // If its an external port apply the downgraded state on ext output port.
    if (ext_out_port_ptr)
@@ -2191,7 +2181,7 @@ ar_result_t spl_cntr_apply_downgraded_state_on_output_port(cu_base_t *       cu_
          spl_cntr_return_held_out_buf(me_ptr, ext_out_port_ptr);
          cu_stop_listen_to_mask(&me_ptr->cu, ext_out_port_ptr->cu.bit_mask);
          ext_out_port_ptr->cu.icb_info.is_prebuffer_sent = FALSE;
-         ext_out_port_ptr->sent_media_fmt = FALSE;
+         ext_out_port_ptr->sent_media_fmt                = FALSE;
       }
       else if ((TOPO_PORT_STATE_SUSPENDED) == downgraded_state)
       {
@@ -2231,15 +2221,15 @@ ar_result_t spl_cntr_apply_downgraded_state_on_output_port(cu_base_t *       cu_
  *
  * This function is called from cu_update_all_port_state.
  */
-ar_result_t spl_cntr_apply_downgraded_state_on_input_port(cu_base_t *       cu_ptr,
-                                                          gu_input_port_t * gu_in_port_ptr,
+ar_result_t spl_cntr_apply_downgraded_state_on_input_port(cu_base_t        *cu_ptr,
+                                                          gu_input_port_t  *gu_in_port_ptr,
                                                           topo_port_state_t downgraded_state)
 {
    INIT_EXCEPTION_HANDLING
    ar_result_t             result          = AR_EOK;
-   spl_cntr_t *            me_ptr          = (spl_cntr_t *)cu_ptr;
+   spl_cntr_t             *me_ptr          = (spl_cntr_t *)cu_ptr;
    spl_cntr_ext_in_port_t *ext_in_port_ptr = NULL;
-   gen_topo_input_port_t * in_port_ptr     = NULL;
+   gen_topo_input_port_t  *in_port_ptr     = NULL;
 
    VERIFY(result, (gu_in_port_ptr) && (cu_ptr));
 
@@ -2362,7 +2352,7 @@ ar_result_t spl_cntr_handle_upstream_stop_cmd(cu_base_t *base_ptr)
           dst_port_ptr->int_in_port_ptr->cmn.id,
           base_ptr->curr_chan_mask);
 
-   spl_cntr_ext_in_port_t *ext_in_port_ptr  = (spl_cntr_ext_in_port_t *)(dst_port_ptr);
+   spl_cntr_ext_in_port_t *ext_in_port_ptr = (spl_cntr_ext_in_port_t *)(dst_port_ptr);
    spl_cntr_flush_input_data_queue(me_ptr, ext_in_port_ptr, TRUE /*keep_data_msg*/, FALSE /*buffer_data_locally*/);
 
    CU_MSG(me_ptr->topo.t_base.gu.log_id,

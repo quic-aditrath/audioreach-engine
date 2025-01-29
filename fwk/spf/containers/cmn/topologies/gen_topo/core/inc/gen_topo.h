@@ -1422,8 +1422,6 @@ uint32_t gen_topo_get_curr_port_bufs_num_v2(gen_topo_common_port_t *port_ptr);
 
 uint32_t gen_topo_get_port_threshold(void *port_ptr);
 
-uint32_t gen_topo_get_default_port_threshold(gen_topo_module_t *module_ptr, topo_media_fmt_t *media_fmt_ptr);
-
 uint32_t gen_topo_get_bufs_num_from_med_fmt(topo_media_fmt_t *med_fmt_ptr);
 
 ar_result_t gen_topo_check_and_set_default_port_threshold(gen_topo_module_t *     module_ptr,
@@ -1443,6 +1441,10 @@ ar_result_t gen_topo_destroy_output_port(gen_topo_t *me_ptr, gen_topo_output_por
 
 ar_result_t gen_topo_fmwk_extn_handle_at_init(gen_topo_t *topo_ptr, gen_topo_module_t *module_ptr);
 ar_result_t gen_topo_fmwk_extn_handle_at_deinit(gen_topo_t *topo_ptr, gen_topo_module_t *module_ptr);
+ar_result_t gen_topo_fwk_ext_set_cntr_frame_dur_per_module(gen_topo_t        *topo_ptr,
+                                                           gen_topo_module_t *module_ptr,
+                                                           uint32_t           frame_len_us);
+ar_result_t gen_topo_fwk_ext_set_cntr_frame_dur(gen_topo_t *topo_ptr, uint32_t frame_len_us);
 
 //////////////////////////////////////////////// GEN_TOPO_FWK_EXTN_UTILS_H
 

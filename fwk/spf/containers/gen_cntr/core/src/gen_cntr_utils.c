@@ -150,8 +150,8 @@ bool_t gen_cntr_check_bump_up_thread_priority(cu_base_t *cu_ptr, bool_t is_bump_
  * e.g. if 1ms is regular interrupt time, during cmd we may make it 0.5 ms which bumps up priority.
  * Original prio is the priority before bump up - which could be prio voted by module or container
  */
-ar_result_t gen_cntr_get_set_thread_priority(gen_cntr_t *        me_ptr,
-                                             int32_t *           priority_ptr,
+ar_result_t gen_cntr_get_set_thread_priority(gen_cntr_t         *me_ptr,
+                                             int32_t            *priority_ptr,
                                              bool_t              should_set,
                                              uint16_t            bump_up_factor,
                                              posal_thread_prio_t original_prio)
@@ -302,12 +302,12 @@ ar_result_t gen_cntr_handle_cntr_period_change(cu_base_t *base_ptr)
 /**
  * keeps Media format and other data messages
  */
-ar_result_t gen_cntr_flush_input_data_queue(gen_cntr_t *            me_ptr,
+ar_result_t gen_cntr_flush_input_data_queue(gen_cntr_t             *me_ptr,
                                             gen_cntr_ext_in_port_t *ext_in_port_ptr,
                                             bool_t                  keep_data_msg)
 {
    ar_result_t result             = AR_EOK;
-   void *      pushed_payload_ptr = NULL;
+   void       *pushed_payload_ptr = NULL;
 
    if (NULL == ext_in_port_ptr->gu.this_handle.q_ptr)
    {
@@ -377,7 +377,7 @@ ar_result_t gen_cntr_flush_input_data_queue(gen_cntr_t *            me_ptr,
    return AR_EOK;
 }
 
-ar_result_t gen_cntr_flush_output_data_queue(gen_cntr_t *             me_ptr,
+ar_result_t gen_cntr_flush_output_data_queue(gen_cntr_t              *me_ptr,
                                              gen_cntr_ext_out_port_t *ext_out_port_ptr,
                                              bool_t                   is_client_cmd)
 {
@@ -915,62 +915,7 @@ static ar_result_t gen_cntr_fwk_extn_handle_at_suspend(gen_cntr_t *me_ptr, gu_mo
    return result;
 }
 
-static ar_result_t gen_cntr_set_cntr_frame_dur_per_module(gen_cntr_t *       me_ptr,
-                                                          gen_topo_module_t *module_ptr,
-                                                          uint32_t           frame_len_us)
-{
-   fwk_extn_param_id_container_frame_duration_t delay_ops;
-   delay_ops.duration_us = frame_len_us;
-
-   capi_err_t err_code = gen_topo_capi_set_param(me_ptr->topo.gu.log_id,
-                                                 module_ptr->capi_ptr,
-                                                 FWK_EXTN_PARAM_ID_CONTAINER_FRAME_DURATION,
-                                                 (int8_t *)&delay_ops,
-                                                 sizeof(delay_ops));
-
-   if ((err_code != CAPI_EOK) && (err_code != CAPI_EUNSUPPORTED))
-   {
-      GEN_CNTR_MSG(me_ptr->topo.gu.log_id,
-                   DBG_ERROR_PRIO,
-                   "Module 0x%lX: setting container frame duration failed",
-                   module_ptr->gu.module_instance_id);
-      return capi_err_to_ar_result(err_code);
-   }
-   else
-   {
-      GEN_CNTR_MSG(me_ptr->topo.gu.log_id,
-                   DBG_LOW_PRIO,
-                   "Module 0x%lX: setting container frame duration of %lu",
-                   module_ptr->gu.module_instance_id,
-                   frame_len_us);
-   }
-
-   return AR_EOK;
-}
-
-/* Iterates over all modules in the sg list and tries to set proc delay if it supports this extension*/
-ar_result_t gen_cntr_capi_set_fwk_extn_cntr_frame_dur(gen_cntr_t *me_ptr, uint32_t cont_frame_dur_us)
-{
-   for (gu_sg_list_t *sg_list_ptr = me_ptr->topo.gu.sg_list_ptr; (NULL != sg_list_ptr); LIST_ADVANCE(sg_list_ptr))
-   {
-      for (gu_module_list_t *module_list_ptr = sg_list_ptr->sg_ptr->module_list_ptr; (NULL != module_list_ptr);
-           LIST_ADVANCE(module_list_ptr))
-      {
-         gen_topo_module_t *module_ptr = (gen_topo_module_t *)module_list_ptr->module_ptr;
-
-         // if frame duration fwk extension is not supported return
-         if (FALSE == module_ptr->flags.need_cntr_frame_dur_extn)
-         {
-            continue;
-         }
-
-         gen_cntr_set_cntr_frame_dur_per_module(me_ptr, module_ptr, cont_frame_dur_us);
-      }
-   }
-   return AR_EOK;
-}
-
-static ar_result_t gen_cntr_capi_set_fwk_extn_proc_dur_per_module(gen_cntr_t *       me_ptr,
+static ar_result_t gen_cntr_capi_set_fwk_extn_proc_dur_per_module(gen_cntr_t        *me_ptr,
                                                                   gen_topo_module_t *module_ptr,
                                                                   uint32_t           cont_proc_dur_us)
 {
@@ -1032,13 +977,34 @@ static ar_result_t gen_cntr_handle_fwk_ext_at_init(gen_cntr_t *me_ptr, gen_topo_
    ar_result_t result = AR_EOK;
    SPF_MANAGE_CRITICAL_SECTION
 
+   if (module_ptr->flags.need_thresh_cfg_extn)
+   {
+      /* if container frame len is configured in the samples by container property then it can not be set to the modules
+       * as threshold extension because at this point sampling rate is not known. In this case, threshold will be set
+       * based on the SG performance mode only and module must raise threshold to avoid container running at the
+       * configured frame len.*/
+      uint32_t new_thresh_us = (me_ptr->cu.conf_frame_len.frame_len_us)
+                                  ? me_ptr->cu.conf_frame_len.frame_len_us
+                                  : (1000 * TOPO_PERF_MODE_TO_FRAME_DURATION_MS(module_ptr->gu.sg_ptr->perf_mode));
+
+      // todo: such modules must raise threshold. check SPR
+      fwk_extn_param_id_threshold_cfg_t fm_dur = { .duration_us = new_thresh_us };
+      result |= gen_topo_capi_set_param(me_ptr->topo.gu.log_id,
+                                        module_ptr->capi_ptr,
+                                        FWK_EXTN_PARAM_ID_THRESHOLD_CFG,
+                                        (int8_t *)&fm_dur,
+                                        sizeof(fm_dur));
+   }
+
    if (module_ptr->flags.need_cntr_frame_dur_extn)
    {
       if (me_ptr->cu.cntr_frame_len.frame_len_us)
       {
          // frame len can change if any media format or threshold changed in the context of data-path processing.
          SPF_CRITICAL_SECTION_START(&me_ptr->topo.gu);
-         gen_cntr_set_cntr_frame_dur_per_module(me_ptr, module_ptr, me_ptr->cu.cntr_frame_len.frame_len_us);
+         gen_topo_fwk_ext_set_cntr_frame_dur_per_module(&me_ptr->topo,
+                                                        module_ptr,
+                                                        me_ptr->cu.cntr_frame_len.frame_len_us);
          SPF_CRITICAL_SECTION_END(&me_ptr->topo.gu);
       }
    }
@@ -1068,7 +1034,7 @@ static ar_result_t gen_cntr_handle_fwk_ext_at_deinit(gen_cntr_t *me_ptr, gen_top
    return result;
 }
 
-ar_result_t gen_cntr_handle_fwk_extn_pre_subgraph_op(gen_cntr_t *      me_ptr,
+ar_result_t gen_cntr_handle_fwk_extn_pre_subgraph_op(gen_cntr_t       *me_ptr,
                                                      uint32_t          sg_op,
                                                      gu_module_list_t *module_list_ptr)
 {
@@ -1086,7 +1052,7 @@ ar_result_t gen_cntr_handle_fwk_extn_pre_subgraph_op(gen_cntr_t *      me_ptr,
    return result;
 }
 
-ar_result_t gen_cntr_handle_fwk_extn_post_subgraph_op(gen_cntr_t *      me_ptr,
+ar_result_t gen_cntr_handle_fwk_extn_post_subgraph_op(gen_cntr_t       *me_ptr,
                                                       uint32_t          sg_op,
                                                       gu_module_list_t *module_list_ptr)
 {
@@ -1103,10 +1069,10 @@ ar_result_t gen_cntr_handle_fwk_extn_post_subgraph_op(gen_cntr_t *      me_ptr,
 // If the propagated property is is_upstrm_rt, cmd is sent to downstream cntr.
 
 // note: in case of port state property apply_downgraded_state_on_output_port is used
-ar_result_t gen_cntr_set_propagated_prop_on_ext_output(gen_topo_t *              topo_ptr,
-                                                       gu_ext_out_port_t *       gu_out_port_ptr,
+ar_result_t gen_cntr_set_propagated_prop_on_ext_output(gen_topo_t               *topo_ptr,
+                                                       gu_ext_out_port_t        *gu_out_port_ptr,
                                                        topo_port_property_type_t prop_type,
-                                                       void *                    payload_ptr)
+                                                       void                     *payload_ptr)
 {
    ar_result_t result = AR_EOK;
    gen_cntr_t *me_ptr = (gen_cntr_t *)GET_BASE_PTR(gen_cntr_t, topo, topo_ptr);
@@ -1145,10 +1111,10 @@ ar_result_t gen_cntr_set_propagated_prop_on_ext_output(gen_topo_t *             
 // Handle property propagation from downstream
 // Propagates the property update through the topology.
 // note: in case of port state property apply_downgraded_state_on_input_port is used
-ar_result_t gen_cntr_set_propagated_prop_on_ext_input(gen_topo_t *              topo_ptr,
-                                                      gu_ext_in_port_t *        gu_in_port_ptr,
+ar_result_t gen_cntr_set_propagated_prop_on_ext_input(gen_topo_t               *topo_ptr,
+                                                      gu_ext_in_port_t         *gu_in_port_ptr,
                                                       topo_port_property_type_t prop_type,
-                                                      void *                    payload_ptr)
+                                                      void                     *payload_ptr)
 {
    ar_result_t result = AR_EOK;
    gen_cntr_t *me_ptr = (gen_cntr_t *)GET_BASE_PTR(gen_cntr_t, topo, topo_ptr);
@@ -1190,9 +1156,9 @@ ar_result_t gen_cntr_set_propagated_prop_on_ext_input(gen_topo_t *              
 ar_result_t gen_cntr_raise_data_to_dsp_service_event_non_island(gen_topo_module_t *module_ptr,
                                                                 capi_event_info_t *event_info_ptr)
 {
-   gen_cntr_t *                      me_ptr        = (gen_cntr_t *)GET_BASE_PTR(gen_cntr_t, topo, module_ptr->topo_ptr);
+   gen_cntr_t                       *me_ptr        = (gen_cntr_t *)GET_BASE_PTR(gen_cntr_t, topo, module_ptr->topo_ptr);
    ar_result_t                       result        = AR_EOK;
-   capi_buf_t *                      payload       = &event_info_ptr->payload;
+   capi_buf_t                       *payload       = &event_info_ptr->payload;
    capi_event_data_to_dsp_service_t *dsp_event_ptr = (capi_event_data_to_dsp_service_t *)(payload->data_ptr);
 
    switch (dsp_event_ptr->param_id)
@@ -1337,12 +1303,12 @@ ar_result_t gen_cntr_handle_algo_delay_change_event(gen_topo_module_t *module_pt
  *
  * This function is called from cu_update_all_port_state.
  */
-ar_result_t gen_cntr_apply_downgraded_state_on_input_port(cu_base_t *       cu_ptr,
-                                                          gu_input_port_t * gu_in_port_ptr,
+ar_result_t gen_cntr_apply_downgraded_state_on_input_port(cu_base_t        *cu_ptr,
+                                                          gu_input_port_t  *gu_in_port_ptr,
                                                           topo_port_state_t downgraded_state)
 {
    ar_result_t             result          = AR_EOK;
-   gen_cntr_t *            me_ptr          = (gen_cntr_t *)cu_ptr;
+   gen_cntr_t             *me_ptr          = (gen_cntr_t *)cu_ptr;
    gen_cntr_ext_in_port_t *ext_in_port_ptr = NULL;
    gen_topo_input_port_t * in_port_ptr     = (gen_topo_input_port_t *)gu_in_port_ptr;
 
@@ -1417,12 +1383,12 @@ ar_result_t gen_cntr_apply_downgraded_state_on_input_port(cu_base_t *       cu_p
  *
  * This function is called from cu_update_all_port_state.
  */
-ar_result_t gen_cntr_apply_downgraded_state_on_output_port(cu_base_t *       cu_ptr,
+ar_result_t gen_cntr_apply_downgraded_state_on_output_port(cu_base_t        *cu_ptr,
                                                            gu_output_port_t *gu_out_port_ptr,
                                                            topo_port_state_t downgraded_state)
 {
    ar_result_t              result           = AR_EOK;
-   gen_cntr_t *             me_ptr           = (gen_cntr_t *)cu_ptr;
+   gen_cntr_t              *me_ptr           = (gen_cntr_t *)cu_ptr;
    gen_cntr_ext_out_port_t *ext_out_port_ptr = NULL;
    gen_topo_output_port_t * out_port_ptr     = (gen_topo_output_port_t *)gu_out_port_ptr;
    INIT_EXCEPTION_HANDLING
@@ -1489,12 +1455,12 @@ ar_result_t gen_cntr_apply_downgraded_state_on_output_port(cu_base_t *       cu_
 /**
  * this is callback from topo
  */
-ar_result_t gen_cntr_destroy_module(gen_topo_t *       topo_ptr,
+ar_result_t gen_cntr_destroy_module(gen_topo_t        *topo_ptr,
                                     gen_topo_module_t *module_ptr,
                                     bool_t             reset_capi_dependent_dont_destroy)
 {
    ar_result_t        result              = AR_EOK;
-   gen_cntr_t *       me_ptr              = (gen_cntr_t *)GET_BASE_PTR(gen_cntr_t, topo, topo_ptr);
+   gen_cntr_t        *me_ptr              = (gen_cntr_t *)GET_BASE_PTR(gen_cntr_t, topo, topo_ptr);
    gen_cntr_module_t *gen_cntr_module_ptr = (gen_cntr_module_t *)module_ptr;
 
    gen_cntr_handle_fwk_ext_at_deinit(me_ptr, module_ptr);
@@ -1530,13 +1496,13 @@ ar_result_t gen_cntr_destroy_module(gen_topo_t *       topo_ptr,
 /**
  * this is callback from topo
  */
-ar_result_t gen_cntr_create_module(gen_topo_t *           topo_ptr,
-                                   gen_topo_module_t *    module_ptr,
+ar_result_t gen_cntr_create_module(gen_topo_t            *topo_ptr,
+                                   gen_topo_module_t     *module_ptr,
                                    gen_topo_graph_init_t *graph_init_ptr)
 {
    ar_result_t result = AR_EOK;
    INIT_EXCEPTION_HANDLING
-   gen_cntr_t *       me_ptr              = (gen_cntr_t *)GET_BASE_PTR(gen_cntr_t, topo, topo_ptr);
+   gen_cntr_t        *me_ptr              = (gen_cntr_t *)GET_BASE_PTR(gen_cntr_t, topo, topo_ptr);
    gen_cntr_module_t *gen_cntr_module_ptr = (gen_cntr_module_t *)module_ptr;
 
    if (AMDB_MODULE_TYPE_FRAMEWORK == module_ptr->gu.module_type)
@@ -1585,16 +1551,16 @@ ar_result_t gen_cntr_create_module(gen_topo_t *           topo_ptr,
    return result;
 }
 
-ar_result_t gen_cntr_cache_set_event_prop(gen_cntr_t *       me_ptr,
+ar_result_t gen_cntr_cache_set_event_prop(gen_cntr_t        *me_ptr,
                                           gen_cntr_module_t *module_ptr,
-                                          topo_reg_event_t * event_cfg_payload_ptr,
+                                          topo_reg_event_t  *event_cfg_payload_ptr,
                                           bool_t             is_register)
 {
    ar_result_t result = AR_EOK;
    INIT_EXCEPTION_HANDLING
    uint32_t log_id = me_ptr->topo.gu.log_id;
 
-   int8_t *      event_cfg_ptr = NULL;
+   int8_t       *event_cfg_ptr = NULL;
    POSAL_HEAP_ID heap_id;
 
    heap_id = me_ptr->topo.heap_id;
@@ -1897,8 +1863,8 @@ ar_result_t gen_cntr_handle_fwk_events_util_(gen_cntr_t *                me_ptr,
 static uint32_t gen_cntr_aggregate_ext_in_port_delay_util(gen_cntr_t *me_ptr, gu_ext_in_port_t *gu_ext_in_port_ptr)
 {
    gen_cntr_ext_in_port_t *ext_in_port_ptr      = (gen_cntr_ext_in_port_t *)gu_ext_in_port_ptr;
-   gen_topo_input_port_t * in_port_ptr          = (gen_topo_input_port_t *)gu_ext_in_port_ptr->int_in_port_ptr;
-   gen_topo_input_port_t * nblc_end_in_port_ptr = in_port_ptr;
+   gen_topo_input_port_t  *in_port_ptr          = (gen_topo_input_port_t *)gu_ext_in_port_ptr->int_in_port_ptr;
+   gen_topo_input_port_t  *nblc_end_in_port_ptr = in_port_ptr;
    if (in_port_ptr->nblc_end_ptr && (in_port_ptr->nblc_end_ptr != in_port_ptr))
    {
       nblc_end_in_port_ptr = in_port_ptr->nblc_end_ptr;
@@ -2046,7 +2012,7 @@ bool_t gen_cntr_is_signal_triggered(gen_cntr_t *me_ptr)
 ar_result_t gen_cntr_check_insert_missing_eos_on_next_module(gen_topo_t *topo_ptr, gen_topo_input_port_t *in_port_ptr)
 {
    ar_result_t        result     = AR_EOK;
-   gen_cntr_t *       me_ptr     = (gen_cntr_t *)GET_BASE_PTR(gen_cntr_t, topo, topo_ptr);
+   gen_cntr_t        *me_ptr     = (gen_cntr_t *)GET_BASE_PTR(gen_cntr_t, topo, topo_ptr);
    gen_topo_module_t *module_ptr = (gen_topo_module_t *)in_port_ptr->gu.cmn.module_ptr;
 
 #if 0

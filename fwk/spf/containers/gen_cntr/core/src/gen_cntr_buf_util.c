@@ -72,6 +72,53 @@ ar_result_t find_lcm(uint32_t a, uint32_t b, uint32_t *lcm_ptr);
  * Global Data Definitions
  * -------------------------------------------------------------------------*/
 
+uint32_t gen_cntr_get_default_port_threshold(gen_cntr_t        *me_ptr,
+                                             gen_topo_module_t *module_ptr,
+                                             topo_media_fmt_t  *media_fmt_ptr)
+{
+   uint32_t buf_size = 0;
+   if (SPF_UNKNOWN_DATA_FORMAT == media_fmt_ptr->data_format)
+   {
+      buf_size = 0;
+   }
+   else if (SPF_IS_PACKETIZED_OR_PCM(media_fmt_ptr->data_format))
+   {
+
+      static const uint64_t num_us_per_sec     = 1000000;
+      uint32_t              frame_size_samples = 0;
+      uint32_t              sampling_rate      = media_fmt_ptr->pcm.sample_rate;
+
+      if (0 == me_ptr->cu.conf_frame_len.frame_len_us)
+      {
+         if (0 == me_ptr->cu.conf_frame_len.frame_len_samples)
+         {
+            // decide frame size based on the perf mode as container frame len property is not configured.
+            frame_size_samples = tu_get_unit_frame_size(sampling_rate) *
+                                 TOPO_PERF_MODE_TO_FRAME_DURATION_MS(module_ptr->gu.sg_ptr->perf_mode);
+         }
+         else
+         {
+            // Container frame len property is configured for an absolute samples value as frame size
+            frame_size_samples = me_ptr->cu.conf_frame_len.frame_len_samples;
+         }
+      }
+      else
+      {
+         // Container frame len property is configured to determine the frame size wrt configured frame length in time.
+         frame_size_samples =
+            (uint32_t)(((uint64_t)sampling_rate * (uint64_t)me_ptr->cu.conf_frame_len.frame_len_us) / num_us_per_sec);
+      }
+
+      buf_size = topo_samples_to_bytes(frame_size_samples, media_fmt_ptr);
+   }
+   else
+   {
+      buf_size = 2048;
+   }
+
+   return buf_size;
+}
+
 ar_result_t gen_cntr_create_ext_out_bufs(gen_cntr_t *             me_ptr,
                                          gen_cntr_ext_out_port_t *ext_port_ptr,
                                          uint32_t                 num_out_bufs)
@@ -296,6 +343,7 @@ static void gen_cntr_set_failsafe_pcm_lcm_thresh(gen_topo_t *               topo
                                                  gen_topo_output_port_t *   first_out_pcm_port_ptr,
                                                  gen_cntr_threshold_prop_t *lcm_thresh_ptr)
 {
+   gen_cntr_t *me_ptr = (gen_cntr_t *)GET_BASE_PTR(gen_cntr_t, topo, topo_ptr);
    gen_topo_module_t *     module_ptr = NULL;
    gen_topo_common_port_t *port_ptr   = NULL;
 
@@ -310,11 +358,7 @@ static void gen_cntr_set_failsafe_pcm_lcm_thresh(gen_topo_t *               topo
       module_ptr = (gen_topo_module_t *)first_out_pcm_port_ptr->gu.cmn.module_ptr;
    }
 
-   uint32_t unit_frame_size = tu_get_unit_frame_size(port_ptr->media_fmt_ptr->pcm.sample_rate);
-   uint32_t thresh_bytes    = TOPO_BITS_TO_BYTES(port_ptr->media_fmt_ptr->pcm.bits_per_sample) *
-                           port_ptr->media_fmt_ptr->pcm.num_channels * (unit_frame_size);
-
-   thresh_bytes *= TOPO_PERF_MODE_TO_FRAME_DURATION_MS(module_ptr->gu.sg_ptr->perf_mode);
+   uint32_t thresh_bytes    = gen_cntr_get_default_port_threshold(me_ptr, module_ptr, port_ptr->media_fmt_ptr);
 
    lcm_thresh_ptr->thresh_us      = topo_bytes_to_us(thresh_bytes, port_ptr->media_fmt_ptr, NULL);
    lcm_thresh_ptr->thresh_samples = topo_bytes_to_samples_per_ch(thresh_bytes, port_ptr->media_fmt_ptr);
@@ -1528,8 +1572,10 @@ static ar_result_t gen_cntr_simple_threshold_assignment(gen_cntr_t              
          return result;
       }
 
-      uint32_t temp =
-         gen_topo_get_default_port_threshold(first_module_with_valid_mf, first_port_with_valid_mf->media_fmt_ptr);
+      uint32_t temp = gen_cntr_get_default_port_threshold(me_ptr,
+                                                          first_module_with_valid_mf,
+                                                          first_port_with_valid_mf->media_fmt_ptr);
+
       first_port_with_valid_mf->port_event_new_threshold = temp;
 
       TRY(result,
@@ -1667,7 +1713,8 @@ loop_over_modules_to_calc_lcm_threshold:
                if (!out_port_ptr->common.flags.port_has_threshold && has_valid_mf)
                {
                   // For MIMO modules assign thresh forcefully
-                  uint32_t temp = gen_topo_get_default_port_threshold(module_ptr, out_port_ptr->common.media_fmt_ptr);
+                  uint32_t temp =
+                     gen_cntr_get_default_port_threshold(me_ptr, module_ptr, out_port_ptr->common.media_fmt_ptr);
                   if (temp != gen_topo_get_curr_port_threshold(&out_port_ptr->common))
                   {
                      out_port_ptr->common.port_event_new_threshold = temp;
@@ -1810,7 +1857,8 @@ loop_over_modules_to_calc_lcm_threshold:
                // For MIMO modules assign thresh forcefully
                if (!in_port_ptr->common.flags.port_has_threshold && has_valid_mf)
                {
-                  uint32_t temp = gen_topo_get_default_port_threshold(module_ptr, in_port_ptr->common.media_fmt_ptr);
+                  uint32_t temp =
+                     gen_cntr_get_default_port_threshold(me_ptr, module_ptr, in_port_ptr->common.media_fmt_ptr);
                   if (temp != gen_topo_get_curr_port_threshold(&in_port_ptr->common))
                   {
                      in_port_ptr->common.port_event_new_threshold = temp;
@@ -1976,8 +2024,9 @@ loop_over_modules_to_calc_lcm_threshold:
             temp_port_id    = first_input_port_with_mf->gu.cmn.id;
 
             // Check and assign default threshold
-            uint32_t temp =
-               gen_topo_get_default_port_threshold(temp_module_ptr, first_input_port_with_mf->common.media_fmt_ptr);
+            uint32_t temp = gen_cntr_get_default_port_threshold(me_ptr,
+                                                                temp_module_ptr,
+                                                                first_input_port_with_mf->common.media_fmt_ptr);
             if (temp != gen_topo_get_curr_port_threshold(&first_input_port_with_mf->common))
             {
                first_input_port_with_mf->common.port_event_new_threshold = temp;
@@ -1989,8 +2038,9 @@ loop_over_modules_to_calc_lcm_threshold:
             cmn_port_ptr    = &first_output_port_with_mf->common;
             temp_port_id    = first_output_port_with_mf->gu.cmn.id;
 
-            uint32_t temp =
-               gen_topo_get_default_port_threshold(temp_module_ptr, first_output_port_with_mf->common.media_fmt_ptr);
+            uint32_t temp = gen_cntr_get_default_port_threshold(me_ptr,
+                                                                temp_module_ptr,
+                                                                first_output_port_with_mf->common.media_fmt_ptr);
             if (temp != gen_topo_get_curr_port_threshold(&first_output_port_with_mf->common))
             {
                first_output_port_with_mf->common.port_event_new_threshold = temp;
@@ -2425,7 +2475,7 @@ ar_result_t gen_cntr_handle_port_data_thresh_change(void *ctx_ptr)
       // modules should be informed about container frame len first so that they can update their DM configuration.
       if (is_threshold_valid)
       {
-         gen_cntr_capi_set_fwk_extn_cntr_frame_dur(me_ptr, lcm_threshold.thresh_us);
+         gen_topo_fwk_ext_set_cntr_frame_dur(&me_ptr->topo, lcm_threshold.thresh_us);
       }
 
       // dm should be updated before handling the frame-len change because DM update can change variable input/output

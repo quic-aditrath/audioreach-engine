@@ -29,7 +29,7 @@ extern "C"
     @indent{12pt} apm_container_cfg_t \n
     @indent{12pt} apm_container_type_t
 */
-#define APM_PARAM_ID_CONTAINER_CONFIG             0x08001000
+#define APM_PARAM_ID_CONTAINER_CONFIG 0x08001000
 
 /*# h2xmlp_parameter   {"Container Configuration",
                          APM_PARAM_ID_CONTAINER_CONFIG}
@@ -58,7 +58,6 @@ struct apm_param_id_container_cfg_t
 #include "spf_end_pack.h"
 ;
 typedef struct apm_param_id_container_cfg_t apm_param_id_container_cfg_t;
-
 
 /** @ingroup spf_apm_container_props
     Payload for #APM_PARAM_ID_CONTAINER_CONFIG. This structure contains
@@ -89,7 +88,6 @@ struct apm_container_cfg_t
 ;
 typedef struct apm_container_cfg_t apm_container_cfg_t;
 
-
 /** @ingroup spf_apm_container_props
     Payload for #APM_PARAM_ID_CONTAINER_CONFIG and
     #APM_CONTAINER_PROP_ID_CONTAINER_TYPE.
@@ -110,7 +108,6 @@ struct apm_container_type_t
 ;
 typedef struct apm_container_type_t apm_container_type_t;
 
-
 /*# h2xmlgp_configType  {"CONT_CFG"}
     @h2xmlgp_config      {"CONT_CFG", "APM_PARAM_ID_CONTAINER_CONFIG",
                            APM_PARAM_ID_CONTAINER_CONFIG}
@@ -126,12 +123,11 @@ typedef struct apm_container_type_t apm_container_type_t;
     apm_cont_prop_id_type_t \n
     @indent{12pt} apm_container_type_t
 */
-#define APM_CONTAINER_PROP_ID_CONTAINER_TYPE     0x08001011
+#define APM_CONTAINER_PROP_ID_CONTAINER_TYPE 0x08001011
 
 /*# @h2xmlp_property    {"Container Type",
                           APM_CONTAINER_PROP_ID_CONTAINER_TYPE}
     @h2xmlp_description {Container property ID for the container type.} */
-
 
 /*# @h2xmlp_insertSubStruct {apm_container_type_t} */
 
@@ -150,8 +146,8 @@ struct apm_cont_prop_id_type_t
         @h2xmle_default     {1}
         @h2xmle_description {Version of the property ID payload for the
                              container type.} */
-        /* version can never be incremented to 2 because it will change below
-           var length array. */
+   /* version can never be incremented to 2 because it will change below
+      var length array. */
 
    apm_container_type_t type_id;
    /**< Identifier for the container type. */
@@ -160,14 +156,13 @@ struct apm_cont_prop_id_type_t
         @h2xmle_default           {APM_PROP_ID_INVALID}
         @h2xmle_description       {ID for the container property.}
         @h2xmle_variableArraySize {version} */
-        /* This is not meant to be a variable size array, but due to backward
-           compatibility with previous struct, which based based on container
-           capability ID, we had to do this. */
+   /* This is not meant to be a variable size array, but due to backward
+      compatibility with previous struct, which based based on container
+      capability ID, we had to do this. */
 }
 #include "spf_end_pack.h"
 ;
 typedef struct apm_cont_prop_id_type_t apm_cont_prop_id_type_t;
-
 
 /*--------------------------------------------------------------------------------------------------------------------*/
 /** @ingroup spf_apm_container_props
@@ -176,23 +171,23 @@ typedef struct apm_cont_prop_id_type_t apm_cont_prop_id_type_t;
     @msgpayload
     apm_cont_prop_id_graph_pos_t
 */
-#define APM_CONTAINER_PROP_ID_GRAPH_POS           0x08001012
+#define APM_CONTAINER_PROP_ID_GRAPH_POS 0x08001012
 
 /** @ingroup spf_apm_container_props
     Position of the container graph in the stream. */
-#define APM_CONT_GRAPH_POS_STREAM                 0x1
+#define APM_CONT_GRAPH_POS_STREAM 0x1
 
 /** @ingroup spf_apm_container_props
     Position of the container graph, per stream per device. */
-#define APM_CONT_GRAPH_POS_PER_STR_PER_DEV        0x2
+#define APM_CONT_GRAPH_POS_PER_STR_PER_DEV 0x2
 
 /** @ingroup spf_apm_container_props
     Position of the container graph on a stream device. */
-#define APM_CONT_GRAPH_POS_STR_DEV                0x3
+#define APM_CONT_GRAPH_POS_STR_DEV 0x3
 
 /** @ingroup spf_apm_container_props
     Position of the container graph on a global device. @newpage */
-#define APM_CONT_GRAPH_POS_GLOBAL_DEV             0x4
+#define APM_CONT_GRAPH_POS_GLOBAL_DEV 0x4
 
 /*# @h2xmlp_property    {"Graph Position", APM_CONTAINER_PROP_ID_GRAPH_POS}
     @h2xmlp_description {Container property ID for the graph position.} */
@@ -225,7 +220,6 @@ struct apm_cont_prop_id_graph_pos_t
 ;
 typedef struct apm_cont_prop_id_graph_pos_t apm_cont_prop_id_graph_pos_t;
 
-
 /*--------------------------------------------------------------------------------------------------------------------*/
 /** @ingroup spf_apm_container_props
     Container property identifier for the stack size.
@@ -233,7 +227,7 @@ typedef struct apm_cont_prop_id_graph_pos_t apm_cont_prop_id_graph_pos_t;
     @msgpayload
     apm_cont_prop_id_stack_size_t
 */
-#define APM_CONTAINER_PROP_ID_STACK_SIZE          0x08001013
+#define APM_CONTAINER_PROP_ID_STACK_SIZE 0x08001013
 
 /*# @h2xmlp_property    {"Stack Size", APM_CONTAINER_PROP_ID_STACK_SIZE}
     @h2xmlp_description {Container property ID for the stack size.} */
@@ -255,7 +249,6 @@ struct apm_cont_prop_id_stack_size_t
 ;
 typedef struct apm_cont_prop_id_stack_size_t apm_cont_prop_id_stack_size_t;
 
-
 /*--------------------------------------------------------------------------------------------------------------------*/
 /** @ingroup spf_apm_container_props
     Container property identifier for the processor domain.
@@ -263,7 +256,7 @@ typedef struct apm_cont_prop_id_stack_size_t apm_cont_prop_id_stack_size_t;
     @msgpayload
     apm_cont_prop_id_proc_domain_t
 */
-#define APM_CONTAINER_PROP_ID_PROC_DOMAIN         0x08001014
+#define APM_CONTAINER_PROP_ID_PROC_DOMAIN 0x08001014
 
 /*# @h2xmlp_property    {"Proc Domain", APM_CONTAINER_PROP_ID_PROC_DOMAIN}
     @h2xmlp_description {Container property ID for the processor domain.} */
@@ -302,7 +295,6 @@ struct apm_cont_prop_id_proc_domain_t
 ;
 typedef struct apm_cont_prop_id_proc_domain_t apm_cont_prop_id_proc_domain_t;
 
-
 /*--------------------------------------------------------------------------------------------------------------------*/
 /** @ingroup spf_apm_container_props
     Container property identifier for the parent container ID.
@@ -310,7 +302,7 @@ typedef struct apm_cont_prop_id_proc_domain_t apm_cont_prop_id_proc_domain_t;
     @msgpayload
     apm_cont_prop_id_parent_container_t
 */
-#define APM_CONTAINER_PROP_ID_PARENT_CONTAINER_ID    0x080010CB
+#define APM_CONTAINER_PROP_ID_PARENT_CONTAINER_ID 0x080010CB
 
 /*# @h2xmlp_property    {"Parent Container ID",
                           APM_CONTAINER_PROP_ID_PARENT_CONTAINER_ID}
@@ -323,8 +315,8 @@ typedef struct apm_cont_prop_id_proc_domain_t apm_cont_prop_id_proc_domain_t;
 struct apm_cont_prop_id_parent_container_t
 {
    uint32_t parent_container_id;
-  /**< Unique identifier for the offload container in the master DSP with which
-       the satellite DSP containers are associated. @newpagetable */
+   /**< Unique identifier for the offload container in the master DSP with which
+        the satellite DSP containers are associated. @newpagetable */
 
    /*#< @h2xmle_range       {0..0xFFFFFFFF}
         @h2xmle_default     {0xFFFFFFFF }
@@ -336,7 +328,6 @@ struct apm_cont_prop_id_parent_container_t
 ;
 typedef struct apm_cont_prop_id_parent_container_t apm_cont_prop_id_parent_container_t;
 
-
 /*--------------------------------------------------------------------------------------------------------------------*/
 /** @ingroup spf_apm_container_props
     Container property identifier for the heap ID.
@@ -344,15 +335,15 @@ typedef struct apm_cont_prop_id_parent_container_t apm_cont_prop_id_parent_conta
     @msgpayload
     apm_cont_prop_id_heap_id_t
 */
-#define APM_CONTAINER_PROP_ID_HEAP_ID                  0x08001174
+#define APM_CONTAINER_PROP_ID_HEAP_ID 0x08001174
 
 /** @ingroup spf_apm_container_props
     Default heap ID for the container. */
-#define APM_CONT_HEAP_DEFAULT                     0x1
+#define APM_CONT_HEAP_DEFAULT 0x1
 
 /** @ingroup spf_apm_container_props
     Low Power Island (LPI) heap ID for the container. */
-#define APM_CONT_HEAP_LOW_POWER                   0x2
+#define APM_CONT_HEAP_LOW_POWER 0x2
 
 /*# @h2xmlp_property    {"Container Heap", APM_CONTAINER_PROP_ID_HEAP_ID}
     @h2xmlp_description {Container property ID for the heap ID.} */
@@ -382,14 +373,13 @@ struct apm_cont_prop_id_heap_id_t
 ;
 typedef struct apm_cont_prop_id_heap_id_t apm_cont_prop_id_heap_id_t;
 
-
 /** @ingroup spf_apm_container_props
     Container property identifier for the peer heap ID.
 
     @msgpayload
     apm_cont_prop_id_peer_heap_id_t
 */
-#define APM_CONTAINER_PROP_ID_PEER_HEAP_ID             0x0800124D
+#define APM_CONTAINER_PROP_ID_PEER_HEAP_ID 0x0800124D
 
 /*# @h2xmlp_property    {"Peer Container Heap",
                           APM_CONTAINER_PROP_ID_PEER_HEAP_ID}
@@ -417,6 +407,107 @@ struct apm_cont_prop_id_peer_heap_id_t
 #include "spf_end_pack.h"
 ;
 typedef struct apm_cont_prop_id_peer_heap_id_t apm_cont_prop_id_peer_heap_id_t;
+
+/*--------------------------------------------------------------------------------------------------------------------*/
+/** @ingroup spf_apm_container_props
+    Container property identifier for the processing frame size.
+
+    @msgpayload
+    apm_cont_prop_id_frame_size_t
+*/
+#define APM_CONTAINER_PROP_ID_FRAME_SIZE 0x08001A9B
+
+/** @ingroup spf_apm_container_props
+    Default mode for the container frame size property. */
+#define APM_CONTAINER_PROP_FRAME_SIZE_DEFAULT 0
+
+/** @ingroup spf_apm_container_props
+    In-Time mode for the container frame size property. */
+#define APM_CONTAINER_PROP_FRAME_SIZE_TIME 1
+
+/** @ingroup spf_apm_container_props
+    Payload for #APM_CONTAINER_PROP_ID_FRAME_SIZE.
+ */
+
+/** @h2xmlp_subStruct */
+#include "spf_begin_pack.h"
+struct apm_cont_prop_id_frame_size_time_t
+{
+    uint32_t frame_size_us;
+    /**< Processing frame size of the container in time (microseconds).*/
+
+    /*#< @h2xmle_range   {1000...100000}
+     @h2xmle_default     {5000}
+     @h2xmle_description {Processing frame size of the container in time (microseconds).} */
+}
+#include "spf_end_pack.h"
+;
+typedef struct apm_cont_prop_id_frame_size_time_t apm_cont_prop_id_frame_size_time_t;
+
+/*# @h2xmlp_property    {"Processing frame size of the container",
+ APM_CONTAINER_PROP_ID_FRAME_SIZE}
+ @h2xmlp_description {Container property to set the processing frame size for PCM or PCM Packetized media format.
+ If container has a module with threshold then that will be used to determine the container processing frame size
+ instead. OLC (offload container) will not use this property.} */
+#include "spf_begin_pack.h"
+struct apm_cont_prop_id_frame_size_t
+{
+   uint32_t mode;
+   /**< Specifies whether the container frame size configuration is default or in-time.*/
+
+   /*#< @h2xmle_rangeList   {"DEFAULT" = 0; "IN_TIME" = 1}
+        @h2xmle_default     {APM_CONTAINER_PROP_FRAME_SIZE_DEFAULT}
+        @h2xmle_description {Container frame size configuration mode.} */
+#ifdef __H2XML__
+    uint8_t bytes[0];
+    /*#< @h2xmle_elementType {rawData} */
+#endif
+}
+#include "spf_end_pack.h"
+;
+
+typedef struct apm_cont_prop_id_frame_size_t apm_cont_prop_id_frame_size_t;
+
+
+/**
+ * case1:
+ *  mode: #APM_CONTAINER_PROP_FRAME_SIZE_TIME
+ *  frame_size_us: 5000
+ *  usecase_sampling_rate: 48000
+ *     Container frame size in samples = floor((usecase_sampling_rate * frame_size_us) / 10^6)
+ *                                     = 240 samples
+ *     Container frame size in time    = floor((10^6 * frame_size_samples) / usecase_sampling_rate)
+ *                                     = 5000 us
+ *  usecase_sampling_rate: 44100
+ *     Container frame size in samples = floor((usecase_sampling_rate * frame_size_us) / 10^6)
+ *                                     = 220 samples
+ *     Container frame size in time    = floor((10^6 * frame_size_samples) / usecase_sampling_rate)
+ *                                     = 4988 us
+ *
+ * case2:
+ *  mode: #APM_CONTAINER_PROP_FRAME_SIZE_TIME
+ *  frame_size_us: 5334
+ *  usecase_sampling_rate: 48000
+ *     Container frame size in samples = floor((usecase_sampling_rate * frame_size_us) / 10^6)
+ *                                     = 256 samples
+ *     Container frame size in time    = floor((10^6 * frame_size_samples) / usecase_sampling_rate)
+ *                                     = 5333 us
+ *
+ * case3:
+ *  mode: #APM_CONTAINER_PROP_FRAME_SIZE_TIME
+ *  frame_size_us: 10000
+ *  usecase_sampling_rate: 44100
+ *     Container frame size in samples = floor((usecase_sampling_rate * frame_size_us) / 10^6)
+ *                                     = 441 samples
+ *     Container frame size in time    = floor((10^6 * frame_size_samples) / usecase_sampling_rate)
+ *                                     = 10000 us
+ *
+ * case4:
+ *  mode: APM_CONTAINER_PROP_FRAME_SIZE_DEFAULT
+ *  Container frame size is decided based on the subgraph performance mode.
+ */
+
+/*--------------------------------------------------------------------------------------------------------------------*/
 
 /*--------------------------------------------------------------------------------------------------------------------*/
 /*# @}                   <-- End of container_cfg -->*/

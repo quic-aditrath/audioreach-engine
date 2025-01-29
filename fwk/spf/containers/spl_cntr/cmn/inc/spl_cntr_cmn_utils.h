@@ -1,8 +1,8 @@
 /**
  * \file spl_cntr_cmn_utils.h
  * \brief
- *  
- * 
+ *
+ *
  * \copyright
  *  Copyright (c) Qualcomm Innovation Center, Inc. All Rights Reserved.
  *  SPDX-License-Identifier: BSD-3-Clause
@@ -18,7 +18,6 @@
 #include "ar_guids.h"
 #include "spl_cntr_sync_fwk_ext.h"
 #include "spl_cntr_voice_delivery_fwk_ext.h"
-#include "spl_cntr_frame_dur_fwk_ext.h"
 #include "spl_cntr_proc_dur_fwk_ext.h"
 #include "spl_topo_trigger_policy_fwk_ext.h"
 

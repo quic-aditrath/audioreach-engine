@@ -37,9 +37,9 @@ ar_result_t spl_cntr_handle_fwk_extn_at_init(gen_topo_t *topo_ptr, gen_topo_modu
          SPF_CRITICAL_SECTION_START(&topo_ptr->gu);
          // sync was sending me_ptr->threshold_data.configured_frame_size_us
          TRY(result,
-             spl_cntr_fwk_extn_set_cntr_frame_duration_per_module(me_ptr,
-                                                                  module_ptr,
-                                                                  me_ptr->cu.cntr_frame_len.frame_len_us));
+             gen_topo_fwk_ext_set_cntr_frame_dur_per_module(&me_ptr->topo.t_base,
+                                                            &module_ptr->t_base,
+                                                            me_ptr->cu.cntr_frame_len.frame_len_us));
          SPF_CRITICAL_SECTION_END(&topo_ptr->gu);
       }
       SPL_CNTR_MSG(me_ptr->topo.t_base.gu.log_id, DBG_HIGH_PRIO, "FWK_EXTN_CNTR_FRAME_DURATION init handling done");

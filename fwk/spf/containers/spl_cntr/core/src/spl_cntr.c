@@ -640,11 +640,8 @@ ar_result_t spl_cntr_set_cntr_frame_len_us(spl_cntr_t *me_ptr, icb_frame_length_
    // and DM update can cause change in variable input/output configuration.
    if ((0 != fm_ptr->frame_len_us) && (old_frame_len_us != fm_ptr->frame_len_us))
    {
-      // Inform sync of threshold change. It expects the actual threshold, not the rounded-up duration.
-      uint64_t *FRACT_TIME_PTR     = NULL;
-      uint32_t unrounded_frame_len = topo_samples_to_us(fm_ptr->frame_len_samples, fm_ptr->sample_rate, FRACT_TIME_PTR);
-
-      TRY(result, spl_cntr_fwk_extn_cntr_frame_duration_changed(me_ptr, unrounded_frame_len));
+      // Inform sync of threshold change.
+      TRY(result, gen_topo_fwk_ext_set_cntr_frame_dur(&me_ptr->topo.t_base, fm_ptr->frame_len_us));
    }
 
    if (0 != fm_ptr->frame_len_us)

@@ -3,7 +3,7 @@
 /**
  * \file apm_private_api.h
  * \brief
- *  	 This file contains the version information for Audio Procesing Manager Private API.
+ *    This file contains the version information for Audio Procesing Manager Private API.
  *
  * \copyright
  *    Copyright (c) Qualcomm Innovation Center, Inc. All Rights Reserved.
@@ -58,7 +58,7 @@ extern "C"
   error code is returned by APM.
 
   */
-#define APM_CMD_REGISTER_MODULE_EVENTS_V2         0x01001047
+#define APM_CMD_REGISTER_MODULE_EVENTS_V2 0x01001047
 
 /**
    Payload of the register events data structure. This
@@ -132,6 +132,25 @@ typedef struct apm_module_register_events_v2_t apm_module_register_events_v2_t;
 /** @ingroup spf_apm_graph_props
     Container type identifier for a Front end container. */
 #define APM_CONTAINER_TYPE_ID_FRONT_END_FWK             0x0B00100D
+
+/** @ingroup spf_apm_container_props
+    In-Sample mode for the container frame size property. */
+#define APM_CONTAINER_PROP_FRAME_SIZE_SAMPLES 2
+
+#include "spf_begin_pack.h"
+struct apm_cont_prop_id_frame_size_samples_t
+{
+   uint32_t frame_size_samples;
+   /**< Processing frame size of the container in samples.*/
+
+   /*#< @h2xmle_range       {8...100000}
+        @h2xmle_default     {240}
+        @h2xmle_description {Processing frame size of the container in samples.} */
+}
+#include "spf_end_pack.h"
+;
+
+typedef struct apm_cont_prop_id_frame_size_samples_t apm_cont_prop_id_frame_size_samples_t;
 
 #ifdef __cplusplus
 }
