@@ -683,6 +683,7 @@ struct apm_cmd_shared_satellite_mem_unmap_regions_t
 /** @} */ /* end_weakgroup weak_apm_cmd_shared_satellite_mem_unmap_regions_t */
 typedef struct apm_cmd_shared_satellite_mem_unmap_regions_t apm_cmd_shared_satellite_mem_unmap_regions_t;
 
+#if 0
 /** This Command specifies memory block loaned to the SPF instance from the specified global
  shared memory which is previously mapped with command #APM_CMD_GLOBAL_SHARED_MEM_MAP_REGIONS.
  This memory can be used by the SPF modules to communicate within the specified global
@@ -786,6 +787,8 @@ struct apm_cmd_unloan_global_shared_mem_t
 ;
 /** @} */ /* end_weakgroup weak_apm_cmd_unloan_global_shared_mem_t*/
 typedef struct apm_cmd_unloan_global_shared_mem_t apm_cmd_unloan_global_shared_mem_t;
+
+#endif
 
 /** @} */ /* end_addtogroup spf_apm_memory_map */
 

@@ -68,17 +68,12 @@ ar_result_t gen_topo_init_global_sh_mem_extn(void *topo_ptr, gen_topo_module_t *
    return result;
 }
 
-ar_result_t gen_topo_set_global_sh_mem_msg(void    *topo_ptr,
-                                           uint32_t miid,
-                                           uint32_t shmem_id,
-                                           void    *virt_addr_ptr,
-                                           uint32_t payload_size)
+ar_result_t gen_topo_set_global_sh_mem_msg(void *topo_ptr, uint32_t miid, void *virt_addr_ptr, void *cmd_header_ptr)
 {
    ar_result_t                       result    = AR_EOK;
    gen_topo_t                       *me_ptr    = (gen_topo_t *)topo_ptr;
    capi_param_set_global_shmem_msg_t shmem_msg = { .payload_virtual_addr = virt_addr_ptr,
-                                                   .payload_size         = payload_size,
-                                                   .shmem_id             = shmem_id };
+                                                   .cmd_header_addr      = cmd_header_ptr };
 
    gen_topo_module_t *module_ptr = (gen_topo_module_t *)gu_find_module(&me_ptr->gu, miid);
 
@@ -89,7 +84,7 @@ ar_result_t gen_topo_set_global_sh_mem_msg(void    *topo_ptr,
       return AR_EFAILED;
    }
 
-   TOPO_MSG(me_ptr->gu.log_id, DBG_HIGH_PRIO, "MIID 0x%x global shmem fwk ext msg", module_ptr->gu.module_instance_id);
+   TOPO_MSG(me_ptr->gu.log_id, DBG_HIGH_PRIO, "MIID 0x%x received global shmem fwk ext msg", module_ptr->gu.module_instance_id);
 
    result = gen_topo_capi_set_param(me_ptr->gu.log_id,
                                     module_ptr->capi_ptr,

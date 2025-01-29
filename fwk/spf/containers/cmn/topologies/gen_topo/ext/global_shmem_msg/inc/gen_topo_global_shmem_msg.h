@@ -27,9 +27,8 @@ ar_result_t gen_topo_init_global_sh_mem_extn(void *topo_ptr, gen_topo_module_t *
 
 ar_result_t gen_topo_set_global_sh_mem_msg(void    *topo_ptr,
                                            uint32_t miid,
-                                           uint32_t shmem_id,
                                            void    *virt_addr_ptr,
-                                           uint32_t payload_size);
+                                           void    *cmd_header_ptr);
 
 #ifdef __cplusplus
 }

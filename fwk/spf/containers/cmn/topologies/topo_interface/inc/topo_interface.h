@@ -149,9 +149,8 @@ typedef struct topo_cu_vtable_t
 
    ar_result_t (*set_global_sh_mem_msg)(void     *vtopo_ptr,
                                         uint32_t  miid,
-                                        uint32_t  shmem_id,
                                         void     *virt_addr_ptr,
-                                        uint32_t  payload_size);
+                                        void     *cmd_header_ptr);
 } topo_cu_vtable_t;
 
 typedef struct topo_cu_island_vtable_t

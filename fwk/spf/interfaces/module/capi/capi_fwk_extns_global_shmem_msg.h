@@ -108,11 +108,9 @@ typedef struct capi_param_set_global_shmem_msg_t capi_param_set_global_shmem_msg
 @{ */
 struct capi_param_set_global_shmem_msg_t
 {
-   uint32_t shmem_id;
-   /* Unique ID mapped with the shared memory handle.*/
-
-   uint32_t payload_size;
-   /*payload size in bytes*/
+   void* cmd_header_addr;
+   /* Address of the cmd #AR_SPF_MSG_GLOBAL_SH_MEM sent from the client.
+    * This is of type ar_spf_msg_global_sh_mem_t.*/
 
    void* payload_virtual_addr;
    /*Virtual address of the out of band payload.

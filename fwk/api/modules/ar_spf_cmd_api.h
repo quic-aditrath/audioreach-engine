@@ -42,6 +42,9 @@ extern "C" {
 /** Definition of the is_ack_required flag bitmask. */
 #define AR_SPF_MSG_GLOBAL_SH_MEM_BIT_MASK_IS_ACK_NOT_REQUIRED (0x00000001UL)
 
+/** Definition of the is_memory_release flag bitmask. */
+#define AR_SPF_MSG_GLOBAL_SH_MEM_BIT_MASK_IS_MEM_RELEASE (0x00000002UL)
+
 /** @ingroup spf_apm_commands
  Payload for #AR_SPF_MSG_GLOBAL_SH_MEM.
  */
@@ -69,7 +72,18 @@ struct ar_spf_msg_global_sh_mem_t
 
     - 0 -- Ack is needed. This is a common case where client wants to wait for the response.
 
-    @subhead{Bits 31 to 1}
+    @subhead{Bit 1 -- is_release_memory flag}
+
+    Indicates if client/HLOS wants module to release the specified shared memory. This can be used for cleanup or during
+    error handling.
+    - 1 -- release; used when client/HLOS wants module to stop reading/writing from/into the specified shared memory.
+    If shmem_size is zero then client/HLOS wants module to stop using the entire shared memory region. This can be used
+    just before shared memory is going to be unmapped.
+    If shmem_size is non zero then client/HLOs wants module to stop using the memory block specified with msw,lsw.
+
+    - 0 -- Default value; used when client wants module to read/use the specified shared memory.
+
+    @subhead{Bits 31 to 2}
 
     Reserved and must be set to 0. */
    uint32_t shmem_addr_lsw;

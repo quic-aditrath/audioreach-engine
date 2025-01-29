@@ -35,17 +35,23 @@ void cu_handle_global_shmem_msg(cu_base_t *cu_ptr, gpr_packet_t *packet_ptr)
             THROW(result, AR_EUNSUPPORTED);
          }
 
-         TRY(result,
-             posal_memorymap_get_mem_map_handle(apm_get_mem_map_client(), cmd_header_ptr->shmem_id, &mem_map_handle));
+         if (cmd_header_ptr->shmem_size)
+         {
+            TRY(result,
+                posal_memorymap_get_mem_map_handle(apm_get_mem_map_client(),
+                                                   cmd_header_ptr->shmem_id,
+                                                   &mem_map_handle));
 
-         TRY(result,
-             posal_memorymap_get_virtual_addr_from_shm_handle_v2(apm_get_mem_map_client(),
-                                                                 mem_map_handle,
-                                                                 cmd_header_ptr->shmem_addr_lsw,
-                                                                 cmd_header_ptr->shmem_addr_msw,
-                                                                 cmd_header_ptr->shmem_size,
-                                                                 FALSE, // ref count not increased, see the comment below
-                                                                 (void *)&(virtual_addr)));
+            TRY(result,
+                posal_memorymap_get_virtual_addr_from_shm_handle_v2(apm_get_mem_map_client(),
+                                                                    mem_map_handle,
+                                                                    cmd_header_ptr->shmem_addr_lsw,
+                                                                    cmd_header_ptr->shmem_addr_msw,
+                                                                    cmd_header_ptr->shmem_size,
+                                                                    FALSE, // ref count not increased, see the comment
+                                                                           // below
+                                                                    (void *)&(virtual_addr)));
+         }
 
          if (packet_ptr->dst_port == cu_ptr->gu_ptr->container_instance_id)
          {
@@ -56,9 +62,8 @@ void cu_handle_global_shmem_msg(cu_base_t *cu_ptr, gpr_packet_t *packet_ptr)
          {
             result = cu_ptr->topo_vtbl_ptr->set_global_sh_mem_msg(cu_ptr->topo_ptr,
                                                                   packet_ptr->dst_port,
-                                                                  cmd_header_ptr->shmem_id,
                                                                   (void *)virtual_addr,
-                                                                  cmd_header_ptr->shmem_size);
+                                                                  (void *)cmd_header_ptr);
          }
 
          /* Not managing ref count in this command handling context in the interest of optimization.
