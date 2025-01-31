@@ -195,6 +195,9 @@ enum containerCap
 
    APM_CONTAINER_TYPE_WC = APM_CONTAINER_TYPE_ID_WC,
    /*#< @h2xmle_name {Wear} */
+   
+   APM_CONTAINER_TYPE_PTC = APM_CONTAINER_TYPE_ID_PTC,
+   /*#< @h2xmle_name {PassThru} */
 };
 
 #else
@@ -271,6 +274,9 @@ enum containerCap
 
    APM_CONTAINER_TYPE_WC = APM_CONTAINER_TYPE_ID_WC,
    /**< Wear container. */
+   
+   APM_CONTAINER_TYPE_PTC = APM_CONTAINER_TYPE_ID_PTC,
+   /*#< Pass Thru container. */
 };
 
 #endif /* __H2XML__*/

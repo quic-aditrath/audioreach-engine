@@ -23,10 +23,12 @@ extern "C" {
 
 // #define MUX_DEMUX_TX_DEBUG_INFO
 
-// Interleaved data is not really supported in Mux, this macro is enabled for profiling automotive use graphs for the fwk MPPS overheads.
-// this macro allows mux demux to accept interleaved data and output interleaved data. Module doesnt really do muxing, it just routes the 
-// data from first input to all the outputs.
-//#define MUX_DEMUX_INTERLEAVED_DATA_WORKAROUND
+#ifdef SIM
+   // Interleaved data is not really supported in Mux, this macro is enabled for profiling automotive use graphs for the fwk MPPS overheads.
+   // this macro allows mux demux to accept interleaved data and output interleaved data. Module doesnt really do muxing, it just routes the
+   // data from first input to all the outputs.
+   #define MUX_DEMUX_INTERLEAVED_DATA_WORKAROUND
+#endif
 
 /** Maximum value of a signed 28-bit integer*/
 static const int32_t MAX_28 = 0x7FFFFFF;

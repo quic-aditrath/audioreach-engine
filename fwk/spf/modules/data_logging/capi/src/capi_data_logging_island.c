@@ -50,7 +50,7 @@ capi_err_t capi_data_logging_process(capi_t *capi_ptr, capi_stream_data_t *input
 
    // if output buffer is provided.
    // even if logging is not done, input data needs to be copied to output & output actual len be set.
-   if ((NULL != output[0]) && (NULL != output[0]->buf_ptr) && (0 != output[0]->buf_ptr[0].max_data_len))
+   if (output && (NULL != output[0]) && (NULL != output[0]->buf_ptr) && (0 != output[0]->buf_ptr[0].max_data_len))
    {
       bool_t is_inplace = (input[0]->buf_ptr[0].data_ptr == output[0]->buf_ptr[0].data_ptr);
 

@@ -348,27 +348,38 @@ ar_result_t pt_cntr_init_ext_in_port(void *base_ptr, gu_ext_in_port_t *gu_ext_po
    module_ptr->in_port_sdata_pptr[in_port_ptr->gc.gu.cmn.index] = &in_port_ptr->gc.common.sdata;
 
 #ifdef VERBOSE_DEBUGGING
-   TOPO_MSG(me_ptr->gc.topo.gu.log_id,
-            DBG_LOW_PRIO,
-            "Assigned self sdata ptr 0x%lx to module 0x%lx in_port_id 0x%x",
-            in_port_ptr->sdata_ptr,
-            module_ptr->gc.topo.gu.module_instance_id,
-            in_port_ptr->gc.gu.cmn.id);
+   pt_cntr_t             *me_ptr          = (pt_cntr_t *)base_ptr;
+   GEN_CNTR_MSG(me_ptr->gc.topo.gu.log_id,
+                DBG_LOW_PRIO,
+                "Assigned self sdata ptr 0x%lx to module 0x%lx in_port_id 0x%x",
+                in_port_ptr->sdata_ptr,
+                module_ptr->gc.topo.gu.module_instance_id,
+                in_port_ptr->gc.gu.cmn.id);
 #endif
    return result;
 }
 
 ar_result_t pt_cntr_init_ext_out_port(void *base_ptr, gu_ext_out_port_t *gu_ext_port_ptr)
 {
-   ar_result_t            result          = AR_EOK;
+   ar_result_t             result           = AR_EOK;
    pt_cntr_ext_out_port_t *ext_out_port_ptr = (pt_cntr_ext_out_port_t *)gu_ext_port_ptr;
-   pt_cntr_output_port_t *out_port_ptr = (pt_cntr_output_port_t *)ext_out_port_ptr->gc.gu.int_out_port_ptr;
-   pt_cntr_module_t      *module_ptr   = (pt_cntr_module_t *)out_port_ptr->gc.gu.cmn.module_ptr;
+   pt_cntr_output_port_t  *out_port_ptr     = (pt_cntr_output_port_t *)ext_out_port_ptr->gc.gu.int_out_port_ptr;
+   pt_cntr_module_t       *module_ptr       = (pt_cntr_module_t *)out_port_ptr->gc.gu.cmn.module_ptr;
 
    result = gen_cntr_init_ext_out_port(base_ptr, gu_ext_port_ptr);
 
    out_port_ptr->sdata_ptr                                        = &out_port_ptr->gc.common.sdata;
    module_ptr->out_port_sdata_pptr[out_port_ptr->gc.gu.cmn.index] = &out_port_ptr->gc.common.sdata;
+
+#ifdef VERBOSE_DEBUGGING
+   pt_cntr_t              *me_ptr           = (pt_cntr_t *)base_ptr;
+   GEN_CNTR_MSG(me_ptr->gc.topo.gu.log_id,
+                DBG_LOW_PRIO,
+                "Assigned self sdata ptr 0x%lx to module 0x%lx out_port_id 0x%x",
+                out_port_ptr->sdata_ptr,
+                module_ptr->gc.topo.gu.module_instance_id,
+                out_port_ptr->gc.gu.cmn.id);
+#endif
    return result;
 }
 

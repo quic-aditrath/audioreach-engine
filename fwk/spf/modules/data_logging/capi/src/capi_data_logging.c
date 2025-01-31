@@ -1867,7 +1867,7 @@ static capi_err_t capi_data_logging_log_data(capi_data_logging_t *me_ptr,
    uint32_t in_actual_data_len = input[0]->buf_ptr[0].actual_data_len;
    uint32_t out_max_data_len   = in_actual_data_len; // same as input, in case output buffer is not present.
    uint32_t num_channels       = me_ptr->media_format.format.num_channels;
-   if ((output[0] != NULL) && (output[0]->buf_ptr[0].data_ptr != NULL))
+   if (output && (output[0] != NULL) && (output[0]->buf_ptr[0].data_ptr != NULL))
    {
       out_max_data_len = output[0]->buf_ptr[0].max_data_len;
    }

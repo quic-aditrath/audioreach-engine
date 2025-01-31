@@ -282,11 +282,11 @@ typedef struct param_id_mux_demux_out_format_t param_id_mux_demux_out_format_t;
     @h2xmlm_description        {ID for the module that provides channel
                                 routing functionality from multiple input
                                 stream to multiple output streams. For more
-                                details, see AudioReach Signal Processing 
+                                details, see AudioReach Signal Processing
                                 Framework (SPF) API Reference.}
     @h2xmlm_dataMaxInputPorts  {INFINITE}
     @h2xmlm_dataMaxOutputPorts {INFINITE}
-    @h2xmlm_supportedContTypes {APM_CONTAINER_TYPE_SC, APM_CONTAINER_TYPE_GC}
+    @h2xmlm_supportedContTypes {APM_CONTAINER_TYPE_SC, APM_CONTAINER_TYPE_GC, APM_CONTAINER_TYPE_PTC}
     @h2xmlm_stackSize          {MUX_DEMUX_STACK_SIZE}
     @h2xmlm_toolPolicy         {Calibration}
 

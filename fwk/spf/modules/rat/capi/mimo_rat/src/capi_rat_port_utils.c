@@ -129,7 +129,7 @@ capi_err_t capi_rat_process_port_num_info(capi_rat_t *me_ptr, capi_prop_t *prop_
    {
       RAT_MSG(me_ptr->iid,
               DBG_HIGH_PRIO,
-              "CAPI_RAT: Warning! RAT being opened without input/output ports.",
+              "CAPI_RAT: Warning! RAT being opened with zero inputs=%lu or outputs=%lu ports.",
               data_ptr->num_input_ports,
               data_ptr->num_output_ports);
    }

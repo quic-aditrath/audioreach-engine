@@ -20,7 +20,7 @@
 #define CAPI_PM_STACK_SIZE 4096 // TODO: To be measured
 
 /* Number of CAPI Framework extension needed */
-#define PM_NUM_FRAMEWORK_EXTENSIONS 1
+#define PM_NUM_FRAMEWORK_EXTENSIONS 2
 
 /*------------------------------------------------------------------------
  * Static declarations
@@ -75,11 +75,11 @@ static void capi_pm_check_n_enable_module_buffer_access_extension(capi_pm_t *me_
       }
       else
       {
-         need_to_enable_extension |= TRUE;
+         need_to_enable_extension = need_to_enable_extension && TRUE;
       }
 
       AR_MSG(DBG_HIGH_PRIO,
-             "CAPI PM: circ buf size %lu frame size %lu is mod buf extn enabled ? %lu 0x%lx",
+             "CAPI PM: circ buf size %lu frame size %lu is mod buf extn enabled ? %lu",
              me_ptr->pull_push_mode_info.shared_circ_buf_size,
              frame_size_in_bytes,
              need_to_enable_extension);
@@ -248,9 +248,12 @@ static capi_err_t capi_pm_process_init(capi_pm_t *me_ptr, capi_proplist_t *init_
       AR_MSG(DBG_ERROR_PRIO, "CAPI PM: Set basic properties failed with result %lu", capi_result);
       return capi_result;
    }
-   me_ptr->pull_push_mode_info.media_fmt.data_interleaving = CAPI_DEINTERLEAVED_UNPACKED;
+   me_ptr->pull_push_mode_info.media_fmt.data_interleaving = CAPI_DEINTERLEAVED_UNPACKED_V2;
    prio_query_t prio_query = {.is_interrupt_trig = FALSE, .static_req_id = SPF_THREAD_STAT_IST_ID };
    posal_thread_calc_prio(&prio_query, &me_ptr->pull_push_mode_info.ist_priority);
+
+   capi_result |= capi_cmn_raise_deinterleaved_unpacked_v2_supported_event(&me_ptr->cb_info);
+
    return capi_result;
 }
 
@@ -492,13 +495,13 @@ static capi_err_t capi_pm_set_param(capi_t *                _pif,
                (param_id_module_data_interleaving_t *)params_ptr->data_ptr;
 
             // convert the PCM interleaving value to CAPI interleaving
-            pcm_to_capi_interleaved_with_native_param(&me_ptr->pull_push_mode_info.media_fmt.data_interleaving,
-                                                      push_pull_intl_ptr->data_interleaving,
-                                                      CAPI_INVALID_INTERLEAVING);
+            pcm_to_capi_interleaved_with_native_param_v2(&me_ptr->pull_push_mode_info.media_fmt.data_interleaving,
+                                                         push_pull_intl_ptr->data_interleaving,
+                                                         CAPI_INVALID_INTERLEAVING);
             capi_pm_raise_output_media_fmt_event(me_ptr);
             AR_MSG(DBG_LOW_PRIO,
-                  "CAPI_PM: Data interleaving set to %d.",
-                  me_ptr->pull_push_mode_info.media_fmt.data_interleaving);
+                   "CAPI_PM: Data interleaving set to %d (0 - intlvd, 1 - packed, 3 - unpacked v2)",
+                   me_ptr->pull_push_mode_info.media_fmt.data_interleaving);
          }
          else
          {

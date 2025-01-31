@@ -201,8 +201,8 @@ static inline intf_extn_data_port_state_t intf_extn_data_port_op_to_port_state(i
 }
 
 static inline void pcm_to_capi_interleaved_with_native_param(capi_interleaving_t *capi_value,
-                                                            int16_t              cfg_value,
-                                                            capi_interleaving_t  inp_value)
+                                                             int16_t              cfg_value,
+                                                             capi_interleaving_t  inp_value)
 {
    switch (cfg_value)
    {
@@ -219,6 +219,43 @@ static inline void pcm_to_capi_interleaved_with_native_param(capi_interleaving_t
       case PCM_DEINTERLEAVED_UNPACKED:
       {
          *capi_value = CAPI_DEINTERLEAVED_UNPACKED;
+         break;
+      }
+      case PARAM_VAL_NATIVE:
+      {
+         *capi_value = inp_value;
+         break;
+      }
+      default:
+         break;
+   }
+}
+
+/** This function is used to map interleaved fromat value from PCM_* to CAPI_*.
+ *
+ *  Important: Use this function only if module supports CAPI_DEINTERLEAVED_UNPACKED_V2. If module
+ *             doesnt support unpacked v2, use pcm_to_capi_interleaved_with_native_param()
+ */
+static inline void pcm_to_capi_interleaved_with_native_param_v2(capi_interleaving_t *capi_value,
+                                                                int16_t              cfg_value,
+                                                                capi_interleaving_t  inp_value)
+{
+   switch (cfg_value)
+   {
+      case PCM_INTERLEAVED:
+      {
+         *capi_value = CAPI_INTERLEAVED;
+         break;
+      }
+      case PCM_DEINTERLEAVED_PACKED:
+      {
+         *capi_value = CAPI_DEINTERLEAVED_PACKED;
+         break;
+      }
+      /** Note that here unpacked is mapped to CAPI unpacked V2. */
+      case PCM_DEINTERLEAVED_UNPACKED:
+      {
+         *capi_value = CAPI_DEINTERLEAVED_UNPACKED_V2;
          break;
       }
       case PARAM_VAL_NATIVE:

@@ -52,12 +52,12 @@
     @h2xmlm_modSearchKeys	   {Audio, Voice}
     @h2xmlm_description        {ID for the Simple Splitter module, which
                                 splits the streams on the input to all the
-                                output ports. For more details, see AudioReach 
+                                output ports. For more details, see AudioReach
                                 Signal Processing Framework (SPF) API Reference.}
     @h2xmlm_dataMaxInputPorts  {SPLITTER_MAX_INPUT_PORTS}
     @h2xmlm_dataMaxOutputPorts {INFINITE}
     @h2xmlm_dataInputPorts     {IN=2}
-    @h2xmlm_supportedContTypes {APM_CONTAINER_TYPE_SC, APM_CONTAINER_TYPE_GC}
+    @h2xmlm_supportedContTypes {APM_CONTAINER_TYPE_SC, APM_CONTAINER_TYPE_GC,APM_CONTAINER_TYPE_PTC}
     @h2xmlm_isOffloadable      {true}
     @h2xmlm_stackSize          {CAPI_SPLITTER_STACK_SIZE}
     @h2xmlm_ToolPolicy         {Calibration}

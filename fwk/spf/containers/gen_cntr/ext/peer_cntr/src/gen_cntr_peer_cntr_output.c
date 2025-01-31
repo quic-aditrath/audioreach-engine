@@ -125,10 +125,23 @@ ar_result_t gen_cntr_flush_output_data_queue_peer_cntr(gen_cntr_t *             
    // Reset all the topo output port buffer pointers
    gen_topo_output_port_t *topo_out_port_ptr = (gen_topo_output_port_t *)ext_out_port_ptr->gu.int_out_port_ptr;
 
-   for (uint32_t b = 0; b < topo_out_port_ptr->common.sdata.bufs_num; b++)
+   // ext out port might have attached to the previous module's int port due to
+   // elementary module at the ext out. When ext out gets connected if any topo buffer
+   // was assigned to the host module's int port it must be returned here.
+   if (topo_out_port_ptr->common.bufs_ptr)
    {
-      topo_out_port_ptr->common.bufs_ptr[b].data_ptr     = NULL;
-      topo_out_port_ptr->common.bufs_ptr[b].max_data_len = 0;
+      topo_out_port_ptr->common.flags.force_return_buf      = TRUE;
+      topo_out_port_ptr->common.bufs_ptr[0].actual_data_len = 0;
+      gen_topo_check_return_one_buf_mgr_buf(&me_ptr->topo,
+                                            &topo_out_port_ptr->common,
+                                            topo_out_port_ptr->gu.cmn.module_ptr->module_instance_id,
+                                            topo_out_port_ptr->gu.cmn.id);
+
+      for (uint32_t b = 0; b < topo_out_port_ptr->common.sdata.bufs_num; b++)
+      {
+         topo_out_port_ptr->common.bufs_ptr[b].data_ptr     = NULL;
+         topo_out_port_ptr->common.bufs_ptr[b].max_data_len = 0;
+      }
    }
 
    ext_out_port_ptr->cu.out_bufmgr_node.buf_ptr = NULL;

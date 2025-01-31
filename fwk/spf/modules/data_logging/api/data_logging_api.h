@@ -1,8 +1,8 @@
 /**
  * \file data_logging_api.h
- * \brief 
+ * \brief
  *  	 This file contains Public APIs for Data logging Module
- * 
+ *
  * \copyright
  *  Copyright (c) Qualcomm Innovation Center, Inc. All Rights Reserved.
  *  SPDX-License-Identifier: BSD-3-Clause
@@ -60,22 +60,22 @@ struct data_logging_config_t
 
         @valuesbul
 		- 0 -- Disabled (Default)
-		- 0x152E 
-		- 0x152F 
-		- 0x1531 
-		- 0x1534 
-		- 0x1532 
-		- 0x1530 
-		- 0x1533 
-		- 0x1535 
-		- 0x1536 
-		- 0x1586 
-		- 0x19AF 
-		- 0x19B0 
-		- 0x19B1 
-		- 0x158A 
-		- 0x158B  */
-
+   		- 0x152E
+		- 0x152F
+		- 0x1531
+		- 0x1534
+		- 0x1532
+		- 0x1530
+		- 0x1533
+        - 0x1535
+        - 0x1536
+		- 0x1586
+        - 0x19AF
+	    - 0x19B0
+        - 0x19B1
+        - 0x158A
+		- 0x158B
+		*/
    /**< @h2xmle_description {logging code}
         @h2xmle_default     {0}
          @h2xmle_rangeList    {"Default"=0;
@@ -775,7 +775,7 @@ struct data_logging_channel_type_mask_t
         Bit position of the channel-map for channel_type_mask_list of defined group is obtained by left shifting (1 (left shift) Channel_map%32). */
 
    /**< @h2xmle_description  {An array used to configure the channels for different channel groups. The array size depends on the number of
-                             bits set in channel_type_group_mask.\n 
+                             bits set in channel_type_group_mask.\n
 
                              For group 1, each bit of channel_type_mask_list corresponds to channel map from 1 (PCM_CHANNEL_L) to 31 (PCM_CHANNEL_LW). \n
                              Bit 0 of group 1 channel_type_mask_list is reserved and must always be set to zero.\n
@@ -786,7 +786,7 @@ struct data_logging_channel_type_mask_t
          @h2xmle_variableArraySizeFunction {GET_SET_BITS_COUNT, channel_type_group_mask}
          @h2xmle_copySrcList{channel_type_mask_lsw, channel_type_mask_msw}
          @h2xmlx_expandStructs {false}
-         @h2xmle_defaultList {0xfffffffe, 0xffffffff}*/ 
+         @h2xmle_defaultList {0xfffffffe, 0xffffffff}*/
 
 }
 #include "spf_end_pragma.h"
@@ -836,7 +836,7 @@ struct data_logging_channel_index_mask_t
         Bit position of the channel-index for channel_index_mask of defined group is obtained by (1 (left shift) (Channel_index-1)%32). */
 
    /**< @h2xmle_description  {An array used to configure the channels for different channel groups. The array size depends on the number of
-                             bits set in channel_index_group_mask.\n 
+                             bits set in channel_index_group_mask.\n
 
                              For any group, each bit of channel_index_mask corresponds to channel index from [32(group_no -1)+1 to 32(group_no)].
 
@@ -845,7 +845,7 @@ struct data_logging_channel_index_mask_t
          @h2xmle_variableArraySizeFunction {GET_SET_BITS_COUNT, channel_index_group_mask}
          @h2xmle_copySrcList{channel_index_mask}
          @h2xmlx_expandStructs {false}
-         @h2xmle_defaultList {0xffffffff}*/ 
+         @h2xmle_defaultList {0xffffffff}*/
 
 }
 #include "spf_end_pragma.h"
@@ -888,7 +888,7 @@ struct data_logging_select_channels_v2_t
    /**< @h2xmle_description  {Mask to select the channels to log based on channel index.
                               This is valid only if mode is selected as channel-index-mask.}
         @h2xmle_policy       {Basic} */
-   
+
    data_logging_channel_type_mask_t channel_type_config;
    /**< Mask to select the channels to log based on channel type.
         This is valid only if mode is selected as channel-type-mask. */
@@ -944,7 +944,7 @@ typedef struct data_logging_select_channels_v2_t data_logging_select_channels_v2
     @h2xmlm_dataInputPorts       {IN = 2}
     @h2xmlm_dataMaxOutputPorts   {DATA_LOGGING_MAX_OUTPUT_PORTS}
     @h2xmlm_dataOutputPorts      {OUT = 1}
-    @h2xmlm_supportedContTypes  { APM_CONTAINER_TYPE_SC,APM_CONTAINER_TYPE_GC}
+    @h2xmlm_supportedContTypes  { APM_CONTAINER_TYPE_SC,APM_CONTAINER_TYPE_GC,APM_CONTAINER_TYPE_PTC}
     @h2xmlm_isOffloadable        {true}
     @h2xmlm_stackSize            { DATA_LOGGING_STACK_SIZE_REQUIREMENT }
     @h2xmlm_toolPolicy           {Calibration}
@@ -955,17 +955,17 @@ typedef struct data_logging_select_channels_v2_t data_logging_select_channels_v2
     @h2xml_Select              {param_id_module_enable_t}
     @h2xmlm_InsertParameter
     @h2xml_Select              {param_id_module_enable_t::enable}
-    @h2xmle_default            {1} 
+    @h2xmle_default            {1}
 
     @h2xml_Select          {"data_logging_island_t"}
     @h2xmlm_InsertParameter
 
     @h2xml_Select          {"data_logging_select_channels_v2_t"}
     @h2xmlm_InsertParameter
-	
+
     @h2xml_Select          {"data_logging_channel_index_mask_t"}
     @h2xmlm_InsertParameter
-	
+
 	@h2xml_Select          {"data_logging_channel_type_mask_t"}
     @h2xmlm_InsertParameter
 

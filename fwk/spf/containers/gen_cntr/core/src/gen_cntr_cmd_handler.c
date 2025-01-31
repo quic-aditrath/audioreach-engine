@@ -209,8 +209,19 @@ static ar_result_t gen_cntr_handle_rest_of_graph_close(cu_base_t *base_ptr, bool
    // check and assign appropriate data process function for signal triggered containers
    gen_cntr_check_and_assign_st_data_process_fn(me_ptr);
 
-   /** NOTES: [PT_CNTR] Close should not alter proc list. Since ext output/SG stop should have already removed the
-   inactive due to self/propagated stop modules from the proc list */
+   /** NOTES: [PT_CNTR] Ext output close should not alter proc list. Since ext output/SG stop should have already removed the
+   inactive due to self/propagated stop modules from the proc list. */
+   if (check_if_pass_thru_container(me_ptr))
+   {
+      spf_msg_header_t *header_ptr = (spf_msg_header_t *)me_ptr->cu.cmd_msg.payload_ptr;
+
+      spf_msg_cmd_graph_mgmt_t *cmd_gmgmt_ptr = (spf_msg_cmd_graph_mgmt_t *)&header_ptr->payload_start;
+      if (cmd_gmgmt_ptr->cntr_port_hdl_list.num_ip_port_handle)
+      {
+         result |= pt_cntr_update_module_process_list((pt_cntr_t *)me_ptr);
+         result |= pt_cntr_assign_port_buffers((pt_cntr_t *)me_ptr);
+      }
+   }
 
    SPF_CRITICAL_SECTION_END(&me_ptr->topo.gu);
 

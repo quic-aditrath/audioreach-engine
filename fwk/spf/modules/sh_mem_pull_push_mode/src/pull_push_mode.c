@@ -484,10 +484,12 @@ capi_err_t pull_mode_read_input(capi_t *_pif, capi_stream_data_t *input[], capi_
          input_scratch_buf.actual_data_len = bytes_to_copy_now;
          input_scratch_buf.data_ptr        = read_ptr;
 
+         uint32_t filled_bytes_per_ch = module_buf_ptr[0].actual_data_len;
+         uint32_t empty_bytes_per_ch  = module_buf_ptr[0].max_data_len - module_buf_ptr[0].actual_data_len;
          for (int32_t i = 0; i < num_channels; i++)
          {
-            me_ptr->scratch_buf[i].data_ptr     = module_buf_ptr[i].data_ptr + module_buf_ptr[i].actual_data_len;
-            me_ptr->scratch_buf[i].max_data_len = module_buf_ptr[i].max_data_len - module_buf_ptr[i].actual_data_len;
+            me_ptr->scratch_buf[i].data_ptr     = module_buf_ptr[i].data_ptr + filled_bytes_per_ch;
+            me_ptr->scratch_buf[i].max_data_len = empty_bytes_per_ch;
          }
 
          if (CAPI_FAILED(result =
@@ -497,10 +499,9 @@ capi_err_t pull_mode_read_input(capi_t *_pif, capi_stream_data_t *input[], capi_
             return result;
          }
 
-         for (int32_t i = 0; i < num_channels; i++)
-         {
-            module_buf_ptr[i].actual_data_len += me_ptr->scratch_buf[i].actual_data_len;
-         }
+         // update only first ch buffer len for unpacked v2.
+         module_buf_ptr[0].actual_data_len += me_ptr->scratch_buf[0].actual_data_len;
+
          empty_inp_bytes_per_buf -= me_ptr->scratch_buf[0].actual_data_len;
       }
 
@@ -650,7 +651,9 @@ capi_err_t push_mode_write_output(capi_t *_pif, capi_stream_data_t *input[], cap
             for (int32_t i = 0; i < me_ptr->media_fmt.num_channels; i++)
             {
                me_ptr->scratch_buf[i].data_ptr        = module_buf_ptr[i].data_ptr + bytes_copied_per_channel;
-               me_ptr->scratch_buf[i].actual_data_len = module_buf_ptr[i].actual_data_len;
+
+               // all chs must have same len, as an optimization just access first ch lens only
+               me_ptr->scratch_buf[i].actual_data_len = module_buf_ptr[0].actual_data_len;
             }
 
             output_scratch_buf.max_data_len    = rem_lin_size;
@@ -673,10 +676,8 @@ capi_err_t push_mode_write_output(capi_t *_pif, capi_stream_data_t *input[], cap
             bytes_copied_per_channel_now = bytes_to_copy / me_ptr->media_fmt.num_channels;
 
             // update remaining bytes per ch, note that consumed bytes are updated later outside the while loop
-            for (int32_t i = 0; i < me_ptr->media_fmt.num_channels; i++)
-            {
-               module_buf_ptr[i].actual_data_len -= bytes_copied_per_channel_now;
-            }
+            // for unpacked v2/interleaved data only first ch buffer lens need to be updated.
+            module_buf_ptr[0].actual_data_len -= bytes_copied_per_channel_now;
 
             bytes_copied_per_channel += bytes_copied_per_channel_now;
          }
@@ -697,10 +698,8 @@ capi_err_t push_mode_write_output(capi_t *_pif, capi_stream_data_t *input[], cap
       }
       else
       {
-         for (int32_t i = 0; i < me_ptr->media_fmt.num_channels; i++)
-         {
-            module_buf_ptr[i].actual_data_len = bytes_copied_per_channel;
-         }
+         // for unpacked v2 only first ch buffer lens need to be used.
+         module_buf_ptr[0].actual_data_len = bytes_copied_per_channel;
       }
    }
 

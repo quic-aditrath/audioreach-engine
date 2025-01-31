@@ -467,7 +467,7 @@ typedef struct sh_mem_pull_push_mode_cfg_t sh_mem_pull_push_mode_cfg_t;
     @h2xmlm_dataMaxInputPorts  {SH_MEM_PULL_MODE_MAX_INPUT_PORTS}
     @h2xmlm_dataMaxOutputPorts {SH_MEM_PULL_MODE_MAX_OUTPUT_PORTS}
     @h2xmlm_dataOutputPorts    {OUT=1}
-    @h2xmlm_supportedContTypes {APM_CONTAINER_TYPE_SC, APM_CONTAINER_TYPE_GC}
+    @h2xmlm_supportedContTypes {APM_CONTAINER_TYPE_SC, APM_CONTAINER_TYPE_GC,APM_CONTAINER_TYPE_PTC}
     @h2xmlm_isOffloadable      {false}
     @h2xmlm_stackSize          {SH_MEM_PULL_MODE_STACK_SIZE_REQUIREMENT}
     @h2xmlm_toolPolicy         {Calibration}
@@ -521,7 +521,7 @@ typedef struct sh_mem_pull_push_mode_cfg_t sh_mem_pull_push_mode_cfg_t;
     @h2xmlm_dataMaxInputPorts  {SH_MEM_PUSH_MODE_MAX_INPUT_PORTS}
     @h2xmlm_dataInputPorts     {IN=2}
     @h2xmlm_dataMaxOutputPorts {SH_MEM_PUSH_MODE_MAX_OUTPUT_PORTS}
-    @h2xmlm_supportedContTypes {APM_CONTAINER_TYPE_SC, APM_CONTAINER_TYPE_GC}
+    @h2xmlm_supportedContTypes {APM_CONTAINER_TYPE_SC, APM_CONTAINER_TYPE_GC,APM_CONTAINER_TYPE_PTC}
     @h2xmlm_stackSize          {SH_MEM_PUSH_MODE_STACK_SIZE_REQUIREMENT}
     @h2xmlm_toolPolicy         {Calibration}
 

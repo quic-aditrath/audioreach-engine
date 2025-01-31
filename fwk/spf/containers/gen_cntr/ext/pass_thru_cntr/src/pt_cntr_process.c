@@ -184,11 +184,10 @@ PT_CNTR_STATIC void pt_cntr_propagate_ext_input_buffer_forwards(pt_cntr_t       
          GEN_CNTR_MSG(me_ptr->gc.topo.gu.log_id,
                       DBG_ERROR_PRIO,
                       "ext input buffer propagation: cannot propagate across to output (MIID,Port):(0x%lX,%lx) "
-                      "already has an ext buffer assigned 0x%lx origin:%lu",
+                      "can_assign_ext_in_buffer: %lu",
                       cur_out_port_ptr->gc.gu.cmn.module_ptr->module_instance_id,
                       cur_out_port_ptr->gc.gu.cmn.id,
-                      cur_out_port_ptr->sdata_ptr->buf_ptr[0].data_ptr,
-                      cur_out_port_ptr->gc.common.flags.buf_origin);
+                      cur_out_port_ptr->can_assign_ext_in_buffer);
 #endif
          return;
       }
@@ -227,9 +226,11 @@ PT_CNTR_STATIC void pt_cntr_propagate_ext_input_buffer_forwards(pt_cntr_t       
 #ifdef VERBOSE_DEBUGGING
       GEN_CNTR_MSG(me_ptr->gc.topo.gu.log_id,
                    DBG_ERROR_PRIO,
-                   "Propagated ext in (buf:0x%lx, ori:%lu) to cur mod output (0x%lX, %lx) and next mod input (0x%lX, "
+                   "Propagated ext in (buf:0x%lx, nbufs: %lu ori:%lu) to cur mod output (0x%lX, %lx) and next mod "
+                   "input (0x%lX, "
                    "%lx)",
                    cur_out_port_ptr->sdata_ptr->buf_ptr[0].data_ptr,
+                   num_bufs_to_update,
                    cur_out_port_ptr->gc.common.flags.buf_origin,
                    cur_out_port_ptr->gc.gu.cmn.module_ptr->module_instance_id,
                    cur_out_port_ptr->gc.gu.cmn.id,
@@ -338,12 +339,6 @@ PT_CNTR_STATIC void pt_cntr_underrun_for_ext_in_non_pass_thru(pt_cntr_t         
 {
    capi_stream_data_v2_t *sdata_ptr = in_port_ptr->sdata_ptr;
 
-   // underrun only if input media format is available, and topo buffer is allocated for the ext input
-   if (!ext_in_port_ptr->topo_in_buf_ptr)
-   {
-      return;
-   }
-
    // Note that for non pass thru, always topo buffer is assigned for the internal input port
    // and data is copied from external to internal input.
    // If external buffer couldnt be polled in the current signal trigger, capi buf will be NULL
@@ -423,7 +418,7 @@ PT_CNTR_STATIC void pt_cntr_underrun_for_ext_in_pass_thru(pt_cntr_t             
       }
    }
 
-   // clear propagated ext buffer in the NBLC
+   // propagated ext buffer in the NBLC
    pt_cntr_propagate_ext_input_buffer_forwards(me_ptr, in_port_ptr, sdata_ptr, bufs_num);
 }
 

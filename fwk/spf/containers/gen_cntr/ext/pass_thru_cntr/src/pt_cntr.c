@@ -280,8 +280,21 @@ ar_result_t pt_cntr_stm_fwk_extn_handle_disable(pt_cntr_t *me_ptr, gu_module_lis
  */
 bool_t pt_cntr_is_module_active(gen_topo_module_t *module_ptr, bool_t need_to_ignore_state)
 {
-   bool_t atleast_one_active_output = FALSE;
-   bool_t atleast_one_active_input  = FALSE;
+   // Firtly check if modules input && output triggers are satisfied.
+   //    1. If the module is acting as source input trigger by default satisified, same logic applies for sink as well.
+   //    2. If the module is not source/sink, then atleast one output and input trigger must satisfied.
+
+   // if a module cannot have outputs, or if module currently doesnt have any outputs connected and its min outputs are
+   // zero.
+   bool_t atleast_one_output_trigger_satisfied =
+      (0 == module_ptr->gu.max_output_ports) ||
+      ((0 == module_ptr->gu.num_output_ports) && (0 == module_ptr->gu.min_output_ports));
+
+   // if module cannot have inputs, or if module currently doesnt have any inputs connected and its min inputs are
+   // zero.
+   bool_t atleast_one_input_trigger_satisfied =
+      (0 == module_ptr->gu.max_input_ports) ||
+      ((0 == module_ptr->gu.num_input_ports) && (0 == module_ptr->gu.min_input_ports));
 
    if (!need_to_ignore_state)
    {
@@ -310,7 +323,7 @@ bool_t pt_cntr_is_module_active(gen_topo_module_t *module_ptr, bool_t need_to_ig
          }
          else
          {
-            atleast_one_active_input = TRUE;
+            atleast_one_input_trigger_satisfied = TRUE;
             break;
          }
       }
@@ -320,7 +333,7 @@ bool_t pt_cntr_is_module_active(gen_topo_module_t *module_ptr, bool_t need_to_ig
       {
          gen_topo_output_port_t *out_port_ptr = (gen_topo_output_port_t *)out_port_list_ptr->op_port_ptr;
 
-         if (!(TOPO_PORT_STATE_STARTED == out_port_ptr->common.state))
+         if (TOPO_PORT_STATE_STARTED != out_port_ptr->common.state)
          {
             continue;
          }
@@ -330,13 +343,14 @@ bool_t pt_cntr_is_module_active(gen_topo_module_t *module_ptr, bool_t need_to_ig
          }
          else
          {
-            atleast_one_active_output = TRUE;
+            atleast_one_output_trigger_satisfied = TRUE;
             break;
          }
       }
    }
 
-   bool_t active_as_per_state = need_to_ignore_state || (atleast_one_active_output || atleast_one_active_input);
+   bool_t active_as_per_state =
+      need_to_ignore_state || (atleast_one_input_trigger_satisfied && atleast_one_output_trigger_satisfied);
    if (active_as_per_state || module_ptr->flags.need_stm_extn)
    {
       if (module_ptr->bypass_ptr || !module_ptr->capi_ptr || !module_ptr->flags.disabled)
@@ -394,15 +408,18 @@ ar_result_t pt_cntr_update_module_process_list(pt_cntr_t *me_ptr)
 
       pt_cntr_reset_proc_module_info(me_ptr, module_ptr);
 
+      // check modules default trigger policy
       if (FALSE == pt_cntr_is_module_active((gen_topo_module_t *)module_ptr, FALSE /** need to ignore state */))
       {
-         // dangling source/sink module
+         // dangling source/sink module cannot be added to the list
          GEN_CNTR_MSG(topo_ptr->gu.log_id,
                       DBG_HIGH_PRIO,
                       "Warning! Module 0x%lx is not active, hence not adding to the process list",
                       module_ptr->gc.topo.gu.module_instance_id);
+         continue;
       }
-      else if (module_ptr->gc.topo.gu.flags.is_sink)
+
+      if (module_ptr->gc.topo.gu.flags.is_sink)
       {
          // add to list of sink modules
          TRY(result,
@@ -558,11 +575,18 @@ ar_result_t pt_cntr_realloc_scratch_sdata_arr(pt_cntr_t *me_ptr, pt_cntr_module_
    uint32_t total_malloc_size = (module_ptr->gc.topo.gu.max_input_ports + module_ptr->gc.topo.gu.max_output_ports) *
                                 sizeof(capi_stream_data_v2_t *);
 
+   // if num inputs and outputs are zero no need to malloc
+   if(0 == total_malloc_size)
+   {
+      return AR_EOK;
+   }
+
    int8_t *blob_ptr = (int8_t *)posal_memory_malloc(total_malloc_size, me_ptr->gc.cu.heap_id);
    if (NULL == blob_ptr)
    {
       return AR_EFAILED;
    }
+   memset(blob_ptr, 0, total_malloc_size);
 
    if (module_ptr->gc.topo.gu.max_input_ports)
    {

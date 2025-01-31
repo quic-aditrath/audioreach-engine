@@ -93,19 +93,26 @@ ar_result_t pt_cntr_assign_port_buffers(pt_cntr_t *me_ptr)
       {
 #ifdef VERBOSE_DEBUGGING
          GEN_CNTR_MSG(me_ptr->gc.topo.gu.log_id,
-                      DBG_HIGH_PRIO,
-                      "Module 0x%lX output 0x%lx: Attempting to send ext out media format dropping the buf 0x%lx len "
-                      "%lu of %lu",
-                      out_port_ptr->gc.gu.cmn.module_ptr->module_instance_id,
-                      out_port_ptr->gc.gu.cmn.id,
-                      out_port_ptr->sdata_ptr->buf_ptr[0].data_ptr,
-                      out_port_ptr->sdata_ptr->buf_ptr[0].actual_data_len,
-                      out_port_ptr->sdata_ptr->buf_ptr[0].max_data_len);
+                        DBG_HIGH_PRIO,
+                        "Module 0x%lX output 0x%lx: Dropping the buf 0x%lx len %lu of %lu",
+                        out_port_ptr->gc.gu.cmn.module_ptr->module_instance_id,
+                        out_port_ptr->gc.gu.cmn.id,
+                        out_port_ptr->gc.common.sdata.buf_ptr[0].data_ptr,
+                        out_port_ptr->gc.common.sdata.buf_ptr[0].actual_data_len,
+                        out_port_ptr->gc.common.sdata.buf_ptr[0].max_data_len);
 #endif
 
          // drop data and propagate
-         out_port_ptr->sdata_ptr->buf_ptr[0].data_ptr = NULL;
-         pt_cntr_set_bufs_actual_len_to_zero(out_port_ptr->sdata_ptr);
+         out_port_ptr->gc.common.bufs_ptr[0].data_ptr = NULL;
+         pt_cntr_set_bufs_actual_len_to_zero(&out_port_ptr->gc.common.sdata);
+
+         if (out_port_ptr->gc.common.sdata.metadata_list_ptr)
+         {
+            gen_topo_destroy_all_metadata(me_ptr->gc.topo.gu.log_id,
+                                          (void *)out_port_ptr->gc.gu.cmn.module_ptr,
+                                          &out_port_ptr->gc.common.sdata.metadata_list_ptr,
+                                          TRUE /* is dropped*/);
+         }
 
          /** return the buffer back */
          gen_cntr_return_back_out_buf((gen_cntr_t *)me_ptr, (gen_cntr_ext_out_port_t *)ext_out_port_ptr);
@@ -302,7 +309,7 @@ PT_CNTR_STATIC ar_result_t pt_cntr_assign_buffer_to_module(pt_cntr_t *me_ptr, pt
       }
 
       // if external input check if it can be pass thru, else assign topo buffer
-      if (NULL == prev_out_port_ptr)
+      if ((NULL == prev_out_port_ptr) && ext_in_port_ptr)
       {
          // max length will be updated later when the ext buffer is populated in the port.
          // length must be set here for the underrun scenarios
@@ -321,26 +328,20 @@ PT_CNTR_STATIC ar_result_t pt_cntr_assign_buffer_to_module(pt_cntr_t *me_ptr, pt
          // this can happen b4 thresh/MF prop
          if (in_port_ptr->gc.common.max_buf_len)
          {
-            ar_result_t result = topo_buf_manager_get_buf(topo_ptr,
-                                                          &ext_in_port_ptr->topo_in_buf_ptr,
-                                                          in_port_ptr->gc.common.max_buf_len);
-            VERIFY(result, result == AR_EOK);
-
             // check if PCM data needs reframing at external inputs
             if (FALSE == ext_in_port_ptr->pass_thru_upstream_buffer)
             {
-               in_port_ptr->gc.common.flags.buf_origin = GEN_TOPO_BUF_ORIGIN_BUF_MGR;
-               for (uint32_t b = 0; b < in_port_ptr->gc.common.sdata.bufs_num; b++)
-               {
-                  in_port_ptr->gc.common.bufs_ptr[b].data_ptr =
-                     ext_in_port_ptr->topo_in_buf_ptr + (b * in_port_ptr->gc.common.max_buf_len_per_buf);
-                  in_port_ptr->gc.common.bufs_ptr[b].actual_data_len = NULL;
-                  in_port_ptr->gc.common.bufs_ptr[b].max_data_len    = in_port_ptr->gc.common.max_buf_len_per_buf;
-               }
+               TRY(result, pt_cntr_buf_mgr_wrapper_get_buf(topo_ptr, &in_port_ptr->gc.common));
             }
             else // do pass thru
             {
                in_port_ptr->gc.common.flags.buf_origin = GEN_TOPO_BUF_ORIGIN_EXT_BUF;
+
+               // for non pass thru if external output is not present we need a topo buffer to underrun
+               TRY(result,
+                   topo_buf_manager_get_buf(topo_ptr,
+                                            &ext_in_port_ptr->topo_in_buf_ptr,
+                                            in_port_ptr->gc.common.max_buf_len));
             }
          }
 
@@ -355,15 +356,18 @@ PT_CNTR_STATIC ar_result_t pt_cntr_assign_buffer_to_module(pt_cntr_t *me_ptr, pt
                       in_port_ptr->gc.common.max_buf_len,
                       ext_in_port_ptr->pass_thru_upstream_buffer);
 
-         GEN_CNTR_MSG(topo_ptr->gu.log_id,
-                      DBG_HIGH_PRIO,
-                      "(MID:0x%x, port:0x%lx) uses external input buffer for processing, allocated "
-                      "underrun buf ptr: 0x%lx size: %lu origin: %lu",
-                      module_ptr->gc.topo.gu.module_instance_id,
-                      in_port_ptr->gc.gu.cmn.id,
-                      ext_in_port_ptr->topo_in_buf_ptr,
-                      in_port_ptr->gc.common.max_buf_len,
-                      in_port_ptr->gc.common.flags.buf_origin);
+         if (ext_in_port_ptr->topo_in_buf_ptr)
+         {
+            GEN_CNTR_MSG(topo_ptr->gu.log_id,
+                         DBG_HIGH_PRIO,
+                         "(MID:0x%x, port:0x%lx) uses external input buffer for processing, allocated "
+                         "underrun buf ptr: 0x%lx size: %lu origin: %lu",
+                         module_ptr->gc.topo.gu.module_instance_id,
+                         in_port_ptr->gc.gu.cmn.id,
+                         ext_in_port_ptr->topo_in_buf_ptr,
+                         in_port_ptr->gc.common.max_buf_len,
+                         in_port_ptr->gc.common.flags.buf_origin);
+         }
       }
       // check if current input is in the ext output facing NBLC path
       // note: as long as current input is in the NBLC path of the external output port there is no
@@ -401,7 +405,7 @@ PT_CNTR_STATIC ar_result_t pt_cntr_assign_buffer_to_module(pt_cntr_t *me_ptr, pt
                       in_port_ptr->gc.common.max_buf_len,
                       in_port_ptr->gc.common.flags.buf_origin);
       }
-      else if (GEN_TOPO_BUF_ORIGIN_BUF_MGR == prev_out_port_ptr->gc.common.flags.buf_origin)
+      else if (prev_out_port_ptr && (GEN_TOPO_BUF_ORIGIN_BUF_MGR == prev_out_port_ptr->gc.common.flags.buf_origin))
       {
          // borrow buffer from prev module's output port
          pt_cntr_assign_bufs_ptr(topo_ptr->gu.log_id,
@@ -422,7 +426,8 @@ PT_CNTR_STATIC ar_result_t pt_cntr_assign_buffer_to_module(pt_cntr_t *me_ptr, pt
                       in_port_ptr->gc.common.max_buf_len,
                       in_port_ptr->gc.common.flags.buf_origin);
       }
-      else if (GEN_TOPO_MODULE_OUTPUT_BUF_ACCESS == prev_out_port_ptr->gc.common.flags.supports_buffer_resuse_extn)
+      else if (prev_out_port_ptr &&
+               (GEN_TOPO_MODULE_OUTPUT_BUF_ACCESS == prev_out_port_ptr->gc.common.flags.supports_buffer_resuse_extn))
       {
          // gets buffer from prev module during process
          in_port_ptr->gc.common.flags.buf_origin = GEN_TOPO_BUF_ORIGIN_CAPI_MODULE_BORROWED;
@@ -680,7 +685,7 @@ PT_CNTR_STATIC ar_result_t pt_cntr_assign_buffer_to_module(pt_cntr_t *me_ptr, pt
 
          GEN_CNTR_MSG(topo_ptr->gu.log_id,
                       DBG_HIGH_PRIO,
-                      "(MID:0x%x, port:0x%lx) uses its own topo buffer for processing ptr: 0x%lx "
+                      "(MID:0x%x, port:0x%lx) uses topo buf mgr buffer for processing ptr: 0x%lx "
                       "size: %lu origin: %lu",
                       module_ptr->gc.topo.gu.module_instance_id,
                       out_port_ptr->gc.gu.cmn.id,
@@ -735,6 +740,14 @@ PT_CNTR_STATIC ar_result_t pt_cntr_free_module_buffer(pt_cntr_t *me_ptr, pt_cntr
          in_port_ptr->gc.common.bufs_ptr[b].max_data_len    = NULL;
       }
 
+      if (in_port_ptr->gc.common.sdata.metadata_list_ptr)
+      {
+         gen_topo_destroy_all_metadata(me_ptr->gc.topo.gu.log_id,
+                                       (void *)in_port_ptr->gc.gu.cmn.module_ptr,
+                                       &in_port_ptr->gc.common.sdata.metadata_list_ptr,
+                                       TRUE /* is dropped*/);
+      }
+
       in_port_ptr->can_assign_ext_in_buffer  = FALSE;
       in_port_ptr->can_assign_ext_out_buffer = FALSE;
 
@@ -775,8 +788,16 @@ PT_CNTR_STATIC ar_result_t pt_cntr_free_module_buffer(pt_cntr_t *me_ptr, pt_cntr
       for (uint32_t b = 0; b < out_port_ptr->gc.common.sdata.bufs_num; b++)
       {
          out_port_ptr->gc.common.bufs_ptr[b].data_ptr        = NULL;
-         out_port_ptr->gc.common.bufs_ptr[b].actual_data_len = NULL;
-         out_port_ptr->gc.common.bufs_ptr[b].max_data_len    = NULL;
+         out_port_ptr->gc.common.bufs_ptr[b].actual_data_len = 0;
+         out_port_ptr->gc.common.bufs_ptr[b].max_data_len    = 0;
+      }
+
+      if (out_port_ptr->gc.common.sdata.metadata_list_ptr)
+      {
+         gen_topo_destroy_all_metadata(me_ptr->gc.topo.gu.log_id,
+                                       (void *)out_port_ptr->gc.gu.cmn.module_ptr,
+                                       &out_port_ptr->gc.common.sdata.metadata_list_ptr,
+                                       TRUE /* is dropped*/);
       }
 
       out_port_ptr->can_assign_ext_in_buffer  = FALSE;
