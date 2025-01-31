@@ -15,6 +15,7 @@
  -----------------------------------------------------------------------*/
 #include "ar_defs.h"
 #include "apm_container_api.h"
+#include "module_cmn_api.h"
 #include "media_fmt_api.h"
 
 /*# @h2xml_title1          {Shared Memory Pull and Push Modules}
