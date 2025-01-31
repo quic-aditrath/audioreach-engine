@@ -20,13 +20,13 @@
 #include <errno.h>
 #include <sys/mman.h>
 #include "spf_hashtable.h"
-#if defined (ARSPF_PLATFORM_LRH)
+#ifdef POSAL_MMAP_VFIO
 #include "plat_vfio.h"
-#endif //defined (ARSPF_PLATFORM_LRH)
+#endif /* POSAL_MMAP_VFIO */
 
-#if defined (ARSPF_PLATFORM_QNX)
+#ifdef POSAL_MMAP_EXTN
 extern void *mdf_mem_base_va_addr;
-#endif
+#endif /* POSAL_MMAP_EXTN */
 
 /* ----------------------------------------------------------------------------
  * Global Declarations/Definitions
@@ -38,10 +38,11 @@ extern void *mdf_mem_base_va_addr;
 #define POSAL_MEMORYMAP_HASH_TABLE_SIZE 16
 #define POSAL_MEMORYMAP_HASH_TABLE_RESIZE_FACTOR 2
 
-#if defined (ARSPF_PLATFORM_LRH)
+#ifdef POSAL_MMAP_VFIO
 #define VFIO_DEV_NAME "soc@0:umd_audio_hlos@1"
 struct plat_vfio g_pvfio;
-#endif //defined (ARSPF_PLATFORM_LRH)
+#endif /* POSAL_MMAP_VFIO */
+
 static uint32_t pa_key_index;
 
 /* -----------------------------------------------------------------------
@@ -239,13 +240,13 @@ void posal_memorymap_global_init()
       AR_MSG(DBG_ERROR_PRIO, "posal_memorymap: Failed to create hashtable for posal_memorymap_shm_map.");
    }
 
-#if defined (ARSPF_PLATFORM_LRH)
+#ifdef POSAL_MMAP_VFIO
    result = plat_vfio_device_init(VFIO_DEV_NAME, &g_pvfio);
    if (result != AR_EOK)
    {
       AR_MSG(DBG_ERROR_PRIO, "posal_memorymap: plat_vfio_device_init failed with result : %d", result);
    }
-#endif //defined (ARSPF_PLATFORM_LRH)
+#endif /* POSAL_MMAP_VFIO */
    pa_key_index = 1;
 }
 
@@ -285,9 +286,9 @@ void posal_memorymap_global_deinit()
 
    posal_mutex_unlock(posal_globalstate.mutex);
 
-#if defined (ARSPF_PLATFORM_LRH)
+#ifdef POSAL_MMAP_VFIO
    plat_vfio_device_deinit(&g_pvfio);
-#endif //defined (ARSPF_PLATFORM_LRH)
+#endif /* POSAL_MMAP_VFIO */
 }
 
 void posal_memorymap_global_unmap_all()
@@ -500,7 +501,7 @@ ar_result_t posal_memorymap_shm_mem_map(uint32_t                      client_tok
    }
    memset(new_shm_map_hashnode_ptr, 0, sizeof(new_shm_map_hashnode_ptr));
 
-#if defined (ARSPF_PLATFORM_LRH)
+#ifdef POSAL_MMAP_VFIO
    new_shm_map_hashnode_ptr->hash_node.key_ptr  = &new_shm_map_hashnode_ptr->fd;
    new_shm_map_hashnode_ptr->hash_node.key_size = sizeof(pa_key_index);
    new_shm_map_hashnode_ptr->hash_node.next_ptr = NULL;
@@ -550,12 +551,12 @@ ar_result_t posal_memorymap_shm_mem_map(uint32_t                      client_tok
       cont_phys_regions_ptr[idx].shm_addr.mem_addr_32b.msw = shm_mem_reg_ptr[idx].shm_addr_msw;
       cont_phys_regions_ptr[idx].mem_size                  = shm_mem_reg_ptr[idx].mem_size;
 
-#ifdef ARSPF_PLATFORM_QNX
+#ifdef POSAL_MMAP_EXTN
       uint64_t phy_addr_64bits = ((uint64_t)cont_phys_regions_ptr[idx].shm_addr.mem_addr_32b.msw << 32)
          | (cont_phys_regions_ptr[idx].shm_addr.mem_addr_32b.lsw);
-      void* mmap_va_addr = mmap (NULL, cont_phys_regions_ptr[idx].mem_size,
-                        PROT_READ | PROT_WRITE, MAP_SHARED ,
-                        NOFD, (off_t)(phy_addr_64bits));
+      void* mmap_va_addr = mmap(NULL, cont_phys_regions_ptr[idx].mem_size,
+                                PROT_READ | PROT_WRITE, MAP_SHARED,
+                                NOFD, (off_t)(phy_addr_64bits));
       //Ideally mmap_va_addr got from above line should be used. It doesnt seem to work
       //For now - extern the va addr in the osal and get it working for QNX.
       //TODO: To find the proper solution without externing the mdf_mem_base_va_addr
@@ -564,7 +565,7 @@ ar_result_t posal_memorymap_shm_mem_map(uint32_t                      client_tok
       cont_phys_regions_ptr[idx].virt_addr_ptr  = mmap (NULL, cont_phys_regions_ptr[idx].mem_size,
                         PROT_READ | PROT_WRITE, MAP_SHARED,
                         cont_phys_regions_ptr[idx].shm_addr.mem_addr_32b.lsw, 0);
-#endif
+#endif /* POSAL_MMAP_EXTN */
 
       if (cont_phys_regions_ptr[idx].virt_addr_ptr == MAP_FAILED)
       {
@@ -584,7 +585,7 @@ ar_result_t posal_memorymap_shm_mem_map(uint32_t                      client_tok
          posal_memory_free(new_shm_map_hashnode_ptr);
          return AR_ENOMEMORY;
       }
-#endif //defined (ARSPF_PLATFORM_LRH)
+#endif /* POSAL_MMAP_VFIO */
    }
 
    spf_hashtable_insert(&g_posal_memorymap_internal_ptr->shmmap_ht, &new_shm_map_hashnode_ptr->hash_node);
@@ -608,7 +609,7 @@ ar_result_t posal_memorymap_shm_mem_map(uint32_t                      client_tok
 #ifdef DEBUG_POSAL_MEMORYMAP
    AR_MSG(DBG_HIGH_PRIO,
           "posal_memorymap successfully mapped all regions and added to client's list "
-		  "(token,ar_handle,num of regions, mapping mode, virt addr mapped) "
+          "(token,ar_handle,num of regions, mapping mode, virt addr mapped) "
           "= (0x%x,0x%x,%d, %d, 0x%lx)",
           (unsigned int)client_token,
           (unsigned int)mem_map_node_ptr,
@@ -849,21 +850,20 @@ ar_result_t posal_memorymap_unmap_all(uint32_t client_token)
       posal_memorymap_region_record_t *cont_phys_regions_ptr =
          (posal_memorymap_region_record_t *)((uint8_t *)current_mem_map_node_ptr + sizeof(posal_memorymap_node_t));
 
-#if defined (ARSPF_PLATFORM_LRH)
+#ifdef POSAL_MMAP_VFIO
       for (int i = 0; i < current_mem_map_node_ptr->unNumContPhysReg; ++i)
       {
          plat_vfio_unmap_mem(&g_pvfio, cont_phys_regions_ptr[i].virt_addr_ptr ,0);
       }
 #else
-#if defined(ARSPF_PLATFORM_QNX)
-
+#ifdef POSAL_MMAP_EXTN
 #else
       for (int i = 0; i < current_mem_map_node_ptr->unNumContPhysReg; ++i)
       {
          munmap(cont_phys_regions_ptr[i].virt_addr_ptr, cont_phys_regions_ptr[i].mem_size);
       }
-#endif
-#endif //defined (ARSPF_PLATFORM_LRH)
+#endif /* POSAL_MMAP_EXTN */
+#endif /* POSAL_MMAP_VFIO */
 
       /* update the Global state */
       posal_atomic_subtract((posal_globalstate.nMemRegions), current_mem_map_node_ptr->unNumContPhysReg);
@@ -1334,21 +1334,20 @@ static ar_result_t memorymap_util_cmd_handler(uint32_t client_token,
          posal_memorymap_region_record_t *cont_phys_regions_ptr =
             (posal_memorymap_region_record_t *)((uint8_t *)found_mem_map_node_ptr + sizeof(posal_memorymap_node_t));
 
-#if defined(ARSPF_PLATFORM_LRH)
+#ifdef POSAL_MMAP_VFIO
          for (int i = 0; i < found_mem_map_node_ptr->unNumContPhysReg; ++i)
          {
             plat_vfio_unmap_mem(&g_pvfio, cont_phys_regions_ptr[i].virt_addr_ptr ,0);
          }
-
 #else
-#if defined(ARSPF_PLATFORM_QNX)
+#ifdef POSAL_MMAP_EXTN
 #else
          for (int i = 0; i < found_mem_map_node_ptr->unNumContPhysReg; ++i)
          {
             munmap(cont_phys_regions_ptr[i].virt_addr_ptr, cont_phys_regions_ptr[i].mem_size);
          }
-#endif
-#endif //defined (ARSPF_PLATFORM_LRH)
+#endif /* POSAL_MMAP_EXTN */
+#endif /* POSAL_MMAP_VFIO */
       }
 #ifdef DEBUG_POSAL_MEMORYMAP
       else
