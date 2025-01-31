@@ -18,6 +18,7 @@ set (lib_incs_list
 #Add the source files
 set (lib_srcs_list
      ${LIB_ROOT}/src/gen_topo_dm_ext.c
+     ${LIB_ROOT}/src/gen_topo_dm_ext_island.c
     )
 
 #Call spf_build_static_library to generate the static library

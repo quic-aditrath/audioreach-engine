@@ -31,6 +31,7 @@ set (lib_srcs_list
      ${LIB_ROOT}/src/gen_cntr_trigger_policy_island.c
      ${LIB_ROOT}/src/gen_cntr_utils.c
      ${LIB_ROOT}/src/gen_cntr_utils_island.c
+     ${LIB_ROOT}/src/gen_cntr_utils_md_island.c
      ${LIB_ROOT}/src/gen_cntr_fwk_extn_utils.c
      ${LIB_ROOT}/src/gen_cntr_fwk_extn_utils_island.c
     )

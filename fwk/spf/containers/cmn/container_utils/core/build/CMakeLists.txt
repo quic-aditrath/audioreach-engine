@@ -31,6 +31,7 @@ set (lib_srcs_list
      ${LIB_ROOT}/src/cu_utils.c
      ${LIB_ROOT}/src/cu_utils_island.c
      ${LIB_ROOT}/src/cu_prebuffer.c
+     ${LIB_ROOT}/src/cu_utils_qsh_audio_island.c
     )
 
 #Add the compiler flags

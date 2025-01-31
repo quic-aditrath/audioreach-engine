@@ -23,7 +23,7 @@ set (lib_srcs_list
      ${LIB_ROOT}/src/gen_topo_capi_cb_handler.c
      ${LIB_ROOT}/src/gen_topo_capi_cb_handler_island.c
      ${LIB_ROOT}/src/gen_topo_data_flow_state.c
-     ${LIB_ROOT}/src/gen_topo_data_flow_state_island.c
+     ${LIB_ROOT}/src/gen_topo_data_flow_state_md_island.c
      ${LIB_ROOT}/src/gen_topo_data_process.c
      ${LIB_ROOT}/src/gen_topo_debug_info.c
      ${LIB_ROOT}/src/gen_topo_data_process_island.c
@@ -33,9 +33,10 @@ set (lib_srcs_list
      ${LIB_ROOT}/src/gen_topo_pm.c
      ${LIB_ROOT}/src/gen_topo_propagation.c
      ${LIB_ROOT}/src/gen_topo_public_functions.c
-     ${LIB_ROOT}/src/gen_topo_public_functions_island.c
+     ${LIB_ROOT}/src/gen_topo_public_functions_md_island.c
      ${LIB_ROOT}/src/gen_topo_trigger_policy.c
      ${LIB_ROOT}/src/gen_topo_trigger_policy_island.c
+     ${LIB_ROOT}/src/gen_topo_trigger_policy_change_island.c
      ${LIB_ROOT}/src/topo_buf_mgr.c
     )
 
