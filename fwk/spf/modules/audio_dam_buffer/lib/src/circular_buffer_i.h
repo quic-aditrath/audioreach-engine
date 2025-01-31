@@ -41,6 +41,7 @@ circbuf_result_t add_circ_buf_data_copy_util(circ_buf_t *      circ_buf_ptr,
 
 /*
  * Resets the client read position to the oldest buffered sample.
+ * force adjust unread length to the full size of the buffer.
  */
-circbuf_result_t add_circ_buf_read_client_reset(circ_buf_client_t *client_ptr);
+circbuf_result_t add_circ_buf_read_client_reset(circ_buf_client_t *client_ptr, bool_t force_reset);
 #endif // __CIRC_BUFFER_I_H

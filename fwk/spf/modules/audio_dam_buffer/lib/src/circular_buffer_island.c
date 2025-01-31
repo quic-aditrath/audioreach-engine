@@ -379,7 +379,7 @@ circbuf_result_t circ_buf_read_adjust(circ_buf_client_t *rd_client_ptr,
    if (force_adjust)
    {
       // reset read pointer to write position, and updates unread bytes.
-      add_circ_buf_read_client_reset(rd_client_ptr);
+      add_circ_buf_read_client_reset(rd_client_ptr, TRUE /** force reset*/);
    }
 
 #ifdef DEBUG_CIRC_BUF_UTILS
@@ -408,7 +408,7 @@ circbuf_result_t circ_buf_read_adjust(circ_buf_client_t *rd_client_ptr,
  * Resets the client read chunk position based on current buffer state.
  * Full documentation in circ_buf_utils.h
  */
-circbuf_result_t add_circ_buf_read_client_reset(circ_buf_client_t *client_ptr)
+circbuf_result_t add_circ_buf_read_client_reset(circ_buf_client_t *client_ptr, bool_t force_reset)
 {
    circbuf_result_t result       = CIRCBUF_SUCCESS;
    circ_buf_t *     circ_buf_ptr = client_ptr->circ_buf_ptr;
@@ -424,23 +424,30 @@ circbuf_result_t add_circ_buf_read_client_reset(circ_buf_client_t *client_ptr)
       circ_buf_client_t *wr_client_ptr = circ_buf_ptr->wr_client_ptr;
       if (wr_client_ptr)
       {
-         // Initialize the read position same as the current write position.
+         // Firstly initialize the read position same as the current write position.
+         // And then update the rd position behind wr position by unread_len, which is done by moving rd ptr forward buy
+         // (circ buf size - unread_len).
          client_ptr->rw_chunk_node_ptr = wr_client_ptr->rw_chunk_node_ptr;
          client_ptr->rw_chunk_offset   = wr_client_ptr->rw_chunk_offset;
 
-         // If the write byte counter is equal to buf size, then read & write have same position.
-         // ideally write byte counter cannot be greater than circ buf size.
-         if (circ_buf_ptr->write_byte_counter >= circ_buf_ptr->circ_buf_size)
+         uint32_t max_data_available_in_buffer = MIN(circ_buf_ptr->write_byte_counter, circ_buf_ptr->circ_buf_size);
+         if (force_reset)
          {
-            client_ptr->unread_bytes = circ_buf_ptr->circ_buf_size;
+            // keeps read and write at the same position.
+            client_ptr->unread_bytes = max_data_available_in_buffer;
          }
          else
          {
-            client_ptr->unread_bytes = circ_buf_ptr->write_byte_counter;
+            // reset unread length if its beyond max data buffered. This can happend if the circular buffer
+            // size has been reduced.
+            client_ptr->unread_bytes = MIN(client_ptr->unread_bytes, max_data_available_in_buffer);
+         }
 
-            // Move the read position behind the write position by write_byte_counter bytes.
-            // instead of traversing backwards by 'x' bytes, traverse forward by 'size-x' bytes
-            // in circular buffer for ease of implementation.
+         // Move the read position behind the write position by unread_bytes.
+         // instead of traversing backwards by 'unread_bytes' bytes, traverse forward by 'size - unread_bytes' bytes
+         // in circular buffer for ease of implementation.
+         if (client_ptr->unread_bytes < circ_buf_ptr->circ_buf_size)
+         {
             result =
                add_circ_buf_position_shift_forward(circ_buf_ptr,
                                                    &client_ptr->rw_chunk_node_ptr,

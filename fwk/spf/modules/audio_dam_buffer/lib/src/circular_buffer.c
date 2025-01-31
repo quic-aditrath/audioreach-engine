@@ -207,7 +207,7 @@ circbuf_result_t circ_buf_register_client(circ_buf_t *       circ_buf_struct_ptr
       _circ_buf_client_resize(circ_buf_struct_ptr);
 
       // Resets the read/write position of the client.
-      add_circ_buf_read_client_reset(client_hdl_ptr);
+      add_circ_buf_read_client_reset(client_hdl_ptr, TRUE /** force reset*/);
    }
    else
    {
@@ -532,7 +532,7 @@ static circbuf_result_t _circ_buf_add_chunks(circ_buf_t *  circ_buf_ptr,
       {
          circ_buf_client_t *temp_client_ptr = (circ_buf_client_t *)client_list_ptr->obj_ptr;
 
-         add_circ_buf_read_client_reset(temp_client_ptr);
+         add_circ_buf_read_client_reset(temp_client_ptr, TRUE /** force reset*/);
       }
       goto __return_result;
    }
@@ -683,7 +683,7 @@ static circbuf_result_t _circ_buf_remove_chunks(circ_buf_t *circ_buf_ptr, uint32
 
    while (removable_size)
    {
-      spf_list_node_t *temp_ptr = NULL;
+      spf_list_node_t *rm_node_ptr = NULL;
 
       // Remove after the current write chunks pointer if a write client exist.
       if (circ_buf_ptr->wr_client_ptr && circ_buf_ptr->wr_client_ptr->rw_chunk_node_ptr)
@@ -692,18 +692,18 @@ static circbuf_result_t _circ_buf_remove_chunks(circ_buf_t *circ_buf_ptr, uint32
 
          if (cur_wr_chunk_ptr->next_ptr)
          {
-            temp_ptr = cur_wr_chunk_ptr->next_ptr;
+            rm_node_ptr = cur_wr_chunk_ptr->next_ptr;
          }
       }
 
       // If the current write node is the tail, assign the head node as temp
-      if (NULL == temp_ptr)
+      if (NULL == rm_node_ptr)
       {
-         temp_ptr = circ_buf_ptr->head_chunk_ptr;
+         rm_node_ptr = circ_buf_ptr->head_chunk_ptr;
       }
 
       // chunk ptr cant be null since removable_size is non zero
-      if (NULL == temp_ptr)
+      if (NULL == rm_node_ptr)
       {
          AR_MSG(DBG_ERROR_PRIO,
                 "remove: Unexpected null chunk! buf_id = 0x%x, removable_size: %u, circ_buf_size: %u, num_chunks: %u ",
@@ -714,7 +714,7 @@ static circbuf_result_t _circ_buf_remove_chunks(circ_buf_t *circ_buf_ptr, uint32
          return CIRCBUF_FAIL;
       }
 
-      chunk_buffer_t *rem_chunk_ptr = (chunk_buffer_t *)temp_ptr->obj_ptr;
+      chunk_buffer_t *rem_chunk_ptr = (chunk_buffer_t *)rm_node_ptr->obj_ptr;
 
       AR_MSG(DBG_HIGH_PRIO,
              "remove: buf_id=0x%x, removable_size:%lu, cur_chunk_size:%lu circ_buf_size:%lu, num_chunks: %lu ",
@@ -735,11 +735,15 @@ static circbuf_result_t _circ_buf_remove_chunks(circ_buf_t *circ_buf_ptr, uint32
          }
          removable_size -= rem_chunk_ptr->size;
 
-         // Delete the node from the list
-         spf_list_delete_node_and_free_obj(&temp_ptr, &circ_buf_ptr->head_chunk_ptr, TRUE /* pool_used */);
+         // Deletes both the chunk node and chunk buffer from the list
+         spf_list_delete_node_and_free_obj(&rm_node_ptr, &circ_buf_ptr->head_chunk_ptr, TRUE /* pool_used */);
       }
-      else // Remove chunk and replace with a smaller size chunk.
+      else // Remove chunk buffer and replace with a smaller size chunk
       {
+         // note that chunk node remains same, just the chunk buffer is replaced with smaller chunk.
+         // wr position needs to be updated based on the new chunk size. Unread length and read position will be updated
+         // towards the end based on the resultant buffer size and updated write position.
+
          // for the last chunk, recreate if required
          uint32_t new_chunk_size = rem_chunk_ptr->size - removable_size;
 
@@ -766,33 +770,57 @@ static circbuf_result_t _circ_buf_remove_chunks(circ_buf_t *circ_buf_ptr, uint32
          new_chunk_ptr->size       = new_chunk_size;
          new_chunk_ptr->buffer_ptr = (int8_t *)new_chunk_ptr + sizeof(chunk_buffer_t);
 
-         // copy data from old to replacement chunk
-         memscpy(new_chunk_ptr->buffer_ptr, new_chunk_ptr->size, rem_chunk_ptr->buffer_ptr, rem_chunk_ptr->size);
-
-         // free the current chunk and replace the new chunk in the list
-         posal_memory_free(rem_chunk_ptr);
-         temp_ptr->obj_ptr = new_chunk_ptr;
-
          // reduce the size by only removable_size
          // note that number of chunks remains same
          circ_buf_ptr->circ_buf_size -= removable_size;
 
          // while loop ends
          removable_size = 0;
+
+         // at this point, write offset needs to be adjusted to be within the newly replaced smaller chunk.
+         if (circ_buf_ptr->wr_client_ptr)
+         {
+
+            if (circ_buf_ptr->wr_client_ptr->rw_chunk_offset >= new_chunk_ptr->size)
+            {
+               /** For example in the below case when chunk size reduces from 4k to 1.9k then
+                wr offset=3960 becomes invalid.
+                Hence reset the wr offset=0, and copy the latest 1920 bytes behind wr ptr to the new chunk.
+                Towards end, rd pointers will be adjusted relatively to the new wr offset.
+                     [old chunk 4096: wr offset=3960]
+                     [new chunk 1920: wr offset=0] -> need to copy data from old chunk offset [2040, 3960]
+               */
+
+               memscpy(new_chunk_ptr->buffer_ptr,
+                       new_chunk_ptr->size,
+                       rem_chunk_ptr->buffer_ptr + (circ_buf_ptr->wr_client_ptr->rw_chunk_offset - new_chunk_ptr->size),
+                       new_chunk_ptr->size);
+
+				circ_buf_ptr->wr_client_ptr->rw_chunk_offset = 0;
+            }
+            else
+            {
+               // if wr offset is within new chunk size, then no need to update the offset.
+               memscpy(new_chunk_ptr->buffer_ptr, new_chunk_ptr->size, rem_chunk_ptr->buffer_ptr, new_chunk_ptr->size);
+            }
+         }
+
+         // free the current chunk and replace the new chunk in the list
+         posal_memory_free(rem_chunk_ptr);
+         rm_node_ptr->obj_ptr = new_chunk_ptr;
       }
-
    } // while()
-
-   // Reset write position if the new circular buffer size is zero
-   if ((0 == circ_buf_ptr->circ_buf_size) && circ_buf_ptr->wr_client_ptr)
-   {
-      _circ_buf_write_client_reset(circ_buf_ptr->wr_client_ptr);
-   }
 
    // Adjust write byte count based on new size
    if (circ_buf_ptr->write_byte_counter > circ_buf_ptr->circ_buf_size)
    {
       circ_buf_ptr->write_byte_counter = circ_buf_ptr->circ_buf_size;
+   }
+
+   // Reset write position if the new circular buffer size is zero
+   if ( (0 == circ_buf_ptr->circ_buf_size) && circ_buf_ptr->wr_client_ptr)
+   {
+      _circ_buf_write_client_reset(circ_buf_ptr->wr_client_ptr);
    }
 
    // Check and update the read positions to avoid reading from the removed chunks.
@@ -801,11 +829,8 @@ static circbuf_result_t _circ_buf_remove_chunks(circ_buf_t *circ_buf_ptr, uint32
    {
       circ_buf_client_t *temp_client_ptr = (circ_buf_client_t *)client_list_ptr->obj_ptr;
 
-      if ((temp_client_ptr->unread_bytes > circ_buf_ptr->circ_buf_size) ||
-          (temp_client_ptr->unread_bytes > circ_buf_ptr->write_byte_counter))
-      {
-         add_circ_buf_read_client_reset(temp_client_ptr);
-      }
+      /** adjust the read pointers based on the resultant reduced buffer size and unread bytes*/
+      add_circ_buf_read_client_reset(temp_client_ptr, FALSE /** force reset*/);
    }
 
 #ifdef DEBUG_CIRC_BUF_UTILS
