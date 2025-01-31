@@ -58,6 +58,10 @@ INCLUDE FILES FOR MODULE
 //DO NOT INCLUDE posal_internal_inline.h here as it shared libs may call inline func and
 // backward compatibility might break in case 'qurt' structs are changed.
 
+#ifdef __cplusplus
+extern "C" {
+#endif //__cplusplus
+
 void posal_init(void);
 void posal_deinit(void);
 
@@ -65,5 +69,9 @@ static inline uint32_t posal_cmn_divide(uint32_t num, uint32_t den)
 {
    return (num / den);
 }
+
+#ifdef __cplusplus
+}
+#endif //__cplusplus
 
 #endif // #ifndef _POSAL_H_
