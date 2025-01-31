@@ -13,6 +13,7 @@ cmake_minimum_required(VERSION 3.10)
 set(latency_sources
 	${LIB_ROOT}capi/src/capi_latency_utils.c
 	${LIB_ROOT}capi/src/capi_latency.c
+	${LIB_ROOT}capi/src/capi_latency_utils_v2.c
 	${LIB_ROOT}lib/src/latency_buf_utils.c
 )
 

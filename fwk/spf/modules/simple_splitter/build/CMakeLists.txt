@@ -14,6 +14,7 @@ set(splitter_sources
 	${LIB_ROOT}capi/src/capi_splitter_island.c
 	${LIB_ROOT}capi/src/capi_splitter_utils.c
 	${LIB_ROOT}capi/src/capi_splitter.c
+	${LIB_ROOT}capi/src/capi_splitter_md_island.c
 )
 
 set(splitter_includes
