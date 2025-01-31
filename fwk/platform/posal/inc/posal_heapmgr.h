@@ -48,7 +48,7 @@ typedef uint32_t posal_heap_tcm_handle_t;
   @return
   Status of the heap manager creation.
 
-  @dependenciess
+  @dependencies
   Before calling this function, the object must be created and initialized.
 */
 ar_result_t posal_memory_heapmgr_create(POSAL_HEAP_ID *heap_id_ptr,
@@ -76,7 +76,7 @@ ar_result_t posal_memory_heapmgr_create(POSAL_HEAP_ID *heap_id_ptr,
   @return
   Status of the heap manager creation.
 
-  @dependenciess
+  @dependencies
   Before calling this function, the object must be created and initialized.
 */
 ar_result_t posal_memory_heapmgr_create_v2(POSAL_HEAP_ID *          heap_id_ptr,
