@@ -55,8 +55,6 @@ set (lib_srcs_list
      ${LIB_ROOT}/src/${TGT_SPECIFIC_FOLDER}/posal_${TGT_SPECIFIC_FOLDER}_thread.c
     )
 
-
-
 if(ARSPF_WIN_PORTING) #platform windows
    list (APPEND lib_srcs_list
       ${LIB_ROOT}/src/${TGT_SPECIFIC_FOLDER}/posal_timer_mmtimer.c
@@ -65,7 +63,9 @@ if(ARSPF_WIN_PORTING) #platform windows
    )
 else() # for QNX & LRH
    list (APPEND lib_srcs_list
+      ${LIB_ROOT}/src/${TGT_SPECIFIC_FOLDER}/posal_condvar.c
       ${LIB_ROOT}/src/${TGT_SPECIFIC_FOLDER}/posal_timer.c
+      ${LIB_ROOT}/src/${TGT_SPECIFIC_FOLDER}/posal_rtld.c
    )
 endif()
 
