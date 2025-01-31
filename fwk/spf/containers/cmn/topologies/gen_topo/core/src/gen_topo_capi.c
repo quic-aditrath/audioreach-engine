@@ -197,12 +197,6 @@ ar_result_t gen_topo_get_aggregated_capi_stack_size(gen_topo_t *topo_ptr, uint32
             uint32_t      temp_log_id = log_id;
             POSAL_HEAP_ID mem_heap_id = module_ptr->gu.module_heap_id;
             gen_topo_get_mod_heap_id_and_log_id(&temp_log_id, &mem_heap_id, module_ptr->serial_num, mem_heap_id);
-            module_ptr->gu.module_heap_id = mem_heap_id;
-            TOPO_MSG(log_id,
-                     DBG_LOW_PRIO,
-                     "Module 0x%lX: mem_heap_id: 0x%lX",
-                     module_ptr->gu.module_instance_id,
-                     module_ptr->gu.module_heap_id);
             capi_heap_id_t            heap_id = { (uint32_t)mem_heap_id };
             capi_module_instance_id_t miid    = { .module_id          = module_ptr->gu.module_id,
                                                .module_instance_id = module_ptr->gu.module_instance_id };
@@ -509,9 +503,9 @@ static ar_result_t gen_topo_capi_query_intf_extn_support(void *             amdb
                               { INTF_EXTN_PATH_DELAY,                FALSE, { NULL, 0, 0 } },      \
                               { INTF_EXTN_PROP_PORT_DS_STATE,        FALSE, { NULL, 0, 0 } },      \
                               { INTF_EXTN_PROP_IS_RT_PORT_PROPERTY,  FALSE, { NULL, 0, 0 } },      \
-							  { INTF_EXTN_DUTY_CYCLING_ISLAND_MODE,  FALSE, { NULL, 0, 0 } },	   \
-							  { INTF_EXTN_PERIOD,                    FALSE, { NULL, 0, 0 } },      \
-							  { INTF_EXTN_STM_TS,                    FALSE, { NULL, 0, 0 } },      \
+                              { INTF_EXTN_DUTY_CYCLING_ISLAND_MODE,  FALSE, { NULL, 0, 0 } },      \
+                              { INTF_EXTN_PERIOD,                    FALSE, { NULL, 0, 0 } },      \
+                              { INTF_EXTN_STM_TS,                    FALSE, { NULL, 0, 0 } },      \
                             }
 
    #define LEN_OF_INTF_EXTNS_ARRAY SIZE_OF_ARRAY((capi_interface_extn_desc_t[]) INTF_EXTNS_ARRAY)

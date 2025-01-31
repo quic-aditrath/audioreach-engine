@@ -63,7 +63,7 @@ extern "C" {
 #ifdef HEAP_PROFILING
 // For tracking purposes, use 1 as the ID for Fwk allocations
 // Using tracking_id=1 may throw off IRM.
-#define MODIFY_HEAP_ID_FOR_FWK_ALLOC_FOR_MEM_TRACKING(actual_heap_id) MODIFY_HEAP_ID_FOR_MEM_TRACKING(1, actual_heap_id)
+#define MODIFY_HEAP_ID_FOR_FWK_ALLOC_FOR_MEM_TRACKING(actual_heap_id) MODIFY_STATIC_MODULE_HEAP_ID_FOR_MEM_TRACKING(0xA, actual_heap_id)
 #else
 #define MODIFY_HEAP_ID_FOR_FWK_ALLOC_FOR_MEM_TRACKING(actual_heap_id) (actual_heap_id)
 #endif
