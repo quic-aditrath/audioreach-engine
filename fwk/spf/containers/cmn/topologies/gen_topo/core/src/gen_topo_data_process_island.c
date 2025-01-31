@@ -2578,7 +2578,8 @@ ar_result_t gen_topo_topo_process(gen_topo_t        *topo_ptr,
          // In future if fractional rate is supported for mfc in island we need to move dm extension code into
          // Island, for now gen_topo_is_dm_enabled check avoids crash for mfc in island for non fractional sampling
          // rate.
-         if ((module_ptr->flags.need_dm_extn) && (gen_topo_is_dm_enabled(module_ptr)))
+         if (!POSAL_IS_ISLAND_HEAP_ID(topo_ptr->heap_id) && (module_ptr->flags.need_dm_extn)
+               && (gen_topo_is_dm_enabled(module_ptr)))
          {
             gen_topo_updated_expected_samples_for_dm_modules(topo_ptr, module_ptr);
          }

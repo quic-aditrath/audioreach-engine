@@ -2,7 +2,7 @@
  *   \file capi_trm.c
  *   \brief
  *        This file contains CAPI implementation of Timed Renderer Module
- * 
+ *
  * \copyright
  *  Copyright (c) Qualcomm Innovation Center, Inc. All Rights Reserved.
  *  SPDX-License-Identifier: BSD-3-Clause
@@ -58,7 +58,7 @@ capi_err_t capi_trm_process_get_properties(capi_trm_t *me_ptr, capi_proplist_t *
       return CAPI_EBADPARAM;
    }
 
-   uint32_t fwk_extn_ids_arr[] = { FWK_EXTN_TRIGGER_POLICY, FWK_EXTN_CONTAINER_FRAME_DURATION };
+   uint32_t fwk_extn_ids_arr[] = { FWK_EXTN_TRIGGER_POLICY, FWK_EXTN_CONTAINER_FRAME_DURATION, FWK_EXTN_DM };
 
    capi_basic_prop_t mod_prop;
    mod_prop.init_memory_req    = align_to_8_byte(sizeof(capi_trm_t));
@@ -420,6 +420,10 @@ capi_err_t capi_trm_set_param(capi_t *                capi_ptr,
 
    switch (param_id)
    {
+      case FWK_EXTN_DM_PARAM_ID_CHANGE_MODE: //default to fixed out due to HW-EP at downstream.
+      case FWK_EXTN_DM_PARAM_ID_SET_SAMPLES: //can be ignored as TRM only supported in GC
+      case FWK_EXTN_DM_PARAM_ID_SET_MAX_SAMPLES: //can be ignored as TRM only supported in GC
+         break;
       case INTF_EXTN_PARAM_ID_METADATA_HANDLER:
       {
          if (params_ptr->actual_data_len < sizeof(intf_extn_param_id_metadata_handler_t))

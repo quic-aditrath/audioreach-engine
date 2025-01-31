@@ -1304,7 +1304,8 @@ ar_result_t st_topo_process(gen_topo_t *topo_ptr, gu_module_list_t **start_modul
          // rate.
          if (topo_ptr->flags.is_dm_enabled)
          {
-            if ((module_ptr->flags.need_dm_extn) && (gen_topo_is_dm_enabled(module_ptr)))
+            if (!POSAL_IS_ISLAND_HEAP_ID(topo_ptr->heap_id) && (module_ptr->flags.need_dm_extn)
+                  && (gen_topo_is_dm_enabled(module_ptr)))
             {
                gen_topo_updated_expected_samples_for_dm_modules(topo_ptr, module_ptr);
             }

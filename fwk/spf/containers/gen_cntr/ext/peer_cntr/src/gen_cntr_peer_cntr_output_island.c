@@ -626,7 +626,7 @@ static ar_result_t gen_cntr_send_peer_cntr_out_buffers(gen_cntr_t *             
                                 &ext_out_port_ptr->gu,
                                 out_buf_ptr,
                                 ext_out_port_ptr->cu.buf_max_size -
-                                   (gen_topo_compute_if_output_needs_addtional_bytes_for_dm(&(me_ptr->topo),
+                                   (ext_out_port_ptr->cu.media_fmt.pcm.num_channels * gen_topo_compute_if_output_needs_addtional_bytes_for_dm(&(me_ptr->topo),
                                                                                             (gen_topo_output_port_t *)
                                                                                                ext_out_port_ptr->gu
                                                                                                   .int_out_port_ptr)));

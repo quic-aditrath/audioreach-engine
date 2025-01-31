@@ -181,6 +181,18 @@ capi_err_t capi_trm_buffer_input_data(capi_trm_t *me_ptr, capi_stream_data_t *in
       return result;
    }
 
+   /* During sample slipping/stuffing from upstream, one sample less or more can come.
+      if input is exactly 2ms then there is no drift correction and TRM should consume only 1ms.
+      if input is less than 2ms and more than 1ms then there is drift correction, so cache everything
+      so that prebuffer inside TRM is replenished.*/
+   if (input[0]->buf_ptr[0].actual_data_len >= 2 * me_ptr->held_input_buf.frame_len_per_ch)
+   {
+      for (int i = 0; i < input[0]->bufs_num; i++)
+      {
+         input[0]->buf_ptr[i].actual_data_len = me_ptr->held_input_buf.frame_len_per_ch;
+      }
+   }
+
    uint32_t input_actual_data_len = input[0]->buf_ptr[0].actual_data_len;
    uint32_t read_offset           = 0;
 
@@ -918,7 +930,7 @@ capi_err_t capi_trm_free_held_metadata(capi_trm_t *               me_ptr,
 
          // Retained if,
          //  1. If its IS stream associated metadata.
-         //  			&&
+         //             &&
          //  2. only if force is False.
          if (!force_free && is_stream_associated)
          {

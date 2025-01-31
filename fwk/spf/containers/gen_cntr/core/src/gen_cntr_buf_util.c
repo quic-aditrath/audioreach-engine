@@ -2229,7 +2229,7 @@ static ar_result_t gen_cntr_recreate_all_buffers(gen_cntr_t *me_ptr)
             // additional bytes are required for a given ip/op based on DM modules position & DM mode in the nblc
             // chain.
             // check funtion: gen_cntr_check_and_find_if_addtional_bytes_required_for_dm for
-            uint32_t additional_bytes_req_for_dm =
+            uint32_t additional_bytes_req_for_dm_per_ch =
                gen_topo_compute_if_output_needs_addtional_bytes_for_dm(&me_ptr->topo, out_port_ptr);
 
             uint32_t new_bufs_num        = gen_topo_get_bufs_num_from_med_fmt(out_port_ptr->common.media_fmt_ptr);
@@ -2245,10 +2245,10 @@ static ar_result_t gen_cntr_recreate_all_buffers(gen_cntr_t *me_ptr)
             // Need to check port event threshold and additional_bytes_req_for_dm to reallocate buffers.
             // Note that DM module can dynamically enable/disable DM mode in such cases port_event_new_threshold
             // will be same by additional_bytes_req_for_dm can change
-            if (out_port_ptr->common.port_event_new_threshold || additional_bytes_req_for_dm || did_num_bufs_change)
+            if (out_port_ptr->common.port_event_new_threshold || additional_bytes_req_for_dm_per_ch || did_num_bufs_change)
             {
                uint32_t req_output_buf_size_bytes =
-                  out_port_ptr->common.port_event_new_threshold + additional_bytes_req_for_dm;
+                  out_port_ptr->common.port_event_new_threshold + (additional_bytes_req_for_dm_per_ch * new_bufs_num);
 
                if ((SPF_IS_RAW_COMPR_DATA_FMT(out_port_ptr->common.media_fmt_ptr->data_format)) &&
                    (out_port_ptr->common.max_buf_len != req_output_buf_size_bytes))
@@ -2320,7 +2320,7 @@ static ar_result_t gen_cntr_recreate_all_buffers(gen_cntr_t *me_ptr)
             gen_topo_input_port_t *in_port_ptr = (gen_topo_input_port_t *)in_port_list_ptr->ip_port_ptr;
 
             // check if additional bytes are required to accomodate variable samples for DM usecases
-            uint32_t additional_bytes_req_for_dm =
+            uint32_t additional_bytes_req_for_dm_per_ch =
                gen_topo_compute_if_input_needs_addtional_bytes_for_dm(&me_ptr->topo, in_port_ptr);
 
             uint32_t new_bufs_num        = gen_topo_get_bufs_num_from_med_fmt(in_port_ptr->common.media_fmt_ptr);
@@ -2336,10 +2336,10 @@ static ar_result_t gen_cntr_recreate_all_buffers(gen_cntr_t *me_ptr)
             // Need to check port event threshold and additional_bytes_req_for_dm to reallocate buffers.
             // Note that DM module can dynamically enable/disable DM mode in such cases port_event_new_threshold
             // will be same by additional_bytes_req_for_dm can change
-            if (in_port_ptr->common.port_event_new_threshold || additional_bytes_req_for_dm || did_num_bufs_change)
+            if (in_port_ptr->common.port_event_new_threshold || additional_bytes_req_for_dm_per_ch || did_num_bufs_change)
             {
                uint32_t req_input_buf_size_bytes =
-                  in_port_ptr->common.port_event_new_threshold + additional_bytes_req_for_dm;
+                  in_port_ptr->common.port_event_new_threshold + (additional_bytes_req_for_dm_per_ch * new_bufs_num);
 
                if ((in_port_ptr->common.max_buf_len != req_input_buf_size_bytes) || did_num_bufs_change)
                {
