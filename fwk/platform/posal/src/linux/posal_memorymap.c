@@ -1073,6 +1073,21 @@ ar_result_t posal_memorymap_shm_decr_refcount(uint32_t client_token, uint32_t sh
    return memorymap_util_shm_update_refcount(client_token, shm_mem_map_handle, -1);
 }
 
+ar_result_t posal_memorymap_set_shmem_id(uint32_t client_token, uint32_t shm_mem_map_handle, uint32_t shmem_id)
+{
+   return AR_EUNSUPPORTED;
+}
+
+ar_result_t posal_memorymap_get_shmem_id(uint32_t client_token, uint32_t shm_mem_map_handle, uint32_t *shmem_id_ptr)
+{
+   return AR_EUNSUPPORTED;
+}
+
+ar_result_t posal_memorymap_get_mem_map_handle(uint32_t client_token, uint32_t shmem_id, uint32_t *shm_mem_map_handle_ptr)
+{
+   return AR_EUNSUPPORTED;
+}
+
 static ar_result_t memorymap_util_shm_update_refcount(uint32_t client_token,
                                                       uint32_t shm_mem_map_handle,
                                                       int16_t  count_value)
