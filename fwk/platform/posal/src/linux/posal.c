@@ -17,7 +17,7 @@ INCLUDE FILES FOR MODULE
 #include "posal_internal.h"
 #include "posal_globalstate.h"
 #include "posal_mem_prof.h"
-#include "pm_server.h"
+#include "posal_power_mgr.h"
 
 /*--------------------------------------------------------------*/
 /* Macro definitions                                            */
@@ -79,8 +79,6 @@ void posal_init(void)
                           LPI_QUEUE_BUF_POOL_NUM_ARRAYS,
                           LPI_QUEUE_BUF_POOL_NODES_PER_ARR);
    posal_queue_pool_setup(POSAL_HEAP_DEFAULT, REGULAR_QUEUE_BUF_POOL_NUM_ARRAYS, REGULAR_QUEUE_BUF_POOL_NODES_PER_ARR);
-
-   pm_server_init(POSAL_HEAP_DEFAULT);
 
    posal_globalstate.is_global_init_done = TRUE;
 

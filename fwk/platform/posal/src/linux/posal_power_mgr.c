@@ -13,7 +13,6 @@ INCLUDE FILES FOR MODULE
 ========================================================================== */
 #include "posal_power_mgr.h"
 #include "platform_internal_api.h"
-#include "pm_server.h"
 #define POSAL_POWER_MGR_INVALID_CLIENT_ID 0
 
 /** PM_WRAPPER max out information */
