@@ -21,6 +21,7 @@ include_directories(
                     ../cmn/container_utils/ext/path_delay/inc
                     ../cmn/container_utils/ext/prof/inc
                     ../cmn/container_utils/ext/soft_timer_fwk_ext/inc
+                    ../cmn/container_utils/ext/global_shmem_msg/inc
                     ../cmn/container_utils/ext/voice/inc
                     ../cmn/graph_utils/inc
                     ../cmn/icb/inc
@@ -38,6 +39,7 @@ include_directories(
                     ../cmn/topologies/gen_topo/ext/prof/inc
                     ../cmn/topologies/gen_topo/ext/pure_st_topo/inc
                     ../cmn/topologies/gen_topo/ext/sync_fwk_ext/inc
+                    ../cmn/topologies/gen_topo/ext/global_shmem_msg/inc
                     ../cmn/topologies/spl_topo/core/inc
                     ../cmn/topologies/spl_topo/ext/dm_fwk_ext/inc
                     ../cmn/topologies/spl_topo/ext/mimo_proc_state_intf_ext/inc

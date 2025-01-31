@@ -29,6 +29,8 @@ include_directories(
                     ../modules/irm/api
                     ../modules/rat/api
                     ../modules/sh_mem_pull_push_mode/api
+                    ../utils/thread_pool/inc
+                    ../utils/watchdog_svc/inc
                    )
 
 #Add the sub directories
@@ -39,4 +41,3 @@ add_subdirectory(../containers/build containers)
 add_subdirectory(../interfaces/build interfaces)
 add_subdirectory(../modules/build modules)
 add_subdirectory(../utils/build utils)
-
