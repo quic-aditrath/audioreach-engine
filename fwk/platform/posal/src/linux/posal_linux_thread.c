@@ -131,7 +131,7 @@ ar_result_t posal_thread_launch3(posal_thread_t     *posal_obj_ptr,
 #endif /* DBG_BUFFER_ADDRESSES */
 
    int max_prio = 99, min_prio = 0;
-   if (0xFFFFFFFF == sched_policy) 
+   if (0xFFFFFFFF == sched_policy)
    {
 	   AR_MSG(DBG_LOW_PRIO, "Incoming sched_policy overridden ");
 	   sched_policy = SCHED_FIFO;
@@ -220,7 +220,7 @@ ar_result_t posal_thread_launch3(posal_thread_t     *posal_obj_ptr,
    }
 
 // Thread Affinity is not supported via this api on QNX and Linux Android
-#if !defined (ARSPF_PLATFORM_QNX) && !defined(__ANDROID__)
+#if defined (POSAL_THREAD_AFFINITY)
    if (0 != affinity)
    {
       cpu_set_t cs;
