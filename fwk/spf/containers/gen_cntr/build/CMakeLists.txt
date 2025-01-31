@@ -23,6 +23,7 @@ include_directories(
                     ../ext/rd_sh_mem_ep/inc
                     ../ext/pure_st/inc
                     ../ext/placeholder/inc
+                    ../ext/pass_thru_cntr/inc
                     ../ext/peer_cntr/inc
                     ../ext/offload/inc
                     ../ext/metadata/inc

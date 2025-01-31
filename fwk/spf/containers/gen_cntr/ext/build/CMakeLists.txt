@@ -23,7 +23,7 @@ add_subdirectory(../offload/build offload)
 add_subdirectory(../peer_cntr/build peer_cntr)
 add_subdirectory(../placeholder/build placeholder)
 add_subdirectory(../pure_st/build pure_st)
+add_subdirectory(../pass_thru_cntr/build pass_thru_cntr)
 add_subdirectory(../rd_sh_mem_ep/build rd_sh_mem_ep)
 add_subdirectory(../sync_fwk_ext/build sync_fwk_ext)
 add_subdirectory(../wr_sh_mem_ep/build wr_sh_mem_ep)
-
