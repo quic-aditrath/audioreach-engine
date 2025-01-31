@@ -18,6 +18,7 @@ set (lib_incs_list
      ${LIB_ROOT}/inc/${TGT_SPECIFIC_FOLDER}
      ${LIB_ROOT}/src
      ${LIB_ROOT}/src/${TGT_SPECIFIC_FOLDER}
+     ${LIB_ROOT}/inc/${TGT_SPECIFIC_FOLDER}/stringl
     )
 
 #Add the source files
