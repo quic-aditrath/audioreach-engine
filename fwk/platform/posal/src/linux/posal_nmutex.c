@@ -1,7 +1,7 @@
 /**
  * \file posal_nmutex.c
  * \brief
- *  	This file contains normal mutex utilities like initialization mutex, lock,unlock, try lock and destroy mutex.
+ *      This file contains normal mutex utilities like initialization mutex, lock,unlock, try lock and destroy mutex.
  *
  * \copyright
  *  Copyright (c) Qualcomm Innovation Center, Inc. All Rights Reserved.
@@ -64,15 +64,15 @@ ar_result_t posal_nmutex_create(posal_nmutex_t *pposal_nmutex, POSAL_HEAP_ID hea
         goto fail;
     }
 
-	*pposal_nmutex = mutex;
+    *pposal_nmutex = mutex;
 
 #ifdef DEBUG_POSAL_MUTEX
-	AR_MSG(DBG_MED_PRIO, "mutex created (0x%p)|status(0x%x)", *pposal_nmutex, AR_EOK);
+    AR_MSG(DBG_MED_PRIO, "mutex created (0x%p)|status(0x%x)", *pposal_nmutex, AR_EOK);
 #endif
-
+    mutex = NULL;
 fail:
     free(mutex);
-
+    mutex = NULL;
 exit:
     return rc;
 }
@@ -130,7 +130,7 @@ void posal_nmutex_lock(posal_nmutex_t posal_nmutex)
 */
 int posal_nmutex_try_lock(posal_nmutex_t posal_nmutex)
 {
-	ar_result_t status = AR_EOK;
+    ar_result_t status = AR_EOK;
     int32_t rc;
     pthread_mutex_t* mutex = posal_nmutex;
 
