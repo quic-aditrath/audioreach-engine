@@ -391,6 +391,10 @@ capi_err_t capi_audio_dam_buffer_set_properties(capi_t *_pif, capi_proplist_t *p
 
 capi_err_t capi_audio_dam_buffer_get_properties(capi_t *_pif, capi_proplist_t *props_ptr);
 
+capi_err_t capi_dam_insert_flushing_eos_at_out_port(capi_audio_dam_t   *me_ptr,
+                                                    capi_stream_data_t *output,
+                                                    bool_t              skip_voting_on_eos);
+
 capi_vtbl_t *capi_audio_dam_buffer_get_vtable();
 
 static inline POSAL_HEAP_ID capi_audio_dam_get_peer_heap_id(capi_audio_dam_t *me_ptr, uint32_t op_arr_idx)
