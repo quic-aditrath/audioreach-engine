@@ -68,6 +68,7 @@ function(spf_module_sources)
 		spf_sources(${SPF_MODULE_SRCS})
 		spf_include_directories(${SPF_MODULE_INCLUDES})
 		set(SPF_MODULE_NAME "${SPF_MODULE_NAME}")
+		set(post_build_commands "")
 		set(json_file "${PROJECT_BINARY_DIR}/libs_cfg/${SPF_MODULE_NAME}.json")
 		file(WRITE ${json_file}
 		"[\n"
@@ -89,6 +90,31 @@ function(spf_module_sources)
 		"   }\n"
 		"]\n"
 		)
+
+		foreach(inc_path ${SPF_MODULE_H2XML_HEADERS})
+			set(abs_path "")
+			get_absolute_path(${inc_path} abs_path)
+
+			list(APPEND
+				post_build_commands
+				COMMAND
+				mkdir -p ${PROJECT_BINARY_DIR}/h2xml_autogen
+				COMMAND
+				${H2XML} -conf ${H2XML_CONFIG} ${H2XML_FLAGS} -o ${PROJECT_BINARY_DIR}/h2xml_autogen ${H2XML_INCLUDES} -t spfModule ${abs_path}
+			)
+		endforeach()
+
+		add_custom_target(${SPF_MODULE_NAME}_h2xml)
+
+		add_custom_command(
+			TARGET ${SPF_MODULE_NAME}_h2xml
+			POST_BUILD
+			${post_build_commands}
+		        COMMENT "Running Post Build Scripts for ${SPF_MODULE_NAME}"
+			VERBATIM
+		)
+		add_dependencies(spf ${SPF_MODULE_NAME}_h2xml)
+
 	elseif(${SPF_MODULE_KCONFIG} MATCHES "m")
 		set(SPF_MODULE_NAME "${SPF_MODULE_NAME}.${SPF_MODULE_MAJOR_VER}")
 		set(soname "lib${SPF_MODULE_NAME}.so")
