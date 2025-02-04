@@ -179,6 +179,10 @@ function(spf_module_sources)
 		endif()
 #TODO
 #SYMBOl OBFUSCATION
+		install(TARGETS ${SPF_MODULE_NAME}
+			LIBRARY DESTINATION lib
+		)
+
 		add_custom_command(
 			TARGET ${SPF_MODULE_NAME}
 			POST_BUILD
