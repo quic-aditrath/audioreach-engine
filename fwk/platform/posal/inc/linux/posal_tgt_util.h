@@ -77,6 +77,14 @@
 #define LPI_SNS_BUF_POOL_NUM_ARRAYS 1
 /*** APM **/
 
+/*** AMDB **/
+/**
+ * Number of AMDB threads created to dynamically load the modules.
+ * Each thread will typically wait for the apps to read then do sig verification and linking. Since the only opportunity
+ * for a thread to wait is while waiting for the apps, which is in the beginning, so there is no point in having more threads.
+ */
+#define AMDB_MAX_THREADS 2 // POSAL_MAX_HW_THREADS;
+
 /*** Container Utils **/
 
 /** Generic Container **/
