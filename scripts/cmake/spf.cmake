@@ -116,8 +116,8 @@ function(spf_module_sources)
 		add_dependencies(spf ${SPF_MODULE_NAME}_h2xml)
 
 	elseif(${SPF_MODULE_KCONFIG} MATCHES "m")
-		set(SPF_MODULE_NAME "${SPF_MODULE_NAME}.${SPF_MODULE_MAJOR_VER}")
-		set(soname "lib${SPF_MODULE_NAME}.so")
+		set(SPF_MODULE_NAME "${SPF_MODULE_NAME}")
+		set(soname "${SPF_MODULE_NAME}.so")
 		set(post_build_commands "")
 		add_library(${SPF_MODULE_NAME} SHARED "" )
 		set(json_file "${PROJECT_BINARY_DIR}/libs_cfg/${SPF_MODULE_NAME}.json")
@@ -155,8 +155,6 @@ function(spf_module_sources)
 			target_include_directories(${SPF_MODULE_NAME} PRIVATE ${abs_path})
 		endforeach()
 
-		# Comment out till we have h2xml support.
-		#[[
 		foreach(inc_path ${SPF_MODULE_H2XML_HEADERS})
 			set(abs_path "")
 			get_absolute_path(${inc_path} abs_path)
@@ -168,8 +166,8 @@ function(spf_module_sources)
 				COMMAND
 				${H2XML} -conf ${H2XML_CONFIG} ${H2XML_FLAGS} -o ${PROJECT_BINARY_DIR}/h2xml_autogen ${H2XML_INCLUDES} -t spfModule ${abs_path}
 			)
-		endforeach()]]
-
+		endforeach()
+		set_target_properties(${SPF_MODULE_NAME} PROPERTIES PREFIX "" SOVERSION ${SPF_MODULE_MAJOR_VER})
 		if (NOT ${CONFIG_MODULES_DEBUG} MATCHES "y")
 			list(APPEND
 				post_build_commands
