@@ -97,6 +97,13 @@ if ( ARCH MATCHES "^(hexagon)")
    set(TGT_SPECIFIC_FOLDER hexagon)
 endif()
 
+if ( ARCH MATCHES "^(linux)")
+   set(linux_INCLUDE
+      ${PROJECT_SOURCE_DIR}/ar_osal/api
+   )
+   set(TGT_SPECIFIC_FOLDER linux)
+endif()
+
 ## Global Includes
 include_directories(
    ${PROJECT_SOURCE_DIR}/fwk/spf/interfaces/module/audio_cmn_lib/
@@ -106,17 +113,21 @@ include_directories(
    ${PROJECT_SOURCE_DIR}/fwk/spf/interfaces/module/metadata/api/
    ${PROJECT_SOURCE_DIR}/fwk/spf/interfaces/module/capi/adv/
    ${PROJECT_SOURCE_DIR}/fwk/spf/interfaces/module/capi_cmn/ctrl_port/inc
+   ${PROJECT_SOURCE_DIR}/fwk/spf/interfaces/module/internal_api/modules_prv/api/
    ${PROJECT_SOURCE_DIR}/fwk/spf/interfaces/module/imcl/api
    ${PROJECT_SOURCE_DIR}/fwk/api/modules/
    ${PROJECT_SOURCE_DIR}/fwk/api/apm/
    ${PROJECT_SOURCE_DIR}/fwk/spf/apm/core/inc/
    ${PROJECT_SOURCE_DIR}/fwk/api/apm/private
    ${PROJECT_SOURCE_DIR}/fwk/api/vcpm/
+   ${PROJECT_SOURCE_DIR}/fwk/api/private
    ${PROJECT_SOURCE_DIR}/fwk/api/ar_utils/
    ${PROJECT_SOURCE_DIR}/fwk/api/ar_utils/generic
-   ${PROJECT_SOURCE_DIR}/fwk/platform/posal/inc
+   ${PROJECT_SOURCE_DIR}/fwk/platform/posal/inc/${TGT_SPECIFIC_FOLDER}/stringl
    ${PROJECT_SOURCE_DIR}/fwk/platform/posal/inc/${TGT_SPECIFIC_FOLDER}
+   ${PROJECT_SOURCE_DIR}/fwk/platform/posal/inc
    ${hexagon_INCLUDE}
+   ${linux_INCLUDE}
    ${PROJECT_SOURCE_DIR}/fwk/platform/posal/inc/generic
    ${PROJECT_SOURCE_DIR}/gpr/api
    ${PROJECT_SOURCE_DIR}/fwk/spf/utils/cmn/inc
