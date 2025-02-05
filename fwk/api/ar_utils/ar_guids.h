@@ -22,7 +22,7 @@
 /** @addtogroup spf_utils_guids
 @{ */
 
- * GUID owner is Qualcomm.
+/** GUID owner is Qualcomm.*/
 #define AR_GUID_OWNER_QC                  0x0
 
 /** GUID owner is not Qualcomm. All ISVs, OEMs, and customers
