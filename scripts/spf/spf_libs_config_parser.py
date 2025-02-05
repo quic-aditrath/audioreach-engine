@@ -25,7 +25,8 @@ def spf_libs_config_parser(env, is_unit_test=False):
    from collections import OrderedDict;
    import os;
    tgt_specific_folder = os.environ.get('TGT_SPECIFIC_FOLDER')
-   c_file_dir='../fwk/spf/amdb/autogen/' + tgt_specific_folder + "/"
+   project_source_dir = os.environ.get('PROJECT_SOURCE_DIR')
+   c_file_dir = project_source_dir + '/fwk/spf/amdb/autogen/' + tgt_specific_folder + "/"
    project_bin_dir = os.environ.get('PROJECT_BINARY_DIR')
    json_file_dir= "%s%s" %(project_bin_dir,"/libs_cfg/*.json")
    spf_cfg_autogen_folder = 'spf_cfg_autogen'
