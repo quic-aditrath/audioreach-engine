@@ -4,7 +4,7 @@
 ## VARIABLES:
 #
 # ARCH: Specify SoC Architecture
-#    Supported Values: "hexagon"
+#    Supported Values: "hexagon, linux"
 # V_ARCH: Arch variant
 # CONFIG: config file to use
 #
@@ -32,7 +32,7 @@ set(LIB_ROOT ../)
 #Set the global property to generate the list of SPF static libs
 set_property(GLOBAL PROPERTY GLOBAL_SPF_LIBS_LIST)
 
-if (NOT ARCH MATCHES "^(hexagon)")
+if ((NOT ARCH MATCHES "^(hexagon)") AND (NOT ARCH MATCHES "^(linux)"))
    message(FATAL_ERROR
       "Please specify supported Architecture.\n")
 endif()
