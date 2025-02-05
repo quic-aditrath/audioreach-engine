@@ -930,4 +930,11 @@ if __name__ == '__main__':
    """
    env.SPF_FWK_COMPILATION = True
 
+   """
+   Define "GEN_SHARED_LIBS" environment variable to TRUE to add module entry to AMDB
+   dynamic capi module list. If not defined, dynamic modules entry is added to AMDB
+   static capi module list.
+   """
+   env["GEN_SHARED_LIBS"] = True;
+
    shared_lib_dict = spf_libs_config_parser(env, True);
