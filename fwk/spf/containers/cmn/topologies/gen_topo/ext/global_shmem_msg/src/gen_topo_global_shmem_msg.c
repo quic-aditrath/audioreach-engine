@@ -14,6 +14,7 @@
 #include "gen_topo.h"
 #include "gen_topo_capi.h"
 #include "capi_fwk_extns_global_shmem_msg.h"
+#include "apm.h"
 
 static capi_err_t gen_topo_capi_cb_global_sh_mem_cmd_handler(void                          *context_ptr,
                                                              uint32_t                       shmem_id,

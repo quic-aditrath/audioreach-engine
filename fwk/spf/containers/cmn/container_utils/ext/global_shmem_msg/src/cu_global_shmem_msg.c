@@ -16,6 +16,7 @@
 #include "container_utils.h"
 #include "gpr_packet.h"
 #include "gpr_api_inline.h"
+#include "apm.h"
 
 void cu_handle_global_shmem_msg(cu_base_t *cu_ptr, gpr_packet_t *packet_ptr)
 {
