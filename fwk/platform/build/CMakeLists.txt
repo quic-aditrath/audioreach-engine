@@ -19,8 +19,9 @@ include_directories()
 if (NOT DEFINED CONFIG_DISABLE_PLATFORM)
 add_subdirectory(../core_drv/build core_drv)
 add_subdirectory(../init/build init)
-add_subdirectory(../modules/build modules)
 endif()
+
+add_subdirectory(../modules/build modules)
 
 if (DEFINED CONFIG_COMPILE_POSAL)
 add_subdirectory(../posal/build posal)
