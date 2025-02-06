@@ -99,7 +99,7 @@ static ar_result_t apm_finish_graph_close_all_cmd(apm_t *apm_info_ptr)
    }
 
    /** Memory unmap */
-   posal_memorymap_global_unmap_all(FALSE);
+   posal_memorymap_global_unmap_all();
 
    AR_MSG(DBG_HIGH_PRIO, "APM_CMD_CLOSE_ALL completed");
 
