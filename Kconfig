@@ -3,3 +3,4 @@ source arch/Kconfig
 source modules/Kconfig
 source fwk/Kconfig
 source fwk/spf/modules/Kconfig
+source fwk/platform/modules/Kconfig
