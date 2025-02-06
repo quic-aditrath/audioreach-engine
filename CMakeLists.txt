@@ -195,4 +195,11 @@ add_subdirectory(modules)
 add_dependencies(spf amdbgen)
 #Read the list of libraries that were added using the global property
 get_property(spf_static_libs GLOBAL PROPERTY GLOBAL_SPF_LIBS_LIST)
-target_link_libraries(spf "$<LINK_GROUP:RESCAN,${spf_static_libs}>" "--allow-multiple-definition")
+
+if ( ARCH MATCHES "^(linux)")
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(GPR REQUIRED IMPORTED_TARGET gpr)
+target_link_libraries(spf PUBLIC PkgConfig::GPR)
+endif()
+
+target_link_libraries(spf PUBLIC "$<LINK_GROUP:RESCAN,${spf_static_libs}>" "-Wl,--allow-multiple-definition")
