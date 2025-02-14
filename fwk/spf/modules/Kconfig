@@ -25,23 +25,23 @@ config DATA_MARKER
         default y
 
 config PRIORITY_SYNC
-        tristate "Enable DATA_MARKER Library"
+        tristate "Enable PRIORITY_SYNC Library"
         default y
 
 config MUX_DEMUX
-        tristate "Enable DATA_MARKER Library"
+        tristate "Enable MUX_DEMUX Library"
         default y
 
 config SISO_RAT
-        tristate "Enable DATA_MARKER Library"
+        tristate "Enable SISO_RAT Library"
         default y
 
 config SH_MEM_PULL_MODE
-        tristate "Enable DATA_MARKER Library"
+        tristate "Enable SH_MEM_PULL_MODE Library"
         default y
 
 config SH_MEM_PUSH_MODE
-        tristate "Enable DATA_MARKER Library"
+        tristate "Enable SH_MEM_PUSH_MODE Library"
         default y
 
 endmenu
