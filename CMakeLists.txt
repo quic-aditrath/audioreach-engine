@@ -151,13 +151,12 @@ else()
    add_library(spf SHARED "" )
 endif()
 
-add_custom_target(
-   amdbgen
-   BYPRODUCTS  "${PROJECT_SOURCE_DIR}/fwk/spf/amdb/autogen/${TGT_SPECIFIC_FOLDER}/spf_shared_build_config.c"
-      "${PROJECT_SOURCE_DIR}/fwk/spf/amdb/autogen/${TGT_SPECIFIC_FOLDER}/spf_shared_build_config.h"
-      "${PROJECT_SOURCE_DIR}/fwk/spf/amdb/autogen/${TGT_SPECIFIC_FOLDER}/spf_static_build_config.h"
-      "${PROJECT_SOURCE_DIR}/fwk/spf/amdb/autogen/${TGT_SPECIFIC_FOLDER}/spf_static_build_config.c"
-   COMMAND   ${CMAKE_COMMAND} -E env
+message (STATUS "Generating AMDB configs")
+
+# Execute before amdb target is configured as amdb target uses generated
+# ouput files from spf_libs_config_parser.py execution.
+execute_process(
+   COMMAND ${CMAKE_COMMAND} -E env
       BUILDPATH=""
       OPENSRC="y"
       PROJECT_BINARY_DIR=${PROJECT_BINARY_DIR}
@@ -171,9 +170,10 @@ add_custom_target(
       AR_MINOR_VERSION=${AR_MINOR_VERSION}
       AR_PATCHLEVEL=${AR_PATCHLEVEL}
       ${PYTHON3} ${PROJECT_SOURCE_DIR}/scripts/spf/spf_libs_config_parser.py -c ${SPF_CHIPSET} -f "GEN_SHARED_LIBS,AVS_TEST"
-   COMMENT "Generating AMDB configs"
-   VERBATIM
+   RESULTS_VARIABLE AMDB_AUTOGEN_OUTPUT
 )
+
+message(STATUS "AMDB config generation result: ${AMDB_AUTOGEN_OUTPUT}")
 
 add_custom_target(
    menuconfig
@@ -196,7 +196,7 @@ add_custom_target(
 add_compile_definitions(AMDB_REG_SPF_MODULES)
 add_subdirectory(fwk/build)
 add_subdirectory(modules)
-add_dependencies(spf amdbgen)
+
 #Read the list of libraries that were added using the global property
 get_property(spf_static_libs GLOBAL PROPERTY GLOBAL_SPF_LIBS_LIST)
 
