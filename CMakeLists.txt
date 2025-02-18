@@ -143,7 +143,7 @@ include_directories(
    ${PROJECT_SOURCE_DIR}/fwk/spf/interfaces/fwk/api
    )
 
-set(CMAKE_SHARED_LINKER_FLAGS "-Wl,--export-all-symbols")
+set(CMAKE_SHARED_LINKER_FLAGS "-Wl,--export-dynamic")
 
 if (${CONFIG_SPF_AS_STATIC_LIB} MATCHES "y")
    add_library(spf STATIC "" )
