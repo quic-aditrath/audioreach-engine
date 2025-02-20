@@ -1,0 +1,7 @@
+menu "Containers"
+
+config WR_SH_MEM_EP
+        bool "Enable Write Share Memory Endpoint"
+        default y
+
+endmenu
