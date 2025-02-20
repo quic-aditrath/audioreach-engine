@@ -207,3 +207,18 @@ target_link_libraries(spf PUBLIC PkgConfig::GPR)
 endif()
 
 target_link_libraries(spf PUBLIC "$<LINK_GROUP:RESCAN,${spf_static_libs}>" "-Wl,--allow-multiple-definition")
+
+# Install header APIs to support ARE on APPS. These APIs are needed by
+# audioreach-graphmgr (AGM) server to initialize audioreach-engine framework.
+file(GLOB POSAL_INC ./fwk/platform/posal/inc/*.h)
+file(GLOB_RECURSE POSAL_${TGT_SPECIFIC_FOLDER}_INC ./fwk/platform/posal/inc/${TGT_SPECIFIC_FOLDER}/*.h)
+set(HEADER_APIS
+	${POSAL_INC}
+	${POSAL_${TGT_SPECIFIC_FOLDER}_INC}
+	${PROJECT_SOURCE_DIR}/fwk/spf/utils/cmn/inc/spf_main.h
+	${PROJECT_SOURCE_DIR}/fwk/api/ar_utils/ar_defs.h
+	${PROJECT_SOURCE_DIR}/fwk/api/ar_utils/generic/ar_msg.h
+	${PROJECT_SOURCE_DIR}/fwk/api/ar_utils/ar_error_codes.h
+	)
+
+install (FILES ${HEADER_APIS} DESTINATION include)
