@@ -222,3 +222,4 @@ set(HEADER_APIS
 	)
 
 install (FILES ${HEADER_APIS} DESTINATION include)
+install(TARGETS spf RUNTIME DESTINATION bin)
