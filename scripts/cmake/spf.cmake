@@ -59,7 +59,7 @@ function(spf_module_sources)
 	SPF_MODULE
 	"OBFUSCATE"
 	"KCONFIG;NAME;MAJOR_VER;MINOR_VER;AMDB_ITYPE;AMDB_MTYPE;AMDB_MID;AMDB_TAG;AMDB_MOD_NAME;AMDB_FMT_ID1"
-	"SRCS;INCLUDES;H2XML_HEADERS;CFLAGS"
+	"SRCS;INCLUDES;H2XML_HEADERS;QACT_MODULE_TYPE;CFLAGS"
 	# Parser Input
 	${ARGN}
 	)
@@ -84,6 +84,7 @@ function(spf_module_sources)
 		"         \"mid\"                : \"${SPF_MODULE_AMDB_MID}\",\n"
 		"         \"tag\"                : \"${SPF_MODULE_AMDB_TAG}\",\n"
 		"         \"module_name\"        : \"${SPF_MODULE_AMDB_MOD_NAME}\",\n"
+		"         \"qact_module_type\"   : \"${SPF_MODULE_QACT_MODULE_TYPE}\",\n"
 		"         \"fmt_id1\"            : \"${SPF_MODULE_AMDB_FMT_ID1}\"\n"
 		"      }\n"
 		"   }\n"
@@ -135,6 +136,7 @@ function(spf_module_sources)
 		"         \"mid\"                : \"${SPF_MODULE_AMDB_MID}\",\n"
 		"         \"tag\"                : \"${SPF_MODULE_AMDB_TAG}\",\n"
 		"         \"module_name\"        : \"${SPF_MODULE_AMDB_MOD_NAME}\",\n"
+		"         \"qact_module_type\"   : \"${SPF_MODULE_QACT_MODULE_TYPE}\",\n"
 		"         \"fmt_id1\"            : \"${SPF_MODULE_AMDB_FMT_ID1}\"\n"
 		"      }\n"
 		"   }\n"

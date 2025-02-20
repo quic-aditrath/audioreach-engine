@@ -408,7 +408,7 @@ def spf_libs_config_parser(env, is_unit_test=False):
                if 'fmt_id2' in lib['amdb_info']:
                   fmtid2 = lib['amdb_info']['fmt_id2'].strip();
                qact_module_type = mtype;
-               if 'qact_module_type' in lib['amdb_info']:
+               if 'qact_module_type' in lib['amdb_info'] and lib['amdb_info']['qact_module_type'].strip() != "":
                   qact_module_type = lib['amdb_info']['qact_module_type'].strip();
 
                if mtype in ['decoder', 'encoder' , 'converter', 'depacketizer'] and None==fmtid1:
