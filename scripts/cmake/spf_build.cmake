@@ -28,7 +28,13 @@ function(spf_build_static_library)
     set(static_lib_name ${ARGV0})
 
     #create the static library with lib name passed in the first argument
-    add_library(${static_lib_name} STATIC "")
+    if(CONFIG_ARCH_LINUX)
+        add_library(${static_lib_name} OBJECT "")
+        set_property(TARGET ${static_lib_name} PROPERTY POSITION_INDEPENDENT_CODE ON)
+    else()
+        add_library(${static_lib_name} STATIC "")
+    endif()
+
 
     #update the global property to append the static library name
     set_property(GLOBAL APPEND PROPERTY GLOBAL_SPF_LIBS_LIST ${static_lib_name})
