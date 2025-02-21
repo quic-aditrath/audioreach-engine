@@ -4,7 +4,7 @@
 This repository hosts implementation of generic signal processing framework, modules which can be used as part of audio graph, and platform & OS abstraction layer for different architecture & SoCs
 
 ## Documentation
-To be available soon.
+Refer AudioReach docs [here](https://audioreach.github.io/design/arspf_design.html)
 
 ## Build and Usage
 This page provides instructions to build, Adding new Modules, describes build artifacts and provides information on code layout.
