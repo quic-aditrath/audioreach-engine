@@ -14,7 +14,7 @@ This page provides instructions to build, Adding new Modules, describes build ar
 - [Directory Layout](#directory-layout)
 - [Build Artifacts](#build-artifacts)
 
-Please note that AudioReach Engine is only supported on Qualcomm Hexagon DSP at the time of writing. Hence, instruction is written using Hexagon DSP in mind.
+Please note that AudioReach Engine support OpenEmbedded system and Qualcomm Hexagon DSP at the time of writing.
 
 ### Setup the environment
 
@@ -25,13 +25,20 @@ Follow download instruction from [CMake Download Page](https://cmake.org/downloa
 #### Qualcomm Hexagon Toolchain
 Hexagon toolchain is bundled with Hexagon SDK which can be downloaded from [Qualcomm Developer Page](https://developer.qualcomm.com/software/hexagon-dsp-sdk/tools).
 
-### Build and Install
-#### Get AudioReach Engine
+## Build and Install
+### Get AudioReach Engine
 ```
 git clone https://github.com/Audioreach/audioreach-engine.git <WORKSPACE>
 ```
 
-#### Kick-off build process
+### Kick-off build process
+
+#### Open Embedded System
+Refer meta-audioreach [README](https://github.com/Audioreach/meta-audioreach?tab=readme-ov-file#openembedded-build--development-process)
+for instructions to use AudioReach Engine on OpenEmbedded system.
+
+#### Hexagon DSP
+
 ```
 $ cd $WORKSPACE
 $ mkdir build && cd build
@@ -48,15 +55,15 @@ $ make -j20
 Once build process is done, all libraries both static and dynamic are generated in top
 build directory
 
-#### Build Artifacts
+### Build Artifacts
 - Libraries: All libraries both static and dynamic are generated in top build directory
 	- libspf.so:  This is SPF in binary form. It is expected to be loaded onto audio DSP dynamically.
 	- Modules which were selected through menuconfig
 
 - AMDB files:
-	- All amdb files are generated at location fwk/spf/amdb/autogen/\<target directory e.g. hexagon\>
+	- All amdb files are generated at location fwk/spf/amdb/autogen/\<target directory e.g. hexagon or linux\>
 
-- H2XML Files(In Progress):
+- H2XML Files:
 	- H2XML files are generated at location: build/h2xml_autogen/
 
 ## Adding new Module
