@@ -16,8 +16,11 @@ INCLUDE FILES FOR MODULE
 #include "posal.h"
 #include "capi_types.h"
 #include "dls_log_pkt_hdr_api.h"
+#if defined(DLS_DATA_LOGGING)
+#include "dls.h"
+#else
 #include "log.h"
-
+#endif //defined DLS_DATA_LOGGING
 /*==========================================================================
   Structure definitions
   ========================================================================== */
@@ -26,6 +29,14 @@ typedef union log_pkt_header_internal_t
    dls_log_pkt_pcm_data_t       pcm;
    dls_log_pkt_bitstream_data_t bitstream;
 } log_pkt_header_internal_t;
+
+// Enable DLS_DATA_LOGGING on platforms where DIAG is not supported and Data Logging Service (DLS) is used.
+#if defined(DLS_DATA_LOGGING)
+#define log_alloc dls_acquire_buffer
+#define log_commit dls_commit_buffer
+#define log_free dls_log_buf_free
+#define log_status dls_log_code_status
+#endif //defined DLS_DATA_LOGGING
 
 static void *      posal_data_alloc_log_buffer_internal(uint32_t                buf_size,
                                                         uint32_t                log_code,
