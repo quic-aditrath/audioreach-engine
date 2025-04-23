@@ -44,4 +44,12 @@ config IIR_MBDRC
         tristate "Enable IIR_MBDRC Library"
         select DRC
         default y
+
+config GAIN
+        tristate "Enable GAIN Library"
+        default n
+
+config SOFT_VOL
+        tristate "Enable SOFT_VOL Library"
+        default n
 endmenu
