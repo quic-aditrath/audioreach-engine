@@ -12,15 +12,15 @@ config MODULES_DEBUG
 
 config ENCODER
         tristate "Enable Example Encoder Library"
-        default y
+        default n
 
 config ECHO_CANCELLATION
         tristate "Enable ECHO Cancellation Library"
-        default y
+        default n
 
-config GAIN
-        tristate "Enable GAIN Library"
-        default y
+config EXAMPLE_GAIN
+        tristate "Enable EXAMPLE_GAIN Library"
+        default n
 
 config CH_MIXER
         tristate "Enable CH_MIXER Library"
@@ -44,4 +44,12 @@ config IIR_MBDRC
         tristate "Enable IIR_MBDRC Library"
         select DRC
         default y
+
+config GAIN
+        tristate "Enable GAIN Library"
+        default n
+
+config SOFT_VOL
+        tristate "Enable SOFT_VOL Library"
+        default n
 endmenu
