@@ -52,4 +52,8 @@ config GAIN
 config SOFT_VOL
         tristate "Enable SOFT_VOL Library"
         default n
+
+config FIR_FILTER
+        tristate "Enable FIR_FILTER Library"
+        default n
 endmenu
