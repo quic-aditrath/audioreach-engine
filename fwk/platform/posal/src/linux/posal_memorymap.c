@@ -585,8 +585,8 @@ ar_result_t posal_memorymap_shm_mem_map(uint32_t                      client_tok
          posal_memory_free(new_shm_map_hashnode_ptr);
          return AR_ENOMEMORY;
       }
-#endif /* POSAL_MMAP_VFIO */
    }
+#endif /* POSAL_MMAP_VFIO */
 
    spf_hashtable_insert(&g_posal_memorymap_internal_ptr->shmmap_ht, &new_shm_map_hashnode_ptr->hash_node);
 
