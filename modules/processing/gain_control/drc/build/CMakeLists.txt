@@ -9,19 +9,9 @@
 ]]
 cmake_minimum_required(VERSION 3.10)
 
-set(drc_sources
-    ${LIB_ROOT}/capi/src/capi_drc.cpp
-    ${LIB_ROOT}/capi/src/capi_drc_utils.cpp
-    ${LIB_ROOT}/lib/src/drc_lib.c
-    ${LIB_ROOT}/lib/src/drc_lib_opt.c
-)
-
 set(drc_includes
     ${LIB_ROOT}/api
-    ${LIB_ROOT}/capi/inc
-    ${LIB_ROOT}/capi/src
-    ${LIB_ROOT}/lib/inc
-    ${LIB_ROOT}/lib/src
+    ${LIB_ROOT}/inc
     ${PROJECT_SOURCE_DIR}/modules/cmn/common/utils/inc
     ${PROJECT_SOURCE_DIR}/modules/cmn/api
     ${PROJECT_SOURCE_DIR}/modules/cmn/common/internal_api
@@ -38,8 +28,8 @@ spf_module_sources(
    AMDB_TAG "capi_drc"
    AMDB_MOD_NAME  "MODULE_ID_DRC"
    AMDB_FMT_ID1   "MEDIA_FMT_ID_PCM"
-   SRCS     ${drc_sources}
    INCLUDES ${drc_includes}
-   H2XML_HEADERS  "../api/api_drc.h"
+   H2XML_HEADERS  "${LIB_ROOT}/api/api_drc.h"
    CFLAGS      ""
+   STATIC_LIB_PATH "${LIB_ROOT}/bin/arm/libdrc.a"
 )
