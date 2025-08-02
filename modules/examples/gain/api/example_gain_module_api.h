@@ -71,8 +71,8 @@
 /* ID of the parameter used to set the gain */
 #define PARAM_ID_GAIN_MODULE_GAIN 0x08001175
 
-/** @h2xmlp_parameter   {"PARAM_ID_GAIN_MODULE",
-                         PARAM_ID_GAIN_MODULE}
+/** @h2xmlp_parameter   {"PARAM_ID_GAIN_MODULE_GAIN",
+                         PARAM_ID_GAIN_MODULE_GAIN}
     @h2xmlp_description {Configures the gain}
     @h2xmlp_toolPolicy  {Calibration; RTC} */
 
