@@ -22,8 +22,8 @@ config EXAMPLE_GAIN
         tristate "Enable EXAMPLE_GAIN Library"
         default n
 
-config CH_MIXER
-        tristate "Enable CH_MIXER Library"
+config CHMIXER
+        tristate "Enable CHMIXER Library"
         default y
 
 config MSIIR
