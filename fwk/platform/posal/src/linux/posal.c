@@ -86,5 +86,14 @@ void posal_init(void)
 
 void posal_deinit(void)
 {
-
+	posal_atomic_word_destroy(posal_globalstate.nMsgQs);
+    posal_atomic_word_destroy(posal_globalstate.nMemRegions);
+	posal_queue_pool_destroy(POSAL_HEAP_DEFAULT);
+	posal_memorymap_global_deinit();
+	posal_memory_stats_deinit();
+	posal_mutex_destroy(&posal_globalstate.mutex);
+	posal_mem_prof_deinit();
+	/* de-initialise posal power manager */
+    posal_power_mgr_deinit();
+	return;
 }

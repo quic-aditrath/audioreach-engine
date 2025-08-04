@@ -16,7 +16,20 @@
 #include "posal_internal.h"
 #include <ar_osal_thread.h>
 #include <pthread.h>
+//#include <zephyr/posix/pthread.h>
 
+/* Pthread inherit scheduler */ //Need to remove back, we should not use pthread.h from /usr/lib/ PTHREAD_EXPLICIT_SCHED --> value 2 showing up.
+#undef PTHREAD_INHERIT_SCHED
+#define PTHREAD_INHERIT_SCHED  0
+#undef PTHREAD_EXPLICIT_SCHED
+#define PTHREAD_EXPLICIT_SCHED 1
+
+#undef PTHREAD_CREATE_DETACHED
+#define PTHREAD_CREATE_DETACHED 1
+#undef PTHREAD_CREATE_JOINABLE
+#define PTHREAD_CREATE_JOINABLE 0
+
+//#define DEBUG_POSAL_THREAD
 /* ----------------------------------------------------------------------------
  * Global Declarations/Definitions
  * ------------------------------------------------------------------------- */
@@ -163,7 +176,7 @@ ar_result_t posal_thread_launch3(posal_thread_t     *posal_obj_ptr,
    unix_result = pthread_attr_init(&attr);
    if (unix_result)
    {
-      AR_MSG(DBG_ERROR_PRIO, "Error: failed to init attributes");
+      AR_MSG(DBG_ERROR_PRIO, "Error: failed to init attributes rc: %d\n", unix_result);
       *posal_obj_ptr = NULL;
       result         = AR_EBADPARAM;
       goto err_attr;
@@ -283,13 +296,13 @@ ar_result_t posal_thread_launch3(posal_thread_t     *posal_obj_ptr,
       goto err_destroy;
    }
 
-   unix_result = pthread_attr_destroy(&attr);
-   if (unix_result)
-   {
-      AR_MSG(DBG_ERROR_PRIO, "Error:  Failed to destroy attributes, unix_result = 0x%x", unix_result);
-      result = AR_EFAILED;
-      goto err_destroy;
-   }
+   //unix_result = pthread_attr_destroy(&attr);
+   //if (unix_result)
+   //{
+     // AR_MSG(DBG_ERROR_PRIO, "Error:  Failed to destroy attributes, unix_result = 0x%x", unix_result);
+     // result = AR_EFAILED;
+     // goto err_destroy;
+   //}
 
 /* low prio debug message in case of difficult issues */
 #ifdef DEBUG_POSAL_THREAD

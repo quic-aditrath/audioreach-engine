@@ -15,6 +15,11 @@
 #include <pthread.h>
 #include <errno.h>
 
+#define SAFE_MODE
+
+#ifndef PTHREAD_MUTEX_RECURSIVE
+#define PTHREAD_MUTEX_RECURSIVE   1
+#endif
 
 /* ----------------------------------------------------------------------------
  * Global Declarations/Definitions

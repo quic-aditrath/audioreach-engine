@@ -17,6 +17,11 @@ INCLUDE FILES FOR MODULE
 #include "ar_defs.h"
 #include "ar_error_codes.h"
 #include "posal_internal_inline.h"
+#include <pthread.h>
+
+#ifndef PTHREAD_MUTEX_RECURSIVE
+#define PTHREAD_MUTEX_RECURSIVE   1
+#endif
 
 #ifdef __cplusplus
 extern "C" {
