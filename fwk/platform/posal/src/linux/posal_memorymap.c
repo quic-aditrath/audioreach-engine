@@ -18,11 +18,16 @@
 #include "posal_globalstate.h"
 #include <stringl.h>
 #include <errno.h>
-#include <sys/mman.h>
+//#include <sys/mman.h>
 #include "spf_hashtable.h"
 #ifdef POSAL_MMAP_VFIO
 #include "plat_vfio.h"
 #endif /* POSAL_MMAP_VFIO */
+
+#define 	PROT_READ   0x1
+#define 	PROT_WRITE   0x2
+#define 	MAP_SHARED   0x1
+#define 	MAP_FAILED   ((void *)-1)
 
 #ifdef POSAL_MMAP_EXTN
 extern void *mdf_mem_base_va_addr;

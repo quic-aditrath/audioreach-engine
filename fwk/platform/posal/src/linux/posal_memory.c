@@ -187,8 +187,10 @@ static inline void *posal_memory_aligned_malloc_inline(uint32_t      unBytes,
    /* allocate enough for requested bytes + alignment wasteage + 1 word for storing offset*/
    /* (which will be just before the aligned ptr) */
    ptr = (char *)posal_memory_malloc_inline(unBytes + unAlignSize + sizeof(int), origheapId, track_mem_stats);
-   if (ptr == NULL)
+   if (ptr == NULL){
+      AR_MSG(DBG_ERROR_PRIO, "posal_memory_malloc_inline returned NULL pointer");
       return (NULL);
+   }
    /* allocate enough for requested bytes + alignment wasteage + 1 word for storing offset */
 
    ptr2        = ptr + sizeof(int);

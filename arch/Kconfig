@@ -1,2 +1,2 @@
-source arch/hexagon/Kconfig
-source arch/linux/Kconfig
+rsource "hexagon/Kconfig"
+rsource "linux/Kconfig"

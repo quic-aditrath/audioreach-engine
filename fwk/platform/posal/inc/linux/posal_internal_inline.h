@@ -16,6 +16,7 @@ INCLUDE FILES FOR MODULE
 ========================================================================== */
 #include "posal.h"
 #include "posal_linux_signal.h"
+#include <pthread.h>
 
 typedef struct {
    posal_linux_signal_t    anysig;
