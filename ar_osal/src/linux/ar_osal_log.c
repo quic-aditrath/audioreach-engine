@@ -40,7 +40,8 @@
 
 static inline void __android_log_write(int prio, const char *tag, const char *msg)
 {
-    syslog(prio, "%s - %s", tag, msg);
+    //syslog(prio, "%s - %s", tag, msg);
+    printf("AR_MSG: %s\n", msg);
 }
 #else
 #include <log/log.h>
