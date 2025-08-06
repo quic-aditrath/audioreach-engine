@@ -2,17 +2,17 @@
 # SPDX-License-Identifier: BSD-3-Clause-Clear
 
 set(example_encoder_sources
-	capi/src/capi_example_enc_module_utils.c
-	capi/src/capi_example_enc_module.c
-	lib/src/example_enc_lib.c
+	${LIB_ROOT}/capi/src/capi_example_enc_module_utils.c
+	${LIB_ROOT}/capi/src/capi_example_enc_module.c
+	${LIB_ROOT}/lib/src/example_enc_lib.c
 )
 
 set(example_encoder_includes
-	capi/inc
-	lib/inc
-	api
-	capi/src
-	lib/src
+	${LIB_ROOT}/capi/inc
+	${LIB_ROOT}/lib/inc
+	${LIB_ROOT}/api
+	${LIB_ROOT}/capi/src
+	${LIB_ROOT}/lib/src
 )
 
 spf_module_sources(
@@ -28,6 +28,6 @@ spf_module_sources(
 	AMDB_FMT_ID1	"MEDIA_FMT_ID_EXAMPLE"
 	SRCS		${example_encoder_sources}
 	INCLUDES	${example_encoder_includes}
-	H2XML_HEADERS	"api/example_encoder_module_api.h"
+	H2XML_HEADERS	"${LIB_ROOT}/api/example_encoder_module_api.h"
 	CFLAGS		""
 )
