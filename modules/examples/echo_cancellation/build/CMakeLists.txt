@@ -2,15 +2,15 @@
 # SPDX-License-Identifier: BSD-3-Clause-Clear
 
 set(echo_cancellation_sources
-	capi/src/capi_ecns_metadata_utils.c
-	capi/src/capi_ecns_utils.c
-	capi/src/capi_ecns_data_port_utils.c
-	capi/src/capi_ecns.c
+	${LIB_ROOT}/capi/src/capi_ecns_metadata_utils.c
+	${LIB_ROOT}/capi/src/capi_ecns_utils.c
+	${LIB_ROOT}/capi/src/capi_ecns_data_port_utils.c
+	${LIB_ROOT}/capi/src/capi_ecns.c
 )
 set(echo_cancellation_includes
-	capi/src
-	capi/inc
-	api
+	${LIB_ROOT}/capi/src
+	${LIB_ROOT}/capi/inc
+	${LIB_ROOT}/api
 )
 
 spf_module_sources(
@@ -26,6 +26,6 @@ spf_module_sources(
 	AMDB_FMT_ID1	"MEDIA_FMT_ID_EXAMPLE"
 	SRCS		${echo_cancellation_sources}
 	INCLUDES	${echo_cancellation_includes}
-	H2XML_HEADERS	"api/ecns_calibration_api.h"
+	H2XML_HEADERS	"${LIB_ROOT}/api/ecns_calibration_api.h"
 	CFLAGS		""
 )

@@ -2,17 +2,17 @@
 # SPDX-License-Identifier: BSD-3-Clause-Clear
 
 set(example_gain_sources
-	capi/src/capi_example_gain_module.c
-	capi/src/capi_example_gain_module_utils.c
-	lib/src/example_gain_module_lib.c
+	${LIB_ROOT}/capi/src/capi_example_gain_module.c
+	${LIB_ROOT}/capi/src/capi_example_gain_module_utils.c
+	${LIB_ROOT}/lib/src/example_gain_module_lib.c
 )
 
 set(example_gain_includes
-	capi/inc
-	lib/inc
-	api
-	capi/src
-	lib/src
+	${LIB_ROOT}/capi/inc
+	${LIB_ROOT}/lib/inc
+	${LIB_ROOT}/api
+	${LIB_ROOT}/capi/src
+	${LIB_ROOT}/lib/src
 )
 
 spf_module_sources(
@@ -28,6 +28,6 @@ spf_module_sources(
 	AMDB_FMT_ID1	"MEDIA_FMT_ID_EXAMPLE"
 	SRCS		${example_gain_sources}
 	INCLUDES	${example_gain_includes}
-	H2XML_HEADERS	api/example_gain_module_api.h
+	H2XML_HEADERS	${LIB_ROOT}/api/example_gain_module_api.h
 	CFLAGS		""
 )
