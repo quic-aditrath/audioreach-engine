@@ -1,0 +1,12 @@
+project: https://github.com/AudioReach/audioreach-engine
+
+branches:
+  master:
+    modes:
+      non-blocking:
+        headers:
+          - fwk/api/apm/*.h
+          - fwk/api/ar_utils/*.h
+          - fwk/api/modules/*.h
+          - fwk/api/vcpm/*.h
+          - fwk/spf/dls/api/*.h
