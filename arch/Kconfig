@@ -1,5 +1,5 @@
-source arch/hexagon/Kconfig
-source arch/linux/Kconfig
+rsource "hexagon/Kconfig"
+rsource "linux/Kconfig"
 
 config PROC_DOMAIN
     string "Target Processor Domain ID for ARE modules"
