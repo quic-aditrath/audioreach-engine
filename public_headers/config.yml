@@ -3,7 +3,7 @@ project: https://github.com/AudioReach/audioreach-engine
 branches:
   master:
     modes:
-      non-blocking:
+      blocking:
         headers:
           - fwk/api/apm/*.h
           - fwk/api/ar_utils/*.h
