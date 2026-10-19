@@ -20,7 +20,17 @@ include(scripts/cmake/zephyr-toolchain.cmake)
 endif()
 
 project(AR VERSION 1.0)
-set(H2XML "${PROJECT_SOURCE_DIR}/scripts/h2xml/h2xml")
+if(CMAKE_HOST_WIN32)
+    set(H2XML "${HEXAGON_SDK_ROOT}/addons/audio/spf/tools/h2xml/h2xml.exe")
+    if(NOT EXISTS "${H2XML}")
+        message(FATAL_ERROR
+            "H2XML not found at path: '${H2XML}'. Please verify that "
+            "HEXAGON_SDK_ROOT ('${HEXAGON_SDK_ROOT}') is set correctly and "
+            "that the audio add-on is installed.")
+    endif()
+else()
+    set(H2XML "${PROJECT_SOURCE_DIR}/scripts/h2xml/h2xml")
+endif()
 set(H2XML_CONFIG "${PROJECT_SOURCE_DIR}/scripts/h2xml/h2xml_config_spf.xml")
 set(H2XML_FLAGS -D __H2XML__)
 set(H2XML_INCLUDES "" )
