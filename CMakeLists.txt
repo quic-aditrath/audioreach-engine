@@ -269,7 +269,11 @@ target_link_libraries(spf PUBLIC ar-gpr)
 target_link_libraries(spf PUBLIC ar-osal)
 endif()
 
-target_link_libraries(spf PUBLIC "$<LINK_GROUP:RESCAN,${spf_static_libs}>" "-Wl,--allow-multiple-definition")
+if(ARCH MATCHES "^(hexagon)")
+    target_link_libraries(spf PUBLIC ${spf_static_libs} "-Wl,--allow-multiple-definition")
+else()
+    target_link_libraries(spf PUBLIC "$<LINK_GROUP:RESCAN,${spf_static_libs}>" "-Wl,--allow-multiple-definition")
+endif()
 
 # Install header APIs to support ARE on APPS. These APIs are needed by
 # audioreach-graphmgr (AGM) server to initialize audioreach-engine framework.
